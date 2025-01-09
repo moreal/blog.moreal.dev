@@ -1,0 +1,24 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+@import url('https://unpkg.com/@catppuccin/palette/css/catppuccin.css');
+
+main {
+  font-family: "Noto Serif CJK KR", "Noto Serif KR", serif;
+  font-optical-sizing: auto;
+  font-style: sans-serif;
+  font-feature-settings: "chws", "halt"
+}
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-color: var(--ctp-macchiato-base);
+      --heading-color: var(--ctp-macchiato-text);
+      --text-color: var(--ctp-macchiato-subtext1);
+      --link-color: var(--ctp-macchiato-sky);
+      --visited-color: var(--ctp-macchiato-mauve);
+      --code-background-color: var(--ctp-macchiato-crust);
+      --code-color: var(--ctp-macchiato-text);
+      --blockquote-color: var(--ctp-macchiato-overlay2);
+     }
+  }
+</style>
