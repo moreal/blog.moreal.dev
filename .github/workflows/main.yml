@@ -10,15 +10,15 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    container:
+      image: ghcr.io/getzola/zola:v0.19.1
+
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Install Zola
-        run: |
-          curl -sSf https://sh.rustup.rs | sh -s -- -y
-          source $HOME/.cargo/env
-          cargo install zola
 
       - name: Build Zola Site
         run: zola build
