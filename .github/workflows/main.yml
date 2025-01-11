@@ -10,16 +10,19 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    container:
-      image: ghcr.io/getzola/zola:v0.19.1
-
     permissions:
       contents: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+      - uses: dtolnay/rust-toolchain@stable
+      - run: |
+          pushd /tmp
+            git clone https://github.com/getzola/zola.git
+            cd zola
+            cargo install --path . --locked 
+          popd
       - name: Build Zola Site
         run: zola build
 
