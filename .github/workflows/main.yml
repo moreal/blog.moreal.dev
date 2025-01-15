@@ -19,6 +19,7 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - run: |
           pushd /tmp
             git clone https://github.com/getzola/zola.git
