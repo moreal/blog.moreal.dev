@@ -10,7 +10,11 @@
 한국어로 [블로그](@/blog/_index.md)를 적습니다.
 
 맞는 내용을 적으려고 노력하지만, <strong>틀린 부분</strong>이 있을 수 있습니다.
-제 의견은 다른 사람들과 다를 수 있고, 시간에 따라 바뀔 수 있습니다.
+
+이전에 작성하던 글들은 아래 링크들에서 확인하실 수 있습니다.
+
+ - https://velog.io/@moreal/posts
+ - https://moreal.hashnode.dev/
 
 ### Contact
 
