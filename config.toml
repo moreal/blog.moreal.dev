@@ -29,3 +29,5 @@ url = "@/_index.md"
 
 [translations]
 site = "moreal dev" 
+filtering_for = "필터"
+remove_filter = "돌아가기"
