@@ -13,8 +13,7 @@
 
 이전에 작성하던 글들은 아래 링크들에서 확인하실 수 있습니다.
 
- - https://velog.io/@moreal/posts
- - https://moreal.hashnode.dev/
+ - [Velog](https://velog.io/@moreal/posts)
 
 ### Contact
 
