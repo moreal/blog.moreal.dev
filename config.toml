@@ -27,6 +27,10 @@ hide_made_with_line = true
 name = "home"
 url = "@/_index.md"
 
+[[extra.main_menu]]
+name = "blog"
+url = "@/blog/_index.md"
+
 [translations]
 site = "moreal dev" 
 filtering_for = "필터"
