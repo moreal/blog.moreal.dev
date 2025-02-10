@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title> - Internals</title>
+    <link rel="self" type="application/atom+xml" href="https://moreal.dev/tags/internals/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://moreal.dev"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2020-02-22T00:00:00+00:00</updated>
+    <id>https://moreal.dev/tags/internals/atom.xml</id>
+    <entry xml:lang="en">
+        <title>How Go interface works</title>
+        <published>2020-02-22T00:00:00+00:00</published>
+        <updated>2020-02-22T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://moreal.dev/blog/go-interface/"/>
+        <id>https://moreal.dev/blog/go-interface/</id>
+        
+        <content type="html" xml:base="https://moreal.dev/blog/go-interface/">&lt;h2 id=&quot;yimun&quot;&gt;의문&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;utilForever&#x2F;falcon&lt;&#x2F;code&gt;의 간단한 프로토타입을 만들면서 &lt;code&gt;CompilerProxy&lt;&#x2F;code&gt; 인터페이스를 구현하는 &lt;code&gt;GccCompilerProxy&lt;&#x2F;code&gt; 구조체를 작성하였습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy_test.go
+&lt;&#x2F;span&gt;&lt;span&gt;var compilerProxy *CompilerProxy = NewGccCompilerProxy()
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy.go
+&lt;&#x2F;span&gt;&lt;span&gt;type CompilerProxy interface {
+&lt;&#x2F;span&gt;&lt;span&gt;	AddLibrary()
+&lt;&#x2F;span&gt;&lt;span&gt;	IncludeDirectory()
+&lt;&#x2F;span&gt;&lt;span&gt;	Compile(srcPath, outPath string)
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;type GccCompilerProxy struct {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) AddLibrary() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) IncludeDirectory() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) Compile(srcPath, outPath string) {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func NewGccCompilerProxy() *GccCompilerProxy {
+&lt;&#x2F;span&gt;&lt;span&gt;	return &amp;amp;GccCompilerProxy{}
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;당연히 &lt;em&gt;&lt;code&gt;*interface&lt;&#x2F;code&gt; = &lt;code&gt;*struct&lt;&#x2F;code&gt;&lt;&#x2F;em&gt; 대입이 될 거라 생각했지만 컴파일러는 제게 에러 메시지 만을 남겼습니다.&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Cannot use &#x27;NewGccCompilerProxy()&#x27; (type *GccCompilerProxy) as type *CompilerProxy in assignment&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;저 컴파일 에러 메시지를 보고서 생각에 빠졌습니다. C#에서도 &lt;code&gt;ref&lt;&#x2F;code&gt; 키워드를 이용할 때 &lt;code&gt;interface&lt;&#x2F;code&gt;와 &lt;code&gt;class&lt;&#x2F;code&gt; 두 타입 앞에 모두 붙였었는데 Go 에서는 뭔가 어떻게 다른 걸까라는 생각과 함께 &lt;code&gt;interface&lt;&#x2F;code&gt; 라는 키워드가 있는 여러 언어를 접해 보지 못했다는 것도 실감했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tour.golang.org&#x2F;&quot;&gt;A Tour of Go&lt;&#x2F;a&gt; 와 Go 언어로 작성된 여러 코드들을 살펴보다가 &lt;code&gt;interface{}&lt;&#x2F;code&gt; 와 같이 사용하는 것을 보았습니다. 그 타입은 모든 타입과 매치되고 마치 &lt;code&gt;Object&lt;&#x2F;code&gt; 타입 처럼 보였다. 실제로 Go는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Reflection_(computer_programming)&quot;&gt;Reflection&lt;&#x2F;a&gt;도 지원합니다. 그렇다면 Go 는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Java_(programming_language)&quot;&gt;Java&lt;&#x2F;a&gt;나 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;C_Sharp_(programming_language)&quot;&gt;C#&lt;&#x2F;a&gt; 처럼 VM위에서 돌아가는 걸까 라는 생각도 들었지만 &lt;a href=&quot;https:&#x2F;&#x2F;golang.org&#x2F;doc&#x2F;faq#runtime&quot;&gt;FAQ&lt;&#x2F;a&gt;를 읽어보면 그렇지는 않다고 말하고 있었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;결국 Go 안에서 &lt;code&gt;interface&lt;&#x2F;code&gt; 관련 작업이 어떻게 이루어지는 알아보기로 했고 이 글을 통해 정리해보고자 합니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;interface-in-go&quot;&gt;Interface in Go&lt;&#x2F;h2&gt;
+&lt;p&gt;Go Spec 레퍼런스를 보면 &lt;em&gt;인터페이스는 메소드의 집합이다&lt;&#x2F;em&gt; 라고 말하고 있습니다. 자바나 기타 언어에서 와는 다르게 느껴집니다. 이는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Protocol_(object-oriented_programming)&quot;&gt;위키피디아 Protocol(OOP)&lt;&#x2F;a&gt; 문서에서도 말하듯 타언어에서는 명시적으로 인터페이스를 구현해야 한다에 가깝지만, Go에서는 인터페이스의 부분 집합인지를 검사하는 것에 가깝습니다. 인터페이스 검사에서 [Duck Typing] 방식을 채용하고 있기 때문입니다. 정적언어인 Go에서 이것이 어떻게 가능한 것일까요? Go 인터페이스가 어떻게 생겼고, 어떻게 다루지를 안다 면 쉽게 이해할 수 있습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;go-interface-gujoce-itab-mandeuneun-beob&quot;&gt;Go Interface 구조체 (itab, 만드는 법)&lt;&#x2F;h2&gt;
+&lt;p&gt;Go에서 인터페이스는 &lt;code&gt;iface&lt;&#x2F;code&gt;라는 이름의 구조체입니다. 타입을 설명하는 &lt;code&gt;itab&lt;&#x2F;code&gt;의 포인터와 실제 데이터를 가리키는 포인터로 이루어져 있습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;type iface struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	tab  *itab
+&lt;&#x2F;span&gt;&lt;span&gt;	data unsafe.Pointer
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;itab&lt;&#x2F;code&gt;은 해당 데이터가 어떤 인터페이스 타입이고 어떤 타입인지, 그리고 함수 테이블을 가지고 있습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; layout of Itab known to compilers
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; allocated in non-garbage-collected memory
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; Needs to be in sync with
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; ..&#x2F;cmd&#x2F;compile&#x2F;internal&#x2F;gc&#x2F;reflect.go:&#x2F;^func.dumptabs.
+&lt;&#x2F;span&gt;&lt;span&gt;type itab struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	inter *interfacetype
+&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
+&lt;&#x2F;span&gt;&lt;span&gt;	hash  uint32 &#x2F;&#x2F; copy of _type.hash. Used for type switches.
+&lt;&#x2F;span&gt;&lt;span&gt;	_     [4]byte
+&lt;&#x2F;span&gt;&lt;span&gt;	fun   [1]uintptr &#x2F;&#x2F; variable sized. fun[0]==0 means _type does not implement inter.
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;주석에서 볼 수 있듯이 코드 상에서 정적인 인터페이스 캐스팅이 있을 때 마다 &lt;code&gt;gc&#x2F;subr.go#implements()&lt;&#x2F;code&gt; 메소드를 호출하여 캐스팅이 가능한지 검사를 합니다. 동시에 &lt;code&gt;itab&lt;&#x2F;code&gt; 을 생성 및 테이블에 등록합니다. 이 &lt;code&gt;itabTable&lt;&#x2F;code&gt;은 &lt;em&gt;.rodata&lt;&#x2F;em&gt; 섹션에 기록하고 실제 프로그램 실행되기 전에 가져오게 됩니다. 이와 관련된 초기화, 컴파일 과정은 다른 글에서 다뤄보도록 하겠습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
+&lt;&#x2F;span&gt;&lt;span&gt;	&#x2F;&#x2F; *** codes ***
+&lt;&#x2F;span&gt;&lt;span&gt;	if isdirectiface(t0) &amp;amp;&amp;amp; !iface.IsEmptyInterface() {
+&lt;&#x2F;span&gt;&lt;span&gt;		itabname(t0, iface)
+&lt;&#x2F;span&gt;&lt;span&gt;	}
+&lt;&#x2F;span&gt;&lt;span&gt;	return true
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위에서 볼 수 있듯이 비어있는 인터페이스, 즉 &lt;code&gt;interface{}&lt;&#x2F;code&gt;로의 변환은 &lt;code&gt;itab&lt;&#x2F;code&gt;을 생성하지 않습니다. 왜냐하면 &lt;code&gt;interface{}&lt;&#x2F;code&gt;의 경우 메소드를 가지지 않는 빈 인터페이스 이므ㅏ로 실제 데이터의 타입과 그 데이터를 가리키는 포인터만 가지고 있으면 충분합니다. 그래서 &lt;code&gt;eface&lt;&#x2F;code&gt;라는 구조체를 사용합니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; runtime&#x2F;runtime2.go
+&lt;&#x2F;span&gt;&lt;span&gt;type eface struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
+&lt;&#x2F;span&gt;&lt;span&gt;	data  unsafe.Pointer
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;변환할때는 런타임시에 &lt;code&gt;runtime.convT64&lt;&#x2F;code&gt;, &lt;code&gt;runtime.assertE2I&lt;&#x2F;code&gt; 와 같은 &lt;em&gt;runtime&#x2F;runtime2.go&lt;&#x2F;em&gt;에 작성되어 있는 함수들을 사용합니다. 어떤 함수들을 호출하게 바뀌는 지는 컴파일 과정중 만드는 SSA를 보면 쉽게 알 수 있습니다.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;$ GOSSAFUNC=func go build test.go
+&lt;&#x2F;span&gt;&lt;span&gt;# command-line-arguments
+&lt;&#x2F;span&gt;&lt;span&gt;dumped SSA to .&#x2F;ssa.html
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;user-images.githubusercontent.com&#x2F;26626194&#x2F;76146532-dc173e00-60d6-11ea-973a-e5567378e15a.png&quot; alt=&quot;image&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;inteopeiseu-mesodeu-hocul&quot;&gt;인터페이스 메소드 호출&lt;&#x2F;h2&gt;
+&lt;p&gt;인터페이스에서 메소드를 호출 하는 것은 &lt;code&gt;itab&lt;&#x2F;code&gt; 구조체의 필드 &lt;code&gt;fun&lt;&#x2F;code&gt; 가상 테이블에서 함수 포인터를 가져와서 실행합니다. 이 때문에 어쩔 수 없이 성능 저하가 발생합니다. 하지만 CPU 캐시 히트를 맞히면 직접 호출과 다르지 않은 속도를 기대할 수도 있습니다. 이 부분은 &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;teh-cmc&#x2F;go-internals&#x2F;blob&#x2F;master&#x2F;chapter2_interfaces&#x2F;README.md&quot;&gt;다음 글&lt;&#x2F;a&gt;에서 잘 설명되어 있기 때문에 생략하겠습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;mamuri&quot;&gt;마무리&lt;&#x2F;h2&gt;
+&lt;p&gt;Golang에서 vm 없이 동적 타입을 어떻게 다루는지, interface가 어떻게 생겼는지, 컴파일러 과정 및 컴파일러 내부 코드 구조를 알 수 있어서 좋았습니다. 앞으로 go로 작성할 때 성능을 신경써야 하는 부분이 있다면 이런 캐시히트도 봐야겠구나 라는 생각이 들었습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;reference&quot;&gt;Reference&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;https:&#x2F;&#x2F;github.com&#x2F;teh-cmc&#x2F;go-internals&#x2F;blob&#x2F;master&#x2F;chapter2_interfaces&#x2F;README.md&lt;&#x2F;li&gt;
+&lt;li&gt;https:&#x2F;&#x2F;research.swtch.com&#x2F;interfaces&lt;&#x2F;li&gt;
+&lt;li&gt;http:&#x2F;&#x2F;www.programmersought.com&#x2F;article&#x2F;16341600537&#x2F;&lt;&#x2F;li&gt;
+&lt;li&gt;https:&#x2F;&#x2F;eli.thegreenplace.net&#x2F;2019&#x2F;go-compiler-internals-adding-a-new-statement-to-go-part-1&#x2F;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+        
+    </entry>
+</feed>

@@ -7,6 +7,18 @@
         <loc>https://moreal.dev/blog/</loc>
     </url>
     <url>
+        <loc>https://moreal.dev/blog/go-interface/</loc>
+        <lastmod>2020-02-22</lastmod>
+    </url>
+    <url>
+        <loc>https://moreal.dev/blog/petabyte-traffic/</loc>
+        <lastmod>2023-03-15</lastmod>
+    </url>
+    <url>
+        <loc>https://moreal.dev/blog/phanpy-translation-guide/</loc>
+        <lastmod>2024-09-01</lastmod>
+    </url>
+    <url>
         <loc>https://moreal.dev/blog/zola-blog/</loc>
         <lastmod>2025-01-07</lastmod>
     </url>
@@ -15,5 +27,29 @@
     </url>
     <url>
         <loc>https://moreal.dev/tags/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/aws/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/beogeu/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/beonyeog/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/eks/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/go/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/internals/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/opeunsoseu/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/sabjil/</loc>
     </url>
 </urlset>

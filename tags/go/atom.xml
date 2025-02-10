@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title> - Go</title>
+    <link rel="self" type="application/atom+xml" href="https://moreal.dev/tags/go/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://moreal.dev"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2023-03-15T00:00:00+00:00</updated>
+    <id>https://moreal.dev/tags/go/atom.xml</id>
+    <entry xml:lang="en">
+        <title>페타바이트 트래픽 원인 분석기</title>
+        <published>2023-03-15T00:00:00+00:00</published>
+        <updated>2023-03-15T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://moreal.dev/blog/petabyte-traffic/"/>
+        <id>https://moreal.dev/blog/petabyte-traffic/</id>
+        
+        <content type="html" xml:base="https://moreal.dev/blog/petabyte-traffic/">&lt;h2 id=&quot;daesibodeue-boineun-isanghan-danwi&quot;&gt;대시보드에 보이는 이상한 단위&lt;&#x2F;h2&gt;
+&lt;p&gt;회사에서는 운영하는 서비스의 상태를 확인하고 주의 사항을 공유하기 위한 주간 미팅을 진행합니다. 서비스는 EKS를 사용하고 있으며, 상태 확인을 위해 AWS CloudWatch Container Insights를 활용하고 있습니다. 그런데 어느 날 대시보드를 확인하다 이상한 수치들을 발견했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;moreal.dev&#x2F;blog&#x2F;petabyte-traffic&#x2F;.&#x2F;container-insight-network-rx.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Y축의 단위를 보니 1.67 페타바이트가 표시되어 있었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;moreal.dev&#x2F;blog&#x2F;petabyte-traffic&#x2F;.&#x2F;container-insight-petabyte-traffic.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;최대 값은 400 페타바이트에 이르렀습니다. 🙀&lt;&#x2F;p&gt;
+&lt;p&gt;여러 가지 추측을 해봤지만, 원인을 찾기 위해 CloudWatch가 어떻게 메트릭을 수집하는지 알아보기로 했습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;cloudwatchga-meteurigeul-sujibhaneun-bangbeob&quot;&gt;CloudWatch가 메트릭을 수집하는 방법&lt;&#x2F;h2&gt;
+&lt;p&gt;CloudWatch 메트릭 수집 방법을 알아보기 위해, 오픈소스로 공개된 &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;aws&#x2F;amazon-cloudwatch-agent&quot;&gt;aws&#x2F;amazon-cloudwatch-agent&lt;&#x2F;a&gt; 저장소를 참조했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;amazon-cloudwatch-agent&lt;&#x2F;code&gt;는 Kubernetes에서 사용하는 cAdvisor를 활용합니다. cAdvisor는 컨테이너에서 사용하는 리소스와 퍼포먼스 메트릭을 제공합니다. 이 값들을 활용하여 메트릭 값을 계산합니다.&lt;&#x2F;p&gt;
+&lt;p&gt;계산 로직은 아래와 같습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetRxBytes&lt;&#x2F;span&gt;&lt;span&gt;] = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cur&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;RxBytes&lt;&#x2F;span&gt;&lt;span&gt;-&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;pre&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;RxBytes&lt;&#x2F;span&gt;&lt;span&gt;) &#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deltaCTimeInNano&lt;&#x2F;span&gt;&lt;span&gt;) * &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;time&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;Second&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetTxBytes&lt;&#x2F;span&gt;&lt;span&gt;] = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cur&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;TxBytes&lt;&#x2F;span&gt;&lt;span&gt;-&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;pre&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;TxBytes&lt;&#x2F;span&gt;&lt;span&gt;) &#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deltaCTimeInNano&lt;&#x2F;span&gt;&lt;span&gt;) * &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;time&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;Second&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;google&#x2F;cadvisor&#x2F;blob&#x2F;648b12f8db47171ebd0fc45c67d53574ddb017fe&#x2F;info&#x2F;v1&#x2F;container.go#L418-L437&quot;&gt;&lt;code&gt;cur.RxBytes&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;의 데이터 타입이 &lt;code&gt;uint64&lt;&#x2F;code&gt;여서 언더플로우가 발생할 가능성이 있었습니다. 과도한 트래픽이 발생하는 경우를 확인하기 위해 로그를 출력하는 부분이 있었고, 실제 값도 확인할 수 있었습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; github.com&#x2F;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetRxBytes&lt;&#x2F;span&gt;&lt;span&gt;] &amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;oneTerabytes &lt;&#x2F;span&gt;&lt;span&gt;|| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetTxBytes&lt;&#x2F;span&gt;&lt;span&gt;] &amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;oneTerabytes &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;Printf&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;I! Too Big value for network RX&#x2F;TX bytes, final Rx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, final Tx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, curRx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, preRx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, curTx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, preTx:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;, deltaCTimeInNano:&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;,
+&lt;&#x2F;span&gt;&lt;span&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetRxBytes&lt;&#x2F;span&gt;&lt;span&gt;], &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;netIfceMetric&lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NetTxBytes&lt;&#x2F;span&gt;&lt;span&gt;],
+&lt;&#x2F;span&gt;&lt;span&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cur&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;RxBytes&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;pre&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;RxBytes&lt;&#x2F;span&gt;&lt;span&gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cur&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;TxBytes&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;pre&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;TxBytes&lt;&#x2F;span&gt;&lt;span&gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deltaCTimeInNano&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;2022-04-08T08:18:17Z I! Too Big value for network RX&#x2F;TX bytes, final Rx:3.1837731352719405e+17, final Tx:3.183773135286772e+17, curRx:692608, preRx:317669466, curTx:11946450, preTx:242992298, deltaCTimeInNano:57939882302
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Go Playground에서 코드를 실행하면 아래와 같은 결과가 나옵니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; https:&#x2F;&#x2F;play.golang.com&#x2F;p&#x2F;KppWhxtTtad
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;package &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;main
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;import &lt;&#x2F;span&gt;&lt;span&gt;(
+&lt;&#x2F;span&gt;&lt;span&gt;	&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;fmt&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;	&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;time&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;var &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;curRxBytes &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;uint64 &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;692608 	
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;var &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;preRxBytes &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;uint64 &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;317669466
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;var &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deltaCTimeInNano &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;int64 &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;57939882302
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;var &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;rxBytes &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;curRxBytes&lt;&#x2F;span&gt;&lt;span&gt;-&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;preRxBytes&lt;&#x2F;span&gt;&lt;span&gt;) &#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;deltaCTimeInNano&lt;&#x2F;span&gt;&lt;span&gt;) * &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;float64&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;time&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;Second&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fmt&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;Printf&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;%v&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;rxBytes&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; output = 3.1837731352719405e+17
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;3.1837731352719405e+17&lt;&#x2F;code&gt; 와 같은 값을 얻을 수 있고, 이 값을 Python에서 확인하면 원래 CloudWatch Container Insight에서 본 페타바이트 값이 나옵니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;python&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-python &quot;&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&amp;gt;&amp;gt;&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;int&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;3.1837731352719405e+17&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;318377313527194048
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;&amp;gt;&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;int&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;3.1837731352719405e+17&lt;&#x2F;span&gt;&lt;span&gt;) &#x2F;&#x2F; (&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1024 &lt;&#x2F;span&gt;&lt;span&gt;** &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;5&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# KB MB GB TB PB
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;282
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;cAdvisor는 &lt;code&gt;&#x2F;proc&#x2F;&amp;lt;pid&amp;gt;&#x2F;net&#x2F;dev&lt;&#x2F;code&gt;에서 프로세스의 네트워크 관련 메트릭들을 가져오는데, 프로세스가 실행되면서 값이 누적되고, 재시작하면 다시 0부터 시작합니다. 그래서 Pod를 내리고 다시 올릴 때, 같은 컨테이너 이름의 경우 이전 값보다 현재 값이 더 작아지면서 언더플로우 버그가 발생한 것으로 이해할 수 있었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;이 문제와 관련하여 Helm이나 다른 예제에서 Pod 이름이 항상 다른 것과 관련이 있는지는 아직 확실하지 않습니다. 🤔&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>How Go interface works</title>
+        <published>2020-02-22T00:00:00+00:00</published>
+        <updated>2020-02-22T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://moreal.dev/blog/go-interface/"/>
+        <id>https://moreal.dev/blog/go-interface/</id>
+        
+        <content type="html" xml:base="https://moreal.dev/blog/go-interface/">&lt;h2 id=&quot;yimun&quot;&gt;의문&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;utilForever&#x2F;falcon&lt;&#x2F;code&gt;의 간단한 프로토타입을 만들면서 &lt;code&gt;CompilerProxy&lt;&#x2F;code&gt; 인터페이스를 구현하는 &lt;code&gt;GccCompilerProxy&lt;&#x2F;code&gt; 구조체를 작성하였습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy_test.go
+&lt;&#x2F;span&gt;&lt;span&gt;var compilerProxy *CompilerProxy = NewGccCompilerProxy()
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy.go
+&lt;&#x2F;span&gt;&lt;span&gt;type CompilerProxy interface {
+&lt;&#x2F;span&gt;&lt;span&gt;	AddLibrary()
+&lt;&#x2F;span&gt;&lt;span&gt;	IncludeDirectory()
+&lt;&#x2F;span&gt;&lt;span&gt;	Compile(srcPath, outPath string)
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;type GccCompilerProxy struct {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) AddLibrary() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) IncludeDirectory() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) Compile(srcPath, outPath string) {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;func NewGccCompilerProxy() *GccCompilerProxy {
+&lt;&#x2F;span&gt;&lt;span&gt;	return &amp;amp;GccCompilerProxy{}
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;당연히 &lt;em&gt;&lt;code&gt;*interface&lt;&#x2F;code&gt; = &lt;code&gt;*struct&lt;&#x2F;code&gt;&lt;&#x2F;em&gt; 대입이 될 거라 생각했지만 컴파일러는 제게 에러 메시지 만을 남겼습니다.&lt;&#x2F;p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Cannot use &#x27;NewGccCompilerProxy()&#x27; (type *GccCompilerProxy) as type *CompilerProxy in assignment&lt;&#x2F;p&gt;
+&lt;&#x2F;blockquote&gt;
+&lt;p&gt;저 컴파일 에러 메시지를 보고서 생각에 빠졌습니다. C#에서도 &lt;code&gt;ref&lt;&#x2F;code&gt; 키워드를 이용할 때 &lt;code&gt;interface&lt;&#x2F;code&gt;와 &lt;code&gt;class&lt;&#x2F;code&gt; 두 타입 앞에 모두 붙였었는데 Go 에서는 뭔가 어떻게 다른 걸까라는 생각과 함께 &lt;code&gt;interface&lt;&#x2F;code&gt; 라는 키워드가 있는 여러 언어를 접해 보지 못했다는 것도 실감했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tour.golang.org&#x2F;&quot;&gt;A Tour of Go&lt;&#x2F;a&gt; 와 Go 언어로 작성된 여러 코드들을 살펴보다가 &lt;code&gt;interface{}&lt;&#x2F;code&gt; 와 같이 사용하는 것을 보았습니다. 그 타입은 모든 타입과 매치되고 마치 &lt;code&gt;Object&lt;&#x2F;code&gt; 타입 처럼 보였다. 실제로 Go는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Reflection_(computer_programming)&quot;&gt;Reflection&lt;&#x2F;a&gt;도 지원합니다. 그렇다면 Go 는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Java_(programming_language)&quot;&gt;Java&lt;&#x2F;a&gt;나 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;C_Sharp_(programming_language)&quot;&gt;C#&lt;&#x2F;a&gt; 처럼 VM위에서 돌아가는 걸까 라는 생각도 들었지만 &lt;a href=&quot;https:&#x2F;&#x2F;golang.org&#x2F;doc&#x2F;faq#runtime&quot;&gt;FAQ&lt;&#x2F;a&gt;를 읽어보면 그렇지는 않다고 말하고 있었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;결국 Go 안에서 &lt;code&gt;interface&lt;&#x2F;code&gt; 관련 작업이 어떻게 이루어지는 알아보기로 했고 이 글을 통해 정리해보고자 합니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;interface-in-go&quot;&gt;Interface in Go&lt;&#x2F;h2&gt;
+&lt;p&gt;Go Spec 레퍼런스를 보면 &lt;em&gt;인터페이스는 메소드의 집합이다&lt;&#x2F;em&gt; 라고 말하고 있습니다. 자바나 기타 언어에서 와는 다르게 느껴집니다. 이는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Protocol_(object-oriented_programming)&quot;&gt;위키피디아 Protocol(OOP)&lt;&#x2F;a&gt; 문서에서도 말하듯 타언어에서는 명시적으로 인터페이스를 구현해야 한다에 가깝지만, Go에서는 인터페이스의 부분 집합인지를 검사하는 것에 가깝습니다. 인터페이스 검사에서 [Duck Typing] 방식을 채용하고 있기 때문입니다. 정적언어인 Go에서 이것이 어떻게 가능한 것일까요? Go 인터페이스가 어떻게 생겼고, 어떻게 다루지를 안다 면 쉽게 이해할 수 있습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;go-interface-gujoce-itab-mandeuneun-beob&quot;&gt;Go Interface 구조체 (itab, 만드는 법)&lt;&#x2F;h2&gt;
+&lt;p&gt;Go에서 인터페이스는 &lt;code&gt;iface&lt;&#x2F;code&gt;라는 이름의 구조체입니다. 타입을 설명하는 &lt;code&gt;itab&lt;&#x2F;code&gt;의 포인터와 실제 데이터를 가리키는 포인터로 이루어져 있습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;type iface struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	tab  *itab
+&lt;&#x2F;span&gt;&lt;span&gt;	data unsafe.Pointer
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;itab&lt;&#x2F;code&gt;은 해당 데이터가 어떤 인터페이스 타입이고 어떤 타입인지, 그리고 함수 테이블을 가지고 있습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; layout of Itab known to compilers
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; allocated in non-garbage-collected memory
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; Needs to be in sync with
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; ..&#x2F;cmd&#x2F;compile&#x2F;internal&#x2F;gc&#x2F;reflect.go:&#x2F;^func.dumptabs.
+&lt;&#x2F;span&gt;&lt;span&gt;type itab struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	inter *interfacetype
+&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
+&lt;&#x2F;span&gt;&lt;span&gt;	hash  uint32 &#x2F;&#x2F; copy of _type.hash. Used for type switches.
+&lt;&#x2F;span&gt;&lt;span&gt;	_     [4]byte
+&lt;&#x2F;span&gt;&lt;span&gt;	fun   [1]uintptr &#x2F;&#x2F; variable sized. fun[0]==0 means _type does not implement inter.
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;주석에서 볼 수 있듯이 코드 상에서 정적인 인터페이스 캐스팅이 있을 때 마다 &lt;code&gt;gc&#x2F;subr.go#implements()&lt;&#x2F;code&gt; 메소드를 호출하여 캐스팅이 가능한지 검사를 합니다. 동시에 &lt;code&gt;itab&lt;&#x2F;code&gt; 을 생성 및 테이블에 등록합니다. 이 &lt;code&gt;itabTable&lt;&#x2F;code&gt;은 &lt;em&gt;.rodata&lt;&#x2F;em&gt; 섹션에 기록하고 실제 프로그램 실행되기 전에 가져오게 됩니다. 이와 관련된 초기화, 컴파일 과정은 다른 글에서 다뤄보도록 하겠습니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
+&lt;&#x2F;span&gt;&lt;span&gt;	&#x2F;&#x2F; *** codes ***
+&lt;&#x2F;span&gt;&lt;span&gt;	if isdirectiface(t0) &amp;amp;&amp;amp; !iface.IsEmptyInterface() {
+&lt;&#x2F;span&gt;&lt;span&gt;		itabname(t0, iface)
+&lt;&#x2F;span&gt;&lt;span&gt;	}
+&lt;&#x2F;span&gt;&lt;span&gt;	return true
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위에서 볼 수 있듯이 비어있는 인터페이스, 즉 &lt;code&gt;interface{}&lt;&#x2F;code&gt;로의 변환은 &lt;code&gt;itab&lt;&#x2F;code&gt;을 생성하지 않습니다. 왜냐하면 &lt;code&gt;interface{}&lt;&#x2F;code&gt;의 경우 메소드를 가지지 않는 빈 인터페이스 이므ㅏ로 실제 데이터의 타입과 그 데이터를 가리키는 포인터만 가지고 있으면 충분합니다. 그래서 &lt;code&gt;eface&lt;&#x2F;code&gt;라는 구조체를 사용합니다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; runtime&#x2F;runtime2.go
+&lt;&#x2F;span&gt;&lt;span&gt;type eface struct {
+&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
+&lt;&#x2F;span&gt;&lt;span&gt;	data  unsafe.Pointer
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;변환할때는 런타임시에 &lt;code&gt;runtime.convT64&lt;&#x2F;code&gt;, &lt;code&gt;runtime.assertE2I&lt;&#x2F;code&gt; 와 같은 &lt;em&gt;runtime&#x2F;runtime2.go&lt;&#x2F;em&gt;에 작성되어 있는 함수들을 사용합니다. 어떤 함수들을 호출하게 바뀌는 지는 컴파일 과정중 만드는 SSA를 보면 쉽게 알 수 있습니다.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;$ GOSSAFUNC=func go build test.go
+&lt;&#x2F;span&gt;&lt;span&gt;# command-line-arguments
+&lt;&#x2F;span&gt;&lt;span&gt;dumped SSA to .&#x2F;ssa.html
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;user-images.githubusercontent.com&#x2F;26626194&#x2F;76146532-dc173e00-60d6-11ea-973a-e5567378e15a.png&quot; alt=&quot;image&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;inteopeiseu-mesodeu-hocul&quot;&gt;인터페이스 메소드 호출&lt;&#x2F;h2&gt;
+&lt;p&gt;인터페이스에서 메소드를 호출 하는 것은 &lt;code&gt;itab&lt;&#x2F;code&gt; 구조체의 필드 &lt;code&gt;fun&lt;&#x2F;code&gt; 가상 테이블에서 함수 포인터를 가져와서 실행합니다. 이 때문에 어쩔 수 없이 성능 저하가 발생합니다. 하지만 CPU 캐시 히트를 맞히면 직접 호출과 다르지 않은 속도를 기대할 수도 있습니다. 이 부분은 &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;teh-cmc&#x2F;go-internals&#x2F;blob&#x2F;master&#x2F;chapter2_interfaces&#x2F;README.md&quot;&gt;다음 글&lt;&#x2F;a&gt;에서 잘 설명되어 있기 때문에 생략하겠습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;mamuri&quot;&gt;마무리&lt;&#x2F;h2&gt;
+&lt;p&gt;Golang에서 vm 없이 동적 타입을 어떻게 다루는지, interface가 어떻게 생겼는지, 컴파일러 과정 및 컴파일러 내부 코드 구조를 알 수 있어서 좋았습니다. 앞으로 go로 작성할 때 성능을 신경써야 하는 부분이 있다면 이런 캐시히트도 봐야겠구나 라는 생각이 들었습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;reference&quot;&gt;Reference&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;https:&#x2F;&#x2F;github.com&#x2F;teh-cmc&#x2F;go-internals&#x2F;blob&#x2F;master&#x2F;chapter2_interfaces&#x2F;README.md&lt;&#x2F;li&gt;
+&lt;li&gt;https:&#x2F;&#x2F;research.swtch.com&#x2F;interfaces&lt;&#x2F;li&gt;
+&lt;li&gt;http:&#x2F;&#x2F;www.programmersought.com&#x2F;article&#x2F;16341600537&#x2F;&lt;&#x2F;li&gt;
+&lt;li&gt;https:&#x2F;&#x2F;eli.thegreenplace.net&#x2F;2019&#x2F;go-compiler-internals-adding-a-new-statement-to-go-part-1&#x2F;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+        
+    </entry>
+</feed>
