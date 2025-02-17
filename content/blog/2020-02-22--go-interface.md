@@ -11,7 +11,7 @@ taxonomies.tags = [
 
 `utilForever/falcon`의 간단한 프로토타입을 만들면서 `CompilerProxy` 인터페이스를 구현하는 `GccCompilerProxy` 구조체를 작성하였습니다.
 
-```golang
+```go
 // compiler_proxy_test.go
 var compilerProxy *CompilerProxy = NewGccCompilerProxy()
 
@@ -61,7 +61,7 @@ Go Spec 레퍼런스를 보면 *인터페이스는 메소드의 집합이다* �
 
 Go에서 인터페이스는 `iface`라는 이름의 구조체입니다. 타입을 설명하는 `itab`의 포인터와 실제 데이터를 가리키는 포인터로 이루어져 있습니다.
 
-```golang
+```go
 type iface struct {
 	tab  *itab
 	data unsafe.Pointer
@@ -70,7 +70,7 @@ type iface struct {
 
 `itab`은 해당 데이터가 어떤 인터페이스 타입이고 어떤 타입인지, 그리고 함수 테이블을 가지고 있습니다.
 
-```golang
+```go
 // layout of Itab known to compilers
 // allocated in non-garbage-collected memory
 // Needs to be in sync with
@@ -86,7 +86,7 @@ type itab struct {
 
 주석에서 볼 수 있듯이 코드 상에서 정적인 인터페이스 캐스팅이 있을 때 마다 `gc/subr.go#implements()` 메소드를 호출하여 캐스팅이 가능한지 검사를 합니다. 동시에 `itab` 을 생성 및 테이블에 등록합니다. 이 `itabTable`은 *.rodata* 섹션에 기록하고 실제 프로그램 실행되기 전에 가져오게 됩니다. 이와 관련된 초기화, 컴파일 과정은 다른 글에서 다뤄보도록 하겠습니다.
 
-```golang
+```go
 func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
 	// *** codes ***
 	if isdirectiface(t0) && !iface.IsEmptyInterface() {
@@ -98,7 +98,7 @@ func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool 
 
 위에서 볼 수 있듯이 비어있는 인터페이스, 즉 `interface{}`로의 변환은 `itab`을 생성하지 않습니다. 왜냐하면 `interface{}`의 경우 메소드를 가지지 않는 빈 인터페이스 이므ㅏ로 실제 데이터의 타입과 그 데이터를 가리키는 포인터만 가지고 있으면 충분합니다. 그래서 `eface`라는 구조체를 사용합니다.
 
-```golang
+```go
 // runtime/runtime2.go
 type eface struct {
 	_type *_type
