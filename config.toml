@@ -31,6 +31,10 @@ url = "@/_index.md"
 name = "blog"
 url = "@/blog/_index.md"
 
+[[extra.main_menu]]
+name = "resume"
+url = "https://resume.moreal.dev/"
+
 [translations]
 site = "moreal dev" 
 filtering_for = "필터"
