@@ -214,6 +214,7 @@ main {
   <nav aria-label="moreal dev">
       <a href="https://moreal.dev/">home</a>
       <a href="https://moreal.dev/blog/">blog</a>
+      <a href="https:&#x2F;&#x2F;resume.moreal.dev&#x2F;">resume</a>
   </nav>
 </header>
 <h1>How Go interface works</h1>
@@ -225,26 +226,26 @@ main {
   <main>
     <h2 id="yimun">의문</h2>
 <p><code>utilForever/falcon</code>의 간단한 프로토타입을 만들면서 <code>CompilerProxy</code> 인터페이스를 구현하는 <code>GccCompilerProxy</code> 구조체를 작성하였습니다.</p>
-<pre data-lang="golang" style="background-color:#2b303b;color:#c0c5ce;" class="language-golang "><code class="language-golang" data-lang="golang"><span>// compiler_proxy_test.go
-</span><span>var compilerProxy *CompilerProxy = NewGccCompilerProxy()
+<pre data-lang="go" style="background-color:#2b303b;color:#c0c5ce;" class="language-go "><code class="language-go" data-lang="go"><span style="color:#65737e;">// compiler_proxy_test.go
+</span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">compilerProxy </span><span>*</span><span style="color:#b48ead;">CompilerProxy </span><span>= </span><span style="color:#bf616a;">NewGccCompilerProxy</span><span>()
 </span><span>
-</span><span>// compiler_proxy.go
-</span><span>type CompilerProxy interface {
-</span><span>	AddLibrary()
-</span><span>	IncludeDirectory()
-</span><span>	Compile(srcPath, outPath string)
+</span><span style="color:#65737e;">// compiler_proxy.go
+</span><span style="color:#b48ead;">type </span><span>CompilerProxy </span><span style="color:#b48ead;">interface </span><span>{
+</span><span>	</span><span style="color:#8fa1b3;">AddLibrary</span><span>()
+</span><span>	</span><span style="color:#8fa1b3;">IncludeDirectory</span><span>()
+</span><span>	</span><span style="color:#8fa1b3;">Compile</span><span>(</span><span style="color:#bf616a;">srcPath</span><span>, </span><span style="color:#bf616a;">outPath </span><span style="color:#b48ead;">string</span><span>)
 </span><span>}
 </span><span>
-</span><span>type GccCompilerProxy struct {}
+</span><span style="color:#b48ead;">type </span><span>GccCompilerProxy </span><span style="color:#b48ead;">struct </span><span>{}
 </span><span>
-</span><span>func (cp *GccCompilerProxy) AddLibrary() {}
+</span><span style="color:#b48ead;">func </span><span>(</span><span style="color:#bf616a;">cp </span><span>*</span><span style="color:#b48ead;">GccCompilerProxy</span><span>) </span><span style="color:#8fa1b3;">AddLibrary</span><span>() {}
 </span><span>
-</span><span>func (cp *GccCompilerProxy) IncludeDirectory() {}
+</span><span style="color:#b48ead;">func </span><span>(</span><span style="color:#bf616a;">cp </span><span>*</span><span style="color:#b48ead;">GccCompilerProxy</span><span>) </span><span style="color:#8fa1b3;">IncludeDirectory</span><span>() {}
 </span><span>
-</span><span>func (cp *GccCompilerProxy) Compile(srcPath, outPath string) {}
+</span><span style="color:#b48ead;">func </span><span>(</span><span style="color:#bf616a;">cp </span><span>*</span><span style="color:#b48ead;">GccCompilerProxy</span><span>) </span><span style="color:#8fa1b3;">Compile</span><span>(</span><span style="color:#bf616a;">srcPath</span><span>, </span><span style="color:#bf616a;">outPath </span><span style="color:#b48ead;">string</span><span>) {}
 </span><span>
-</span><span>func NewGccCompilerProxy() *GccCompilerProxy {
-</span><span>	return &amp;GccCompilerProxy{}
+</span><span style="color:#b48ead;">func </span><span style="color:#8fa1b3;">NewGccCompilerProxy</span><span>() *</span><span style="color:#b48ead;">GccCompilerProxy </span><span>{
+</span><span>	</span><span style="color:#b48ead;">return </span><span>&amp;</span><span style="color:#bf616a;">GccCompilerProxy</span><span>{}
 </span><span>}
 </span></code></pre>
 <p>당연히 <em><code>*interface</code> = <code>*struct</code></em> 대입이 될 거라 생각했지만 컴파일러는 제게 에러 메시지 만을 남겼습니다.</p>
@@ -258,38 +259,38 @@ main {
 <p>Go Spec 레퍼런스를 보면 <em>인터페이스는 메소드의 집합이다</em> 라고 말하고 있습니다. 자바나 기타 언어에서 와는 다르게 느껴집니다. 이는 <a href="https://en.wikipedia.org/wiki/Protocol_(object-oriented_programming)">위키피디아 Protocol(OOP)</a> 문서에서도 말하듯 타언어에서는 명시적으로 인터페이스를 구현해야 한다에 가깝지만, Go에서는 인터페이스의 부분 집합인지를 검사하는 것에 가깝습니다. 인터페이스 검사에서 [Duck Typing] 방식을 채용하고 있기 때문입니다. 정적언어인 Go에서 이것이 어떻게 가능한 것일까요? Go 인터페이스가 어떻게 생겼고, 어떻게 다루지를 안다 면 쉽게 이해할 수 있습니다.</p>
 <h2 id="go-interface-gujoce-itab-mandeuneun-beob">Go Interface 구조체 (itab, 만드는 법)</h2>
 <p>Go에서 인터페이스는 <code>iface</code>라는 이름의 구조체입니다. 타입을 설명하는 <code>itab</code>의 포인터와 실제 데이터를 가리키는 포인터로 이루어져 있습니다.</p>
-<pre data-lang="golang" style="background-color:#2b303b;color:#c0c5ce;" class="language-golang "><code class="language-golang" data-lang="golang"><span>type iface struct {
-</span><span>	tab  *itab
-</span><span>	data unsafe.Pointer
+<pre data-lang="go" style="background-color:#2b303b;color:#c0c5ce;" class="language-go "><code class="language-go" data-lang="go"><span style="color:#b48ead;">type </span><span>iface </span><span style="color:#b48ead;">struct </span><span>{
+</span><span>	</span><span style="color:#bf616a;">tab  </span><span>*</span><span style="color:#b48ead;">itab
+</span><span>	</span><span style="color:#bf616a;">data unsafe</span><span>.</span><span style="color:#b48ead;">Pointer
 </span><span>}
 </span></code></pre>
 <p><code>itab</code>은 해당 데이터가 어떤 인터페이스 타입이고 어떤 타입인지, 그리고 함수 테이블을 가지고 있습니다.</p>
-<pre data-lang="golang" style="background-color:#2b303b;color:#c0c5ce;" class="language-golang "><code class="language-golang" data-lang="golang"><span>// layout of Itab known to compilers
-</span><span>// allocated in non-garbage-collected memory
-</span><span>// Needs to be in sync with
-</span><span>// ../cmd/compile/internal/gc/reflect.go:/^func.dumptabs.
-</span><span>type itab struct {
-</span><span>	inter *interfacetype
-</span><span>	_type *_type
-</span><span>	hash  uint32 // copy of _type.hash. Used for type switches.
-</span><span>	_     [4]byte
-</span><span>	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
+<pre data-lang="go" style="background-color:#2b303b;color:#c0c5ce;" class="language-go "><code class="language-go" data-lang="go"><span style="color:#65737e;">// layout of Itab known to compilers
+</span><span style="color:#65737e;">// allocated in non-garbage-collected memory
+</span><span style="color:#65737e;">// Needs to be in sync with
+</span><span style="color:#65737e;">// ../cmd/compile/internal/gc/reflect.go:/^func.dumptabs.
+</span><span style="color:#b48ead;">type </span><span>itab </span><span style="color:#b48ead;">struct </span><span>{
+</span><span>	</span><span style="color:#bf616a;">inter </span><span>*</span><span style="color:#b48ead;">interfacetype
+</span><span>	</span><span style="color:#bf616a;">_type </span><span>*</span><span style="color:#b48ead;">_type
+</span><span>	</span><span style="color:#bf616a;">hash  </span><span style="color:#b48ead;">uint32 </span><span style="color:#65737e;">// copy of _type.hash. Used for type switches.
+</span><span>	</span><span style="color:#bf616a;">_     </span><span>[</span><span style="color:#d08770;">4</span><span>]</span><span style="color:#b48ead;">byte
+</span><span>	</span><span style="color:#bf616a;">fun   </span><span>[</span><span style="color:#d08770;">1</span><span>]</span><span style="color:#b48ead;">uintptr </span><span style="color:#65737e;">// variable sized. fun[0]==0 means _type does not implement inter.
 </span><span>}
 </span></code></pre>
 <p>주석에서 볼 수 있듯이 코드 상에서 정적인 인터페이스 캐스팅이 있을 때 마다 <code>gc/subr.go#implements()</code> 메소드를 호출하여 캐스팅이 가능한지 검사를 합니다. 동시에 <code>itab</code> 을 생성 및 테이블에 등록합니다. 이 <code>itabTable</code>은 <em>.rodata</em> 섹션에 기록하고 실제 프로그램 실행되기 전에 가져오게 됩니다. 이와 관련된 초기화, 컴파일 과정은 다른 글에서 다뤄보도록 하겠습니다.</p>
-<pre data-lang="golang" style="background-color:#2b303b;color:#c0c5ce;" class="language-golang "><code class="language-golang" data-lang="golang"><span>func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
-</span><span>	// *** codes ***
-</span><span>	if isdirectiface(t0) &amp;&amp; !iface.IsEmptyInterface() {
-</span><span>		itabname(t0, iface)
+<pre data-lang="go" style="background-color:#2b303b;color:#c0c5ce;" class="language-go "><code class="language-go" data-lang="go"><span style="color:#b48ead;">func </span><span style="color:#8fa1b3;">implements</span><span>(</span><span style="color:#bf616a;">t</span><span>, </span><span style="color:#bf616a;">iface </span><span>*</span><span style="color:#bf616a;">types</span><span>.</span><span style="color:#b48ead;">Type</span><span>, </span><span style="color:#bf616a;">m</span><span>, </span><span style="color:#bf616a;">samename </span><span>**</span><span style="color:#bf616a;">types</span><span>.</span><span style="color:#b48ead;">Field</span><span>, </span><span style="color:#bf616a;">ptr </span><span>*</span><span style="color:#b48ead;">int</span><span>) </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>	</span><span style="color:#65737e;">// *** codes ***
+</span><span>	</span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">isdirectiface</span><span>(</span><span style="color:#bf616a;">t0</span><span>) &amp;&amp; !</span><span style="color:#bf616a;">iface</span><span>.</span><span style="color:#bf616a;">IsEmptyInterface</span><span>() {
+</span><span>		</span><span style="color:#bf616a;">itabname</span><span>(</span><span style="color:#bf616a;">t0</span><span>, </span><span style="color:#bf616a;">iface</span><span>)
 </span><span>	}
-</span><span>	return true
+</span><span>	</span><span style="color:#b48ead;">return </span><span style="color:#d08770;">true
 </span><span>}
 </span></code></pre>
 <p>위에서 볼 수 있듯이 비어있는 인터페이스, 즉 <code>interface{}</code>로의 변환은 <code>itab</code>을 생성하지 않습니다. 왜냐하면 <code>interface{}</code>의 경우 메소드를 가지지 않는 빈 인터페이스 이므ㅏ로 실제 데이터의 타입과 그 데이터를 가리키는 포인터만 가지고 있으면 충분합니다. 그래서 <code>eface</code>라는 구조체를 사용합니다.</p>
-<pre data-lang="golang" style="background-color:#2b303b;color:#c0c5ce;" class="language-golang "><code class="language-golang" data-lang="golang"><span>// runtime/runtime2.go
-</span><span>type eface struct {
-</span><span>	_type *_type
-</span><span>	data  unsafe.Pointer
+<pre data-lang="go" style="background-color:#2b303b;color:#c0c5ce;" class="language-go "><code class="language-go" data-lang="go"><span style="color:#65737e;">// runtime/runtime2.go
+</span><span style="color:#b48ead;">type </span><span>eface </span><span style="color:#b48ead;">struct </span><span>{
+</span><span>	</span><span style="color:#bf616a;">_type </span><span>*</span><span style="color:#b48ead;">_type
+</span><span>	</span><span style="color:#bf616a;">data  unsafe</span><span>.</span><span style="color:#b48ead;">Pointer
 </span><span>}
 </span></code></pre>
 <p>변환할때는 런타임시에 <code>runtime.convT64</code>, <code>runtime.assertE2I</code> 와 같은 <em>runtime/runtime2.go</em>에 작성되어 있는 함수들을 사용합니다. 어떤 함수들을 호출하게 바뀌는 지는 컴파일 과정중 만드는 SSA를 보면 쉽게 알 수 있습니다.</p>

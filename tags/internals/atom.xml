@@ -24,26 +24,26 @@
         
         <content type="html" xml:base="https://moreal.dev/blog/go-interface/">&lt;h2 id=&quot;yimun&quot;&gt;의문&lt;&#x2F;h2&gt;
 &lt;p&gt;&lt;code&gt;utilForever&#x2F;falcon&lt;&#x2F;code&gt;의 간단한 프로토타입을 만들면서 &lt;code&gt;CompilerProxy&lt;&#x2F;code&gt; 인터페이스를 구현하는 &lt;code&gt;GccCompilerProxy&lt;&#x2F;code&gt; 구조체를 작성하였습니다.&lt;&#x2F;p&gt;
-&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy_test.go
-&lt;&#x2F;span&gt;&lt;span&gt;var compilerProxy *CompilerProxy = NewGccCompilerProxy()
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; compiler_proxy_test.go
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;var &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;compilerProxy &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;CompilerProxy &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;NewGccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;()
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; compiler_proxy.go
-&lt;&#x2F;span&gt;&lt;span&gt;type CompilerProxy interface {
-&lt;&#x2F;span&gt;&lt;span&gt;	AddLibrary()
-&lt;&#x2F;span&gt;&lt;span&gt;	IncludeDirectory()
-&lt;&#x2F;span&gt;&lt;span&gt;	Compile(srcPath, outPath string)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; compiler_proxy.go
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;CompilerProxy &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;interface &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;AddLibrary&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;IncludeDirectory&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;Compile&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;srcPath&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;outPath &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;string&lt;&#x2F;span&gt;&lt;span&gt;)
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;type GccCompilerProxy struct {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;GccCompilerProxy &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span&gt;{}
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) AddLibrary() {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cp &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;GccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;AddLibrary&lt;&#x2F;span&gt;&lt;span&gt;() {}
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) IncludeDirectory() {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cp &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;GccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;IncludeDirectory&lt;&#x2F;span&gt;&lt;span&gt;() {}
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;func (cp *GccCompilerProxy) Compile(srcPath, outPath string) {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;cp &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;GccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;Compile&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;srcPath&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;outPath &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;string&lt;&#x2F;span&gt;&lt;span&gt;) {}
 &lt;&#x2F;span&gt;&lt;span&gt;
-&lt;&#x2F;span&gt;&lt;span&gt;func NewGccCompilerProxy() *GccCompilerProxy {
-&lt;&#x2F;span&gt;&lt;span&gt;	return &amp;amp;GccCompilerProxy{}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;NewGccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;() *&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;GccCompilerProxy &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;GccCompilerProxy&lt;&#x2F;span&gt;&lt;span&gt;{}
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;당연히 &lt;em&gt;&lt;code&gt;*interface&lt;&#x2F;code&gt; = &lt;code&gt;*struct&lt;&#x2F;code&gt;&lt;&#x2F;em&gt; 대입이 될 거라 생각했지만 컴파일러는 제게 에러 메시지 만을 남겼습니다.&lt;&#x2F;p&gt;
@@ -57,38 +57,38 @@
 &lt;p&gt;Go Spec 레퍼런스를 보면 &lt;em&gt;인터페이스는 메소드의 집합이다&lt;&#x2F;em&gt; 라고 말하고 있습니다. 자바나 기타 언어에서 와는 다르게 느껴집니다. 이는 &lt;a href=&quot;https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Protocol_(object-oriented_programming)&quot;&gt;위키피디아 Protocol(OOP)&lt;&#x2F;a&gt; 문서에서도 말하듯 타언어에서는 명시적으로 인터페이스를 구현해야 한다에 가깝지만, Go에서는 인터페이스의 부분 집합인지를 검사하는 것에 가깝습니다. 인터페이스 검사에서 [Duck Typing] 방식을 채용하고 있기 때문입니다. 정적언어인 Go에서 이것이 어떻게 가능한 것일까요? Go 인터페이스가 어떻게 생겼고, 어떻게 다루지를 안다 면 쉽게 이해할 수 있습니다.&lt;&#x2F;p&gt;
 &lt;h2 id=&quot;go-interface-gujoce-itab-mandeuneun-beob&quot;&gt;Go Interface 구조체 (itab, 만드는 법)&lt;&#x2F;h2&gt;
 &lt;p&gt;Go에서 인터페이스는 &lt;code&gt;iface&lt;&#x2F;code&gt;라는 이름의 구조체입니다. 타입을 설명하는 &lt;code&gt;itab&lt;&#x2F;code&gt;의 포인터와 실제 데이터를 가리키는 포인터로 이루어져 있습니다.&lt;&#x2F;p&gt;
-&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;type iface struct {
-&lt;&#x2F;span&gt;&lt;span&gt;	tab  *itab
-&lt;&#x2F;span&gt;&lt;span&gt;	data unsafe.Pointer
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;iface &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;tab  &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;itab
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;data unsafe&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;Pointer
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;&lt;code&gt;itab&lt;&#x2F;code&gt;은 해당 데이터가 어떤 인터페이스 타입이고 어떤 타입인지, 그리고 함수 테이블을 가지고 있습니다.&lt;&#x2F;p&gt;
-&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; layout of Itab known to compilers
-&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; allocated in non-garbage-collected memory
-&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; Needs to be in sync with
-&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; ..&#x2F;cmd&#x2F;compile&#x2F;internal&#x2F;gc&#x2F;reflect.go:&#x2F;^func.dumptabs.
-&lt;&#x2F;span&gt;&lt;span&gt;type itab struct {
-&lt;&#x2F;span&gt;&lt;span&gt;	inter *interfacetype
-&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
-&lt;&#x2F;span&gt;&lt;span&gt;	hash  uint32 &#x2F;&#x2F; copy of _type.hash. Used for type switches.
-&lt;&#x2F;span&gt;&lt;span&gt;	_     [4]byte
-&lt;&#x2F;span&gt;&lt;span&gt;	fun   [1]uintptr &#x2F;&#x2F; variable sized. fun[0]==0 means _type does not implement inter.
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; layout of Itab known to compilers
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; allocated in non-garbage-collected memory
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; Needs to be in sync with
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; ..&#x2F;cmd&#x2F;compile&#x2F;internal&#x2F;gc&#x2F;reflect.go:&#x2F;^func.dumptabs.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;itab &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inter &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;interfacetype
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;_type &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;_type
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;hash  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;uint32 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; copy of _type.hash. Used for type switches.
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;_     &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;byte
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;fun   &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;uintptr &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; variable sized. fun[0]==0 means _type does not implement inter.
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;주석에서 볼 수 있듯이 코드 상에서 정적인 인터페이스 캐스팅이 있을 때 마다 &lt;code&gt;gc&#x2F;subr.go#implements()&lt;&#x2F;code&gt; 메소드를 호출하여 캐스팅이 가능한지 검사를 합니다. 동시에 &lt;code&gt;itab&lt;&#x2F;code&gt; 을 생성 및 테이블에 등록합니다. 이 &lt;code&gt;itabTable&lt;&#x2F;code&gt;은 &lt;em&gt;.rodata&lt;&#x2F;em&gt; 섹션에 기록하고 실제 프로그램 실행되기 전에 가져오게 됩니다. 이와 관련된 초기화, 컴파일 과정은 다른 글에서 다뤄보도록 하겠습니다.&lt;&#x2F;p&gt;
-&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;func implements(t, iface *types.Type, m, samename **types.Field, ptr *int) bool {
-&lt;&#x2F;span&gt;&lt;span&gt;	&#x2F;&#x2F; *** codes ***
-&lt;&#x2F;span&gt;&lt;span&gt;	if isdirectiface(t0) &amp;amp;&amp;amp; !iface.IsEmptyInterface() {
-&lt;&#x2F;span&gt;&lt;span&gt;		itabname(t0, iface)
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;func &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;implements&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;t&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;iface &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;types&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;Type&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;m&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;samename &lt;&#x2F;span&gt;&lt;span&gt;**&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;types&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;Field&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ptr &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;int&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; *** codes ***
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;isdirectiface&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;t0&lt;&#x2F;span&gt;&lt;span&gt;) &amp;amp;&amp;amp; !&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;iface&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;IsEmptyInterface&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;itabname&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;t0&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;iface&lt;&#x2F;span&gt;&lt;span&gt;)
 &lt;&#x2F;span&gt;&lt;span&gt;	}
-&lt;&#x2F;span&gt;&lt;span&gt;	return true
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;true
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;위에서 볼 수 있듯이 비어있는 인터페이스, 즉 &lt;code&gt;interface{}&lt;&#x2F;code&gt;로의 변환은 &lt;code&gt;itab&lt;&#x2F;code&gt;을 생성하지 않습니다. 왜냐하면 &lt;code&gt;interface{}&lt;&#x2F;code&gt;의 경우 메소드를 가지지 않는 빈 인터페이스 이므ㅏ로 실제 데이터의 타입과 그 데이터를 가리키는 포인터만 가지고 있으면 충분합니다. 그래서 &lt;code&gt;eface&lt;&#x2F;code&gt;라는 구조체를 사용합니다.&lt;&#x2F;p&gt;
-&lt;pre data-lang=&quot;golang&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-golang &quot;&gt;&lt;code class=&quot;language-golang&quot; data-lang=&quot;golang&quot;&gt;&lt;span&gt;&#x2F;&#x2F; runtime&#x2F;runtime2.go
-&lt;&#x2F;span&gt;&lt;span&gt;type eface struct {
-&lt;&#x2F;span&gt;&lt;span&gt;	_type *_type
-&lt;&#x2F;span&gt;&lt;span&gt;	data  unsafe.Pointer
+&lt;pre data-lang=&quot;go&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-go &quot;&gt;&lt;code class=&quot;language-go&quot; data-lang=&quot;go&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; runtime&#x2F;runtime2.go
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span&gt;eface &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;_type &lt;&#x2F;span&gt;&lt;span&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;_type
+&lt;&#x2F;span&gt;&lt;span&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;data  unsafe&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;Pointer
 &lt;&#x2F;span&gt;&lt;span&gt;}
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;변환할때는 런타임시에 &lt;code&gt;runtime.convT64&lt;&#x2F;code&gt;, &lt;code&gt;runtime.assertE2I&lt;&#x2F;code&gt; 와 같은 &lt;em&gt;runtime&#x2F;runtime2.go&lt;&#x2F;em&gt;에 작성되어 있는 함수들을 사용합니다. 어떤 함수들을 호출하게 바뀌는 지는 컴파일 과정중 만드는 SSA를 보면 쉽게 알 수 있습니다.&lt;&#x2F;p&gt;
