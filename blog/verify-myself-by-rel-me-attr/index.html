@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <link rel="shortcut icon" href="logo.svg"><title>Hackers&#x27; Pub에서 HTML rel 속성으로 자기 인증하는 원리 | </title>
+  <meta name="title" content="Hackers&#x27; Pub에서 HTML rel 속성으로 자기 인증하는 원리">
+<meta name="description" content="">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+  <style>
+    :root {
+    --width: 800px;
+    --font-main: Verdana, sans-serif;
+    --font-secondary: Verdana, sans-serif;
+    --font-scale: 1em;
+    --background-color: #fff;
+    --heading-color: #222;
+    --text-color: #444;
+    --link-color: #3273dc;
+    --visited-color: #8b6fcb;
+    --code-background-color: #f2f2f2;
+    --code-color: #222;
+    --blockquote-color: #222;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-color: #01242e;
+      --heading-color: #eee;
+      --text-color: #ddd;
+      --link-color: #8cc2dd;
+      --visited-color: #8b6fcb;
+      --code-background-color: #000;
+      --code-color: #ddd;
+      --blockquote-color: #ccc;
+    }
+  }
+
+  body {
+    font-family: var(--font-secondary);
+    font-size: var(--font-scale);
+    margin: auto;
+    padding: 20px;
+    max-width: var(--width);
+    text-align: left;
+    background-color: var(--background-color);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    color: var(--text-color);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-main);
+    color: var(--heading-color);
+  }
+
+  a {
+    color: var(--link-color);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  nav a {
+    margin-right: 8px;
+  }
+
+  nav span.active {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  strong,
+  b {
+    color: var(--heading-color);
+  }
+
+  button {
+    margin: 0;
+    cursor: pointer;
+  }
+
+  main {
+    line-height: 1.6;
+  }
+
+  table {
+    width: 100%;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px dashed;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  pre code {
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    display: block;
+    padding: 20px;
+    white-space: pre-wrap;
+    font-size: 0.875rem;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: monospace;
+    padding: 2px;
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    border-radius: 3px;
+  }
+
+  blockquote {
+    border-left: 1px solid #999;
+    color: var(--code-color);
+    padding-left: 20px;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 25px 0;
+    text-align: center;
+  }
+
+  .title:hover {
+    text-decoration: none;
+  }
+
+  .title h1 {
+    font-size: 1.5em;
+  }
+
+  .inline {
+    width: auto !important;
+  }
+
+  .highlight,
+  .code {
+    padding: 1px 15px;
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    border-radius: 3px;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    overflow-x: auto;
+  }
+
+  /* blog post list */
+  ul.blog-posts {
+    list-style-type: none;
+    padding: unset;
+  }
+
+  ul.blog-posts li {
+    display: flex;
+  }
+
+  ul.blog-posts li span {
+    flex: 0 0 130px;
+  }
+
+  ul.blog-posts li a:visited {
+    color: var(--visited-color);
+  }
+
+  .tags {
+    font-size: smaller;
+  }
+
+  </style><style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+@import url('https://unpkg.com/@catppuccin/palette/css/catppuccin.css');
+
+main {
+  /* font-family: "Noto Serif CJK KR", "Noto Serif KR", serif; */
+  font-optical-sizing: auto;
+  font-style: sans-serif;
+  font-feature-settings: "chws", "halt"
+}
+</style>
+
+</head>
+<body>
+  <header>
+  <a href="https://moreal.dev/" class="title">
+    <h1></h1>
+  </a>
+  <nav aria-label="moreal dev">
+      <a href="https://moreal.dev/">home</a>
+      <a href="https://moreal.dev/blog/">blog</a>
+      <a href="https:&#x2F;&#x2F;resume.moreal.dev&#x2F;">resume</a>
+  </nav>
+</header>
+<h1>Hackers&#x27; Pub에서 HTML rel 속성으로 자기 인증하는 원리</h1>
+      <p>
+        <i>
+          <time datetime="2025-03-19T00:00:00+00:00" pubdate>19 Mar, 2025</time>
+        </i>
+      </p>
+  <main>
+    <h2 id="seomun-donggi">서문 (동기)</h2>
+<p>아래와 같은 Hackers' Pub 글을 보았습니다:</p>
+<blockquote>
+<p>이제 프로필의 링크에 인증 여부가 보이게 됩니다. 링크를 인증하기 위해서는, 링크된 페이지 측에서도 Hackers' Pub 프로필을 rel="me" 속성과 함께 링크해야 합니다. Mastodon이나 GitHub 같은 경우 프로필에 링크를 추가하면 rel="me" 속성이 추가되게 되어 있으니, Mastodon이나 GitHub 프로필 링크를 추가하면 인증은 자동으로 될 겁니다. 개인 웹사이트가 있으신 분들은 Hackers' Pub 프로필을 rel="me" 속성과 함께 링크하면 인증이 됩니다.</p>
+<p>참고로 인증은 프로필 설정을 저장할 때 이뤄집니다. 이미 Mastodon이나 GitHub 프로필을 링크해 두신 분들은 인증 표시가 안 뜰 수도 있는데, 그럼 프로필 설정에 들어가셔서 저장 버튼을 한 번 눌러주시면 인증 버튼이 붙을 겁니다.</p>
+<p>from https://hackers.pub/@hongminhee/0195ad00-50db-7bb1-b0a0-edaf9ce73515</p>
+</blockquote>
+<p>그래서 Hackers' Pub 설정으로 들어가서 GitHub 링크를 추가하고 저장버튼을 눌러봤지만 체크 표시가 나타나지 않았습니다. <code>rel="me"</code>가 뭔지 잘 몰라서 <code>https://github.com/moreal?rel=me</code> 같이 추가해봤는데 이것도 아니라서 (<del>아닐 것 같았지만</del>) 찾아본 내용을 가볍게 메모로 남깁니다.</p>
+<h2 id="bonmun">본문</h2>
+<p><code>rel="me"</code>를 검색하니 MDN 문서가 반겨주었습니다. HTML <code>&lt;link rel="stylesheet" ...</code>  할 때 <code>rel</code> 속성이었습니다. <code>&lt;link rel="me"</code> 혹은 <code>&lt;a rel="me"</code> 같은 느낌으로 사용할 수 있는 것 같았습니다.</p>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/me">https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/me</a></p>
+<p>GitHub 프로필 설정에서 <code>https://hackers.pub/@moreal</code> 소셜 링크를 추가하면 아래처럼 링크 <code>a</code> 요소에 <code>rel="me"</code> 속성을 추가하여 줍니다.</p>
+<pre data-lang="html" style="background-color:#2b303b;color:#c0c5ce;" class="language-html "><code class="language-html" data-lang="html"><span>&lt;</span><span style="color:#bf616a;">a </span><span style="color:#d08770;">rel</span><span>=&quot;</span><span style="color:#a3be8c;">nofollow me</span><span>&quot; </span><span style="color:#d08770;">class</span><span>=&quot;</span><span style="color:#a3be8c;">Link--primary wb-break-all</span><span>&quot; </span><span style="color:#d08770;">href</span><span>=&quot;</span><span style="color:#a3be8c;">https://hackers.pub/@moreal</span><span>&quot;&gt;https://hackers.pub/@moreal&lt;/</span><span style="color:#bf616a;">a</span><span>&gt;
+</span></code></pre>
+<p>이 값을 활용하여 인증 마크를 표시하는 것으로 보입니다. (<a href="https://github.com/dahlia/hackerspub/blob/76dba1fbddd7c8a9ec86a5609d49df9c0de9efb9/models/account.ts#L224-L247">Hackers' Pub 링크 인증 소스코드</a>)</p>
+<h2 id="gyeolron">결론</h2>
+<p>GitHub 등에서 <code>https://hackers.pub/@&lt;id&gt;</code> 를 연관 링크로 추가하고 Hackers' Pub 프로필 설정에서 다시 저장 버튼을 누르면 체크 표시가 나타납니다!</p>
+<h2 id="yeodam">여담</h2>
+<p>함께 <code>rel</code> 속성에 달려있는 <code>nofollow</code> 같은 값은 검색엔진에게 주는 힌트처럼 보입니다. 해당 링크와 연관이 있음을 보장하지 않음, 같은 의미 같습니다. 일단 지금 하려던것과 무관하니 더 찾아보지는 않았습니다.</p>
+<p>https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel#nofollow</p>
+<p>그리고 Hackers' Pub이 오픈소스라서 실제로 어떻게 인증마크를 표시하는지 확인할 수도 있었습니다!</p>
+
+  </main>
+  <p>
+        Tags:
+          <a href="https://moreal.dev/tags/memo/">#memo</a>
+  </p>
+<footer>
+</footer>
+</body>
+</html>
