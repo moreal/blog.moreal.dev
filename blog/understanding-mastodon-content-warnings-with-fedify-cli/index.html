@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <link rel="shortcut icon" href="logo.svg"><title>Fedify CLI로 Content Warnings 이해하기 | </title>
+  <meta name="title" content="Fedify CLI로 Content Warnings 이해하기">
+<meta name="description" content="">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+  <style>
+    :root {
+    --width: 800px;
+    --font-main: Verdana, sans-serif;
+    --font-secondary: Verdana, sans-serif;
+    --font-scale: 1em;
+    --background-color: #fff;
+    --heading-color: #222;
+    --text-color: #444;
+    --link-color: #3273dc;
+    --visited-color: #8b6fcb;
+    --code-background-color: #f2f2f2;
+    --code-color: #222;
+    --blockquote-color: #222;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-color: #01242e;
+      --heading-color: #eee;
+      --text-color: #ddd;
+      --link-color: #8cc2dd;
+      --visited-color: #8b6fcb;
+      --code-background-color: #000;
+      --code-color: #ddd;
+      --blockquote-color: #ccc;
+    }
+  }
+
+  body {
+    font-family: var(--font-secondary);
+    font-size: var(--font-scale);
+    margin: auto;
+    padding: 20px;
+    max-width: var(--width);
+    text-align: left;
+    background-color: var(--background-color);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    color: var(--text-color);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-main);
+    color: var(--heading-color);
+  }
+
+  a {
+    color: var(--link-color);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  nav a {
+    margin-right: 8px;
+  }
+
+  nav span.active {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  strong,
+  b {
+    color: var(--heading-color);
+  }
+
+  button {
+    margin: 0;
+    cursor: pointer;
+  }
+
+  main {
+    line-height: 1.6;
+  }
+
+  table {
+    width: 100%;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px dashed;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  pre code {
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    display: block;
+    padding: 20px;
+    white-space: pre-wrap;
+    font-size: 0.875rem;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: monospace;
+    padding: 2px;
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    border-radius: 3px;
+  }
+
+  blockquote {
+    border-left: 1px solid #999;
+    color: var(--code-color);
+    padding-left: 20px;
+    font-style: italic;
+  }
+
+  footer {
+    padding: 25px 0;
+    text-align: center;
+  }
+
+  .title:hover {
+    text-decoration: none;
+  }
+
+  .title h1 {
+    font-size: 1.5em;
+  }
+
+  .inline {
+    width: auto !important;
+  }
+
+  .highlight,
+  .code {
+    padding: 1px 15px;
+    background-color: var(--code-background-color);
+    color: var(--code-color);
+    border-radius: 3px;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    overflow-x: auto;
+  }
+
+  /* blog post list */
+  ul.blog-posts {
+    list-style-type: none;
+    padding: unset;
+  }
+
+  ul.blog-posts li {
+    display: flex;
+  }
+
+  ul.blog-posts li span {
+    flex: 0 0 130px;
+  }
+
+  ul.blog-posts li a:visited {
+    color: var(--visited-color);
+  }
+
+  .tags {
+    font-size: smaller;
+  }
+
+  </style><style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+@import url('https://unpkg.com/@catppuccin/palette/css/catppuccin.css');
+
+main {
+  /* font-family: "Noto Serif CJK KR", "Noto Serif KR", serif; */
+  font-optical-sizing: auto;
+  font-style: sans-serif;
+  font-feature-settings: "chws", "halt"
+}
+</style>
+
+</head>
+<body>
+  <header>
+  <a href="https://moreal.dev/" class="title">
+    <h1></h1>
+  </a>
+  <nav aria-label="moreal dev">
+      <a href="https://moreal.dev/">home</a>
+      <a href="https://moreal.dev/blog/">blog</a>
+      <a href="https:&#x2F;&#x2F;resume.moreal.dev&#x2F;">resume</a>
+  </nav>
+</header>
+<h1>Fedify CLI로 Content Warnings 이해하기</h1>
+      <p>
+        <i>
+          <time datetime="2025-03-30T00:00:00+00:00" pubdate>30 Mar, 2025</time>
+        </i>
+      </p>
+  <main>
+    <blockquote>
+<p><a href="https://hackers.pub">Hackers' Pub</a> 에서 먼저 작성하고 개인 블로그로 옮긴 글이다.</p>
+</blockquote>
+<h2 id="seomun-donggi">서문 (동기)</h2>
+<p>Mastodon에서 글을 쓸 때 Content Warnings을 자주 쓰는데:</p>
+<ol>
+<li>내가 쓰는 글이 어떤 사람에게는 기분 상할 글일 수도 있을까 하는 걱정도 있고,</li>
+<li>혼자 말을 자주 적는데 소음같이 느껴져서 보고 싶지 않을 사람도 있을까 싶어서 "혼자 말" 같은 경고문을 달고 적어놓는다.</li>
+</ol>
+<p>요즘은 "혼자 말" 대신 요약을 좀 적어놓는 편인 것 같다. 그런데 Mastodon에서 글을 적으면 몇 글자 더 적을 수 있는지, 글자 수 제한을 표시해준다. Content Warnings을 적는데도 글자 수 제한이 줄어드는 것을 보고 본문과 Content Warnings가 같은 필드에 있는 걸까 그런 궁금증이 들었다. 어떻게 생겼는지 보고 글을 적고 있는 지금 다시 생각하면, 조금 잘못된(?) 상상이었던 것 같지만 암튼 그랬다.</p>
+<h2 id="bonmun">본문</h2>
+<h3 id="activity-gaegce-ilgeoogi">Activity 객체 읽어오기</h3>
+<p>내가 적은 글의 Activity 객체 버전을 확인해보려면 어떻게 해야 하지 싶던 중, @hongminhee@hackers.pub 님이 만드신 <a href="https://fedify.dev">Fedify</a>에서 제공하는 CLI 도구에 관련 기능이 있었던 것 같아 살펴보니 <a href="https://fedify.dev/cli#fedify-lookup-looking-up-an-activitypub-object"><code>fedify lookup</code></a>이라는 명령어가 있었다.</p>
+<p>사용법은 아래와 같이 인자로 글 URL을 넘겨주면 됐다.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>fedify lookup https://social.silicon.moe/@moreal/114252336335817713
+</span></code></pre>
+<p>그러면 아래와 같이 Activity 객체 내용을 보여준다:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>$ fedify lookup https://social.silicon.moe/@moreal/114252336335817713
+</span><span>✔ Fetched object: https://social.silicon.moe/@moreal/114252336335817713.
+</span><span>Note {
+</span><span>  id: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713&quot;,
+</span><span>  attribution: URL &quot;https://social.silicon.moe/users/moreal&quot;,
+</span><span>  contents: [ &quot;&lt;p&gt;본문&lt;/p&gt;&quot;, &lt;ko&gt; &quot;&lt;p&gt;본문&lt;/p&gt;&quot; ],
+</span><span>  published: 2025-03-30T16:31:40Z,
+</span><span>  replies: Collection {
+</span><span>    id: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713/replies&quot;,
+</span><span>    first: CollectionPage {
+</span><span>      partOf: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713/replies&quot;,
+</span><span>      next: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713/replies?only_other_accounts=true&amp;page=true&quot;
+</span><span>    }
+</span><span>  },
+</span><span>  shares: Collection {
+</span><span>    id: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713/shares&quot;,
+</span><span>    totalItems: 0
+</span><span>  },
+</span><span>  likes: Collection {
+</span><span>    id: URL &quot;https://social.silicon.moe/users/moreal/statuses/114252336335817713/likes&quot;,
+</span><span>    totalItems: 0
+</span><span>  },
+</span><span>  summary: &quot;Content Warning 테스트&quot;,
+</span><span>  url: URL &quot;https://social.silicon.moe/@moreal/114252336335817713&quot;,
+</span><span>  to: URL &quot;https://social.silicon.moe/users/moreal/followers&quot;,
+</span><span>  cc: URL &quot;https://www.w3.org/ns/activitystreams#Public&quot;,
+</span><span>  sensitive: true
+</span><span>}
+</span><span>✔ Successfully fetched the object.
+</span></code></pre>
+<h3 id="activity-gaegce-ihaehagi">Activity 객체 이해하기</h3>
+<p>"Content Warnings"에 넣었던 <code>Content Warning 테스트</code>라는 문구는 <code>summary</code> 필드에 들어있었다.</p>
+<p><code>summary</code> 필드에 대해 살펴보기 위해서 <a href="https://www.w3.org/TR/activitypub/">ActivityPub 문서</a>에 들어갔다. <code>"Note"</code>를 키워드로 검색해보니 아래 같은 예제를 발견했다:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{&quot;</span><span style="color:#a3be8c;">@context</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">https://www.w3.org/ns/activitystreams</span><span>&quot;,
+</span><span> &quot;</span><span style="color:#a3be8c;">type</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Note</span><span>&quot;,
+</span><span> &quot;</span><span style="color:#a3be8c;">to</span><span>&quot;: [&quot;</span><span style="color:#a3be8c;">https://chatty.example/ben/</span><span>&quot;],
+</span><span> &quot;</span><span style="color:#a3be8c;">attributedTo</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">https://social.example/alyssa/</span><span>&quot;,
+</span><span> &quot;</span><span style="color:#a3be8c;">content</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Say, did you finish reading that book I lent you?</span><span>&quot;}
+</span></code></pre>
+<p>예전에 Fedify에 기여할 때 기억으로는 Activity가 <a href="https://json-ld.org/">JSON-LD</a> 포맷으로 표현되므로 스키마를 확인하고자 <code>@context</code> 필드의 링크로 들어갔다. 그렇게 타고 들어가서 <a href="https://www.w3.org/TR/activitystreams-vocabulary/#dfn-note">Note의 정의</a>를 발견했는데 <a href="https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object">Object</a>를 상속하였고, 상속받은 것 외에 자신만의 필드는 없어 보였다.</p>
+<p>링크를 또 타고 들어가 <a href="https://www.w3.org/TR/activitystreams-vocabulary/#dfn-summary">summary의 정의</a>를 볼 수 있었다. 설명은 아래와 같다:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>A natural language summarization of the object encoded as HTML. Multiple language tagged summaries MAY be provided.
+</span></code></pre>
+<p>HTML로 스타일링할 수도 있고, 여러 언어별로 요약을 제공할 수도 있다고 한다. 아래 JSON은 문서에 있는 예제인데, 영어(en)와 스페인어(es), 중국어 간체(zh-Hans) 언어마다 요약을 각각 제공하는 것으로 보인다.</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">@context</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">https://www.w3.org/ns/activitystreams</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Cane Sugar Processing</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">type</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Note</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">summaryMap</span><span>&quot;: {
+</span><span>    &quot;</span><span style="color:#a3be8c;">en</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">A simple &lt;em&gt;note&lt;/em&gt;</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">es</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Una &lt;em&gt;nota&lt;/em&gt; sencilla</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">zh-Hans</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">一段&lt;em&gt;简单的&lt;/em&gt;笔记</span><span>&quot;
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<h2 id="gyeolron">결론</h2>
+<ul>
+<li><del><code>Content Warnings</code>에 요약을 적는 건 적절한 용례이다! (?)</del>
+<ul>
+<li>+) Hackers' Pub에서 <a href="https://hackers.pub/@hongminhee/0195e9b8-8824-7461-85e8-346664f4fa2a">댓글</a>로 달아주셔서 알게된 놓친 부분인데, <code>Content Warnings</code>를 쓰면 <a href="https://docs.joinmastodon.org/spec/activitypub/#sensitive"><code>as:sensitive</code></a> 확장 속성도 같이 추가되어서 Mastodon에서 <code>Content Warnings</code>를 요약으로 쓰는 것이 마냥 맞는 용례는 아닌 것 같다.</li>
+</ul>
+</li>
+<li>사용자가 주로 사용하는 언어로 작성하면, 애플리케이션 단에서 다른 요약들도 번역해서 자동으로 채워줄 수도 있겠다. (읽는 쪽에서 번역하는 게 나으려나)</li>
+</ul>
+
+  </main>
+  <p>
+        Tags:
+          <a href="https://moreal.dev/tags/retrospection/">#retrospection</a>
+  </p>
+<footer>
+</footer>
+</body>
+</html>
