@@ -116,5 +116,5 @@ Zig에 대한 이야기는 줄이고 공부를 회고하는 시점으로 돌아�
 
 공부하면서 발견한 Zig 관련 글들을 나열해놓습니다.
 
-- https://matklad.github.io/2025/04/19/things-zig-comptime-wont-do.html
-- https://mitchellh.com/zig/sema
+- <https://matklad.github.io/2025/04/19/things-zig-comptime-wont-do.html>
+- <https://mitchellh.com/zig/sema>
