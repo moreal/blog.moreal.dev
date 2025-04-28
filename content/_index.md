@@ -18,7 +18,8 @@
 
 ### Contact
 
-email: [dev.moreal@gmail.com](mailto:dev.moreal@gmail.com)  
+Email: [dev.moreal@gmail.com](mailto:dev.moreal@gmail.com)  
 GitHub: [moreal](https://github.com/moreal)  
 Mastodon: [@moreal@silicon.moe](https://social.silicon.moe/@moreal)  
-linkedin: [devmoreal](https://www.linkedin.com/in/devmoreal/)  
+Hackers' Pub: [@moreal@hackers.pub](https://hackers.pub/@moreal)
+LinkedIn: [devmoreal](https://www.linkedin.com/in/devmoreal/)  
