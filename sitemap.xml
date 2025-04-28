@@ -19,6 +19,10 @@
         <lastmod>2024-09-01</lastmod>
     </url>
     <url>
+        <loc>https://moreal.dev/blog/review-learning-zig/</loc>
+        <lastmod>2025-04-29</lastmod>
+    </url>
+    <url>
         <loc>https://moreal.dev/blog/understanding-mastodon-content-warnings-with-fedify-cli/</loc>
         <lastmod>2025-03-30</lastmod>
     </url>
@@ -56,6 +60,9 @@
         <loc>https://moreal.dev/tags/go/</loc>
     </url>
     <url>
+        <loc>https://moreal.dev/tags/growth/</loc>
+    </url>
+    <url>
         <loc>https://moreal.dev/tags/internals/</loc>
     </url>
     <url>
@@ -65,6 +72,9 @@
         <loc>https://moreal.dev/tags/opeunsoseu/</loc>
     </url>
     <url>
+        <loc>https://moreal.dev/tags/programminglanguage/</loc>
+    </url>
+    <url>
         <loc>https://moreal.dev/tags/retrospection/</loc>
     </url>
     <url>
@@ -72,5 +82,8 @@
     </url>
     <url>
         <loc>https://moreal.dev/tags/saenggag/</loc>
+    </url>
+    <url>
+        <loc>https://moreal.dev/tags/zig/</loc>
     </url>
 </urlset>

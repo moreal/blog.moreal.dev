@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title> - ProgrammingLanguage</title>
+    <link rel="self" type="application/atom+xml" href="https://moreal.dev/tags/programminglanguage/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://moreal.dev"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2025-04-29T00:00:00+00:00</updated>
+    <id>https://moreal.dev/tags/programminglanguage/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Zig 공부 회고</title>
+        <published>2025-04-29T00:00:00+00:00</published>
+        <updated>2025-04-29T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://moreal.dev/blog/review-learning-zig/"/>
+        <id>https://moreal.dev/blog/review-learning-zig/</id>
+        
+        <content type="html" xml:base="https://moreal.dev/blog/review-learning-zig/">&lt;h2 id=&quot;geuleul-sijaghagi-jeone&quot;&gt;글을 시작하기 전에&lt;&#x2F;h2&gt;
+&lt;p&gt;이 글은 Zig를 경험한지 4일 정도된 상태에서 과정 및 감상을 기록하기 위해 적은 글입니다. 때문에 Zig를 제대로 이해하지 못하고 적은 글이라고 생각하셔도 무방합니다.&lt;&#x2F;p&gt;
+&lt;p&gt;사용하지 않던 새로운 언어라 어색한 것이고, 아직 잘 모르는 것이지 잘못되었다고 생각하지 않습니다. 이 글에 그런 어감으로 적은 부분이 남아있다면 제가 표현을 잘못한 것이니 피드백해주신다면 수정하겠습니다. 🙇‍♂️ 그리고 제가 미처 알지 못하고 지난 Zig의 장점이 있다면 알려주시면 감사히 배우겠습니다 🙏&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zigreul-gongbuhage-doen-baegyeong&quot;&gt;Zig를 공부하게 된 배경&lt;&#x2F;h2&gt;
+&lt;p&gt;최근에 &lt;a href=&quot;https:&#x2F;&#x2F;product.kyobobook.co.kr&#x2F;detail&#x2F;S000001033071&quot;&gt;함께 자라기 책&lt;&#x2F;a&gt;과 &lt;a href=&quot;https:&#x2F;&#x2F;agilestory.blog&quot;&gt;애자일 이야기 블로그&lt;&#x2F;a&gt;를 읽었고, 나는 어떻게 학습하는지를 돌아보고 교정해보고 싶었습니다. (관련 글: &lt;a href=&quot;https:&#x2F;&#x2F;agilestory.blog&#x2F;5664879&quot;&gt;프로그래밍 언어 배우기의 달인&lt;&#x2F;a&gt;) 과정을 기록하는 방법으로 노트가 생각이 나서 노트에 시각과 의문이 드는 점들을 기록하며 공부했고, 마무리하며 이 글도 적고 있습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;프로그래밍 언어 중 Zig를 선택한 이유는 두 가지인데요:&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;최근에 Bun이나 CyberScript 등으로 Zig가 자주 언급되었습니다. 또한 Zig 홈페이지의 코드를 볼 때 Rust와 비슷하다는 생각에 비교적 쉽게 공부할 수 있을 것이라 예상했습니다(결과적으로는 그렇지 않았지만요).&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;다른 언어를 공부하면 멘탈 모델을 좀 더 키울 수 있지 않을까 하는 생각이 있었습니다. 그런 흐름에서 최근에 OCaml 같은 언어도 살펴봤었습니다.&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;언어를 익히면서 프로그램을 직접 구현해보면 이해하는 데 도움이 된다고 느끼는데, 새로운 언어이니만큼 익숙한 프로그램을 구현하면 좋겠다고 생각했습니다. 그래서 이전에 C#, Rust로 구현해봤던 Bencodex를 Zig로 구현하기로 했습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zigreul-gongbuhan-gwajeong&quot;&gt;Zig를 공부한 과정&lt;&#x2F;h2&gt;
+&lt;p&gt;처음 &lt;a href=&quot;https:&#x2F;&#x2F;ziglang.org&#x2F;&quot;&gt;Zig 홈페이지&lt;&#x2F;a&gt;에 있는 예시 코드를 볼 때 표준 라이브러리 요소를 제외하면 대체로 이해할 수 있을 것 같았습니다. 그래서 우선 기본적인 구현은 GitHub Copilot에게 맡겨보았고, 모르는 문법이나 표준 라이브러리 요소가 나오면 그 부분부터 이해하기로 했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;그러다 언어의 기능을 너무 이해 안하고 넘어갔다는 생각이 들어 &lt;a href=&quot;https:&#x2F;&#x2F;codeberg.org&#x2F;ziglings&#x2F;exercises&#x2F;#ziglings&quot;&gt;Ziglings&lt;&#x2F;a&gt; 문제들을 풀었습니다. 이를 통해 코드가 좀 더 눈에 들어오게 되었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;하지만 다른 언어에는 있는 기능이 없어서 여전히 어색했습니다. 책에서 봤던 대로 표준 라이브러리 소스코드를 읽어보면서 &quot;이런 패턴은 Zig로는 이렇게 구현하는구나&quot;를 습득하는 데 도움이 되었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;마지막으로 모듈화를 공부하는 데는 &lt;a href=&quot;https:&#x2F;&#x2F;zigistry.dev&quot;&gt;Zigistry&lt;&#x2F;a&gt;에 있는 라이브러리들을 참조했습니다. 이 과정에서 &lt;code&gt;build.zig&lt;&#x2F;code&gt; 파일을 좀 더 잘 이해하게 되었습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zigreul-gongbuhamyeo-insang-gipeossdeon-pointeu&quot;&gt;Zig를 공부하며 인상 깊었던 포인트&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;web-eosembeulri&quot;&gt;웹 어셈블리&lt;&#x2F;h3&gt;
+&lt;p&gt;Zig를 웹 어셈블리로 빌드하여 사용하는 게 의외로 간단하여 좋았습니다. 아래처럼 명령어를 실행하면 &lt;code&gt;*.wasm&lt;&#x2F;code&gt; 파일이 생성되고 Deno 같은 환경에서는 &lt;code&gt;import {} from &quot;foo.wasm&quot;&lt;&#x2F;code&gt; 같이 간편히 불러올 수 있었습니다.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;zig build-exe -target wasm32-freestanding -fno-entry -rdynamic -ofmt=wasm src&#x2F;root.zig
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;chung-leong&#x2F;zigar&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;chung-leong&#x2F;zigar&lt;&#x2F;a&gt; 처럼 이를 보다 편하게 하는 프로젝트도 있었습니다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;taib-seoneon-bangsig&quot;&gt;타입 선언 방식&lt;&#x2F;h3&gt;
+&lt;p&gt;Zig에서는 타입을 선언할 때 특별히 &lt;code&gt;type&lt;&#x2F;code&gt;, &lt;code&gt;typedef&lt;&#x2F;code&gt; 같은 별도의 키워드가 없습니다. &lt;code&gt;const Animal = struct{ name: []const u8 };&lt;&#x2F;code&gt; 같은 방식으로 타입을 선언합니다. 제네릭의 경우 &lt;code&gt;struct(comptime T: type){ value: T }&lt;&#x2F;code&gt; 같은 식으로 선언할 수 있습니다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;keompail-taim-yeonsan&quot;&gt;컴파일 타임 연산&lt;&#x2F;h3&gt;
+&lt;p&gt;이 기능은 C++에서의 &lt;a href=&quot;https:&#x2F;&#x2F;ko.wikipedia.org&#x2F;wiki&#x2F;%ED%85%9C%ED%94%8C%EB%A6%BF_%EB%A9%94%ED%83%80%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D&quot;&gt;템플릿 메타프로그래밍&lt;&#x2F;a&gt;이나 &lt;a href=&quot;https:&#x2F;&#x2F;en.cppreference.com&#x2F;w&#x2F;cpp&#x2F;language&#x2F;constexpr&quot;&gt;constexpr&lt;&#x2F;a&gt;과 유사한 기능 같았습니다. 다만 보다 작성하기 쉽게 느껴졌습니다. 컴파일 타입 리플렉션도 제공하고요.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;anytype&quot;&gt;&lt;code&gt;anytype&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;정적 타입 언어이지만 &lt;code&gt;anytype&lt;&#x2F;code&gt; 타입이 있는 것이 신기했습니다. TypeScript의 &lt;code&gt;any&lt;&#x2F;code&gt;가 떠오르는 개념이었지만, 다행히 타입 검사는 잘 이루어졌습니다. Zig가 타입을 추론하는 원리를 완전히 이해하지는 못했지만, 시작점(예: &lt;code&gt;main&lt;&#x2F;code&gt;)을 기준으로 사용되는 타입들을 검사하는 것으로 보였습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;예를 들어 아래와 같은 함수 &lt;code&gt;f&lt;&#x2F;code&gt;가 있다고 할 때, 인자 &lt;code&gt;x&lt;&#x2F;code&gt;로 어떤 것이 주어질지 미리 알 수 없습니다:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;zig&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-zig &quot;&gt;&lt;code class=&quot;language-zig&quot; data-lang=&quot;zig&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;f&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;x&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;anytype&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;void &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  x.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;say&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;&amp;quot;Hello&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;하지만 위와 같이 함수를 작성한 후에는 인자 &lt;code&gt;x&lt;&#x2F;code&gt;는 &lt;code&gt;fn say(self: @This(), arg: []const u8) void&lt;&#x2F;code&gt; 같은 시그니처의 함수를 가진 &lt;code&gt;struct&lt;&#x2F;code&gt;여야 한다는 것을 추론할 수 있습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;기존에 다른 언어로 코드를 작성할 때는 함수에 들어오는 타입을 한정하는 방식으로 코드를 작성했었는데, 이 방식은 개인적으로 혼란스러웠습니다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;inteopeiseu-munbeobyi-bujae&quot;&gt;인터페이스 문법의 부재&lt;&#x2F;h3&gt;
+&lt;p&gt;Java, TypeScript, C# 같은 언어에서는 &lt;code&gt;interface&lt;&#x2F;code&gt; 같은 타입이 있었고, C++에서는 &lt;code&gt;abstract class&lt;&#x2F;code&gt;, Rust에서는 &lt;code&gt;trait&lt;&#x2F;code&gt;이 있어 &lt;code&gt;로그를 받아 계산 결과를 반환하는 함수 &quot;evaluate&quot;를 가진 타입, Evaluator&lt;&#x2F;code&gt; 같은 타입을 정의하여 활용할 수 있었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;그런데 Zig에서는 이런 타입을 정의하는 방법이 없어 보였습니다. 그래서 표준 라이브러리(&lt;code&gt;std&lt;&#x2F;code&gt;)를 읽어보았습니다. Rust의 &lt;code&gt;trait std::io::Write&lt;&#x2F;code&gt; 같은 역할로 &lt;code&gt;std.io.AnyWriter&lt;&#x2F;code&gt;라는 것이 있었는데, 프록시처럼 함수 포인터를 받아 호출해주는 방식으로 하나의 타입으로 여러 구현체를 사용할 수 있게 하였습니다. 메모리 할당을 담당하는 &lt;code&gt;std.mem.Allocator&lt;&#x2F;code&gt;도 같은 방식이었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;&quot;Zig는 이런 부분까지 선택지로 두고 최적화하게끔 하려는 것인가!&quot;라는 생각에 놀라기도 했고, 다르게 생각하면 최신 언어치고는 기능이 부족하다는 생각도 들었습니다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;saengmyeongjugi-cujeog-doguyi-bujae&quot;&gt;생명주기 추적 도구의 부재&lt;&#x2F;h3&gt;
+&lt;p&gt;C언어를 주로 사용했었다면 익히기 더 쉬웠을 것 같습니다. vtable 같은 것도 직접 구현하고, 무엇보다 포인터를 직접 다루는 방식이 C언어 코딩을 배울 때와 비슷했습니다. GC가 없고 직접 할당 및 해제를 해줘야 하는 점이 오랜만에 해보니 어색했습니다. Go의 &lt;code&gt;defer&lt;&#x2F;code&gt; 키워드와 비슷한 &lt;code&gt;errdefer&lt;&#x2F;code&gt; 키워드를 도입하여 메모리 해제를 쉽게 도와주려는 모습을 보았지만, 모든 문제를 해결하는 것은 아니었습니다. 테스트에서 제공되는 Allocator를 사용하면 메모리 누수를 탐지할 수 있는 도구가 있어서 도움이 되었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;그래도 Rust의 라이프타임 검사 같은 기능이 있었다면 좋았을 텐데 하는 아쉬움은 남습니다. Zig가 숨겨진 흐름이 없도록 하는 철학(암묵적 함수 호출 방지)을 가지고 있어 자동으로 처리해주는 기능은 아마 추가되지 않을 것 같지만, 그런 것을 검증하려는 시도는 있는 것 같습니다. (&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;ityonemo&#x2F;clr&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;ityonemo&#x2F;clr&lt;&#x2F;a&gt;)&lt;&#x2F;p&gt;
+&lt;p&gt;Bun에서 메모리 누수가 왜 발생하는지도 이해가 가는 부분이었습니다(메모리 해제를 잘 챙기는 것은 어려운 일이니깐요).&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zigreul-gongbuhaneun-gwajeongeseo-johassdeon-jeom&quot;&gt;Zig를 공부하는 과정에서 좋았던 점&lt;&#x2F;h2&gt;
+&lt;p&gt;Zig에 대한 이야기는 줄이고 공부를 회고하는 시점으로 돌아오겠습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;이번에 Zig를 공부할 때는 노트를 펴고 펜으로 필기하며 진행한 것이 좋은 경험이었습니다. 공부를 회고하려면 과정이 남아있어야 하는데, 기억력에 의존하기에는 놓치는 부분이 많을 것 같았기 때문입니다. 지금 이 글을 적는 것도 필기를 기반으로 합니다. 그 외에도 머리에서 생각하는 것을 적으며 정리해볼때 펜으로 쓰는 것이 가장 자유롭고 편하다고 느낍니다.&lt;&#x2F;p&gt;
+&lt;p&gt;그리고 표준 라이브러리를 보는 것이 도움이 되었던 것 같습니다. &quot;쓰기&quot;, &quot;읽기&quot; 같은 기본적인 개념만 보아도 이 언어에서는 추상화를 위해서 어떻게 표현하는지가 잘 보였습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zigreul-gongbuhaneun-gwajeongeseo-aswiun-jeom&quot;&gt;Zig를 공부하는 과정에서 아쉬운 점&lt;&#x2F;h2&gt;
+&lt;p&gt;아쉬운 점 중 하나는 원래 생각했던 멘탈 모델을 늘리는 데는 크게 도움을 받지 못했다는 것입니다. 예전을 돌이켜 보면 &quot;아하!&quot; 모먼트였던 것은 타입 기반 프로그래밍을 이해했을 때였습니다. 타입이란 것은 값의 집합이고, 함수에 입력으로 받는 값의 범위를 한정함으로써 더 예측 가능한 코드를 작성하는 것이 타입 검사의 진정한 의미라는 것을 이해했을 때 눈이 뜨인 기분이었습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;그런 &quot;아하!&quot; 모먼트를 다시금 느끼고 싶었지만 그러지 못 했습니다.&lt;&#x2F;p&gt;
+&lt;p&gt;때문에 학습하고 싶은 것이 무엇인지 확실히 파악해야 매몰비용이 크지 않을 것 같습니다. 그러기 위해서는 학습 목표를 명확히 하는 것이 중요합니다. 제 경우, 언어를 공부할 때 얻고 싶은 것은 타입 기반으로 더 안정적인 프로그램을 작성하는 데 필요한 사고방식을 습득하는 것입니다. 다시 말해, 타입 검사를 더 잘 활용하는 데 도움이 되는 언어인지 파악한 후 공부를 시작해야 할 것입니다. 이를 위해서는 언어 설계의 목표와 같은 설명을 먼저 살펴보는 것이 좋겠습니다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;apeuro-eoddeohge-hamyeon-joheulgga&quot;&gt;앞으로 어떻게 하면 좋을까?&lt;&#x2F;h2&gt;
+&lt;p&gt;위 내용들을 요약해서 나열하면 아래와 같습니다.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;언어의 철학(목표) 문서가 있다면 가정 먼저 읽자.&lt;&#x2F;li&gt;
+&lt;li&gt;언어의 표준 라이브러리가 있다면, &lt;code&gt;Write&lt;&#x2F;code&gt;, &lt;code&gt;Read&lt;&#x2F;code&gt; 같은 개념들을 어떻게 추상화하는지 먼저 살펴보자.&lt;&#x2F;li&gt;
+&lt;li&gt;노트에 펜으로 글과 그림을 적으며 정리하자.&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;burog-zig-gwanryeon-geul&quot;&gt;부록: Zig 관련 글&lt;&#x2F;h2&gt;
+&lt;p&gt;공부하면서 발견한 Zig 관련 글들을 나열해놓습니다.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;https:&#x2F;&#x2F;matklad.github.io&#x2F;2025&#x2F;04&#x2F;19&#x2F;things-zig-comptime-wont-do.html&lt;&#x2F;li&gt;
+&lt;li&gt;https:&#x2F;&#x2F;mitchellh.com&#x2F;zig&#x2F;sema&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</content>
+        
+    </entry>
+</feed>
