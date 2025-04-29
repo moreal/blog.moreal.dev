@@ -21,7 +21,7 @@ highlight_code = true
 
 [extra]
 hide_made_with_line = true
-favicon = "logo.svg"
+favicon = "/logo.svg"
 # Put all your custom variables here
 
 [[extra.main_menu]]
