@@ -21,5 +21,6 @@
 Email: [dev.moreal@gmail.com](mailto:dev.moreal@gmail.com)  
 GitHub: [moreal](https://github.com/moreal)  
 Mastodon: [@moreal@silicon.moe](https://social.silicon.moe/@moreal)  
-Hackers' Pub: [@moreal@hackers.pub](https://hackers.pub/@moreal)
+Hackers' Pub: [@moreal@hackers.pub](https://hackers.pub/@moreal)  
 LinkedIn: [devmoreal](https://www.linkedin.com/in/devmoreal/)  
+적독가: [@moreal](https://적독가.com/@moreal)  
