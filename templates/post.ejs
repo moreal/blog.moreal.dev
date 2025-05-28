@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    <%= title %> — <%= site.title %>
+  </title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <meta name="description" content="<%= metadata?.description || '블로그 포스트' %>">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="post">
+  <% if (published) { %>
+  <header class="post-header">
+    <time datetime="<%= published.toISOString() %>" class="publish-date">
+      <%= published.getFullYear() %>년 <%= published.getMonth() + 1 %>월 <%= published.getDate() %>일
+    </time>
+  </header>
+  <% } %>
+
+  <main>
+    <article>
+      <%- body %>
+    </article>
+  </main>
+</body>
+
+</html>

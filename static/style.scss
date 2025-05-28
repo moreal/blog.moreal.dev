@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200..900&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+@media (min-width: 50rem) {
+    body {
+      max-width: min(45rem, 100% - 18rem);
+      font-size: larger;
+    }
+}
+
+body {
+  font-family: Noto Serif KR, sans-serif;
+  max-width: calc(100% - 4rem);
+  margin: auto;
+  padding: 1em;
+  line-height: 1.6;
+  color: #333;
+  background-color: #fff;
+
+  @media (prefers-color-scheme: dark) {
+    & {
+      background-color: #1a1a1a;
+      color: #e4e4e4;
+    }
+
+    a:link {
+      color: #7da3db;
+    }
+
+    a:visited {
+      color: #9b9b9b;
+    }
+  }
+
+  p {
+    margin-bottom: 1.25rem;
+  }
+
+  a {
+    color: #0066cc;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  hr {
+    border: none;
+    height: 1px;
+    background-color: #eee;
+    margin: 2rem 0;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #444;
+    }
+  }
+
+  &.list {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    
+    .year-section {
+      margin-bottom: 3rem;
+
+      .month-section {
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            margin-bottom: 0.75rem;
+            // padding-bottom: 0.75rem;
+          }
+        }
+      }
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+
+        a {
+          font-weight: 500;
+          margin-bottom: 0.25rem;
+        }
+      }
+
+      .languages,
+      time {
+        font-size: small;
+        color: #666;
+
+        @media (prefers-color-scheme: dark) {
+          color: #999;
+        }
+
+        &:before {
+          content: "\2014";
+          margin-right: 0.5rem;
+        }
+
+        a {
+          text-decoration: none;
+
+          &:before {
+            content: "\00b7\0020";
+            cursor: default;
+          }
+
+          &:first-child:before {
+            content: "";
+          }
+        }
+      }
+    }
+  }
+
+  &.post {
+    max-width: 45rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    position: relative; // 헤더 절대 위치를 위한 상대 위치
+
+    img {
+      max-width: 100%;
+    }
+    
+    .post-header {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      
+      .publish-date {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 300;
+        
+        @media (prefers-color-scheme: dark) {
+          color: #999;
+        }
+        
+        // 모바일에서는 상대 위치로 변경
+        @media (max-width: 768px) {
+          position: static;
+          display: block;
+          text-align: right;
+          margin-bottom: 1rem;
+        }
+      }
+    }
+
+    .post-meta {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-size: 0.9rem;
+      color: #666;
+
+      @media (prefers-color-scheme: dark) {
+        border-top-color: #444;
+        color: #999;
+      }
+
+      p {
+        margin: 0.5rem 0;
+      }
+    }
+
+    pre {
+      background: #f8f8f8;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      
+      @media (prefers-color-scheme: dark) {
+        background: #2d2d2d;
+      }
+    }
+
+    code {
+      background: #f8f8f8;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.9em;
+
+      @media (prefers-color-scheme: dark) {
+        background: #2d2d2d;
+      }
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    blockquote {
+      border-left: 3px solid #ddd;
+      margin: 1.5rem 0;
+      padding-left: 1.5rem;
+      color: #666;
+
+      @media (prefers-color-scheme: dark) {
+        border-left-color: #444;
+        color: #999;
+      }
+    }
+  }
+
+  header {
+    margin-bottom: 2rem;
+    
+    nav {
+      margin-bottom: 1rem;
+      
+      .home-link {
+        color: #666;
+        font-size: 0.9rem;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+          color: #999;
+        }
+      }
+    }
+  }
+
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    
+    .navigation {
+      margin-top: 2rem;
+      
+      .back-to-list {
+        color: #0066cc;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+    
+    p {
+      color: #666;
+      font-size: 0.9rem;
+      
+      @media (prefers-color-scheme: dark) {
+        color: #999;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}

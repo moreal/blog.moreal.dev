@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= site.title %></title>
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="<%= baseUrl %>/static/style.css">
+  <meta name="description" content="개발과 기술에 대한 블로그">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="list">
+  <header>
+    <h1><%= site.title %></h1>
+  </header>
+  
+  <main>
+    <% 
+    // 포스트를 연도별로 그룹화
+    const postsByYear = new Map();
+    
+    for await (const post of list) {
+      const published = await queryPublished(post);
+      const draft = await queryString(post, "draft");
+      if (draft) continue;  // FIXME: Filter drafts in main.ts script.
+      const year = published.getFullYear();
+      const yearKey = year.toString();
+      
+      if (!postsByYear.has(yearKey)) {
+        postsByYear.set(yearKey, []);
+      }
+      
+      postsByYear.get(yearKey).push(post);
+    }
+    
+    // 연도를 내림차순으로 정렬
+    const sortedYears = Array.from(postsByYear.keys()).sort((a, b) => parseInt(b) - parseInt(a));
+    %>
+    
+    <% for (const year of sortedYears) { %>
+      <section class="year-section">
+        <h2><time datetime="<%= year %>"><%= year %></time></h2>
+        <ul>
+          <% 
+          // 해당 연도의 포스트들을 날짜순으로 정렬 (최신순), 같은 날짜면 제목순
+          const postsInYear = postsByYear.get(year);
+          const sortedPosts = [];
+          
+          for (const post of postsInYear) {
+            const published = await queryPublished(post);
+            const title = await queryTitle(post);
+            sortedPosts.push({ post, published, title });
+          }
+          
+          sortedPosts.sort((a, b) => {
+            // 날짜로 먼저 정렬 (최신순)
+            const dateCompare = b.published.getTime() - a.published.getTime();
+            if (dateCompare !== 0) return dateCompare;
+            
+            // 같은 날짜면 제목으로 정렬 (오름차순)
+            return a.title.localeCompare(b.title);
+          });
+          %>
+          
+          <% for (const { post, published, title } of sortedPosts) { %>
+            <li>
+              <a href="<%= post.path %>">
+                <%= title %>
+              </a>
+              <% 
+              const month = published.getMonth() + 1;
+              const day = published.getDate();
+              %>
+              <time datetime="<%= published.toISOString() %>">
+                <%= month %>월 <%= day %>일
+              </time>
+            </li>
+          <% } %>
+        </ul>
+      </section>
+    <% } %>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 moreal's blog</p>
+  </footer>
+</body>
+
+</html>
