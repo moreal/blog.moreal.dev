@@ -1,236 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <link rel="shortcut icon" href="&#x2F;logo.svg"><title></title>
-  <meta name="title" content="">
-<meta name="description" content="">
-<meta name="referrer" content="strict-origin-when-cross-origin">
-  <style>
-    :root {
-    --width: 800px;
-    --font-main: Verdana, sans-serif;
-    --font-secondary: Verdana, sans-serif;
-    --font-scale: 1em;
-    --background-color: #fff;
-    --heading-color: #222;
-    --text-color: #444;
-    --link-color: #3273dc;
-    --visited-color: #8b6fcb;
-    --code-background-color: #f2f2f2;
-    --code-color: #222;
-    --blockquote-color: #222;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background-color: #01242e;
-      --heading-color: #eee;
-      --text-color: #ddd;
-      --link-color: #8cc2dd;
-      --visited-color: #8b6fcb;
-      --code-background-color: #000;
-      --code-color: #ddd;
-      --blockquote-color: #ccc;
-    }
-  }
-
-  body {
-    font-family: var(--font-secondary);
-    font-size: var(--font-scale);
-    margin: auto;
-    padding: 20px;
-    max-width: var(--width);
-    text-align: left;
-    background-color: var(--background-color);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.5;
-    color: var(--text-color);
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-main);
-    color: var(--heading-color);
-  }
-
-  a {
-    color: var(--link-color);
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  nav a {
-    margin-right: 8px;
-  }
-
-  nav span.active {
-    font-weight: bold;
-    margin-right: 10px;
-  }
-  strong,
-  b {
-    color: var(--heading-color);
-  }
-
-  button {
-    margin: 0;
-    cursor: pointer;
-  }
-
-  main {
-    line-height: 1.6;
-  }
-
-  table {
-    width: 100%;
-  }
-
-  hr {
-    border: 0;
-    border-top: 1px dashed;
-  }
-
-  img {
-    max-width: 100%;
-  }
-
-  pre code {
-    background-color: var(--code-background-color);
-    color: var(--code-color);
-    display: block;
-    padding: 20px;
-    white-space: pre-wrap;
-    font-size: 0.875rem;
-    overflow-x: auto;
-  }
-
-  code {
-    font-family: monospace;
-    padding: 2px;
-    background-color: var(--code-background-color);
-    color: var(--code-color);
-    border-radius: 3px;
-  }
-
-  blockquote {
-    border-left: 1px solid #999;
-    color: var(--code-color);
-    padding-left: 20px;
-    font-style: italic;
-  }
-
-  footer {
-    padding: 25px 0;
-    text-align: center;
-  }
-
-  .title:hover {
-    text-decoration: none;
-  }
-
-  .title h1 {
-    font-size: 1.5em;
-  }
-
-  .inline {
-    width: auto !important;
-  }
-
-  .highlight,
-  .code {
-    padding: 1px 15px;
-    background-color: var(--code-background-color);
-    color: var(--code-color);
-    border-radius: 3px;
-    margin-block-start: 1em;
-    margin-block-end: 1em;
-    overflow-x: auto;
-  }
-
-  /* blog post list */
-  ul.blog-posts {
-    list-style-type: none;
-    padding: unset;
-  }
-
-  ul.blog-posts li {
-    display: flex;
-  }
-
-  ul.blog-posts li span {
-    flex: 0 0 130px;
-  }
-
-  ul.blog-posts li a:visited {
-    color: var(--visited-color);
-  }
-
-  .tags {
-    font-size: smaller;
-  }
-
-  </style><style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
-@import url('https://unpkg.com/@catppuccin/palette/css/catppuccin.css');
-
-main {
-  /* font-family: "Noto Serif CJK KR", "Noto Serif KR", serif; */
-  /* font-optical-sizing: auto;
-  font-style: sans-serif;
-  font-feature-settings: "chws", "halt" */
-}
-</style>
-<link rel="me" href="https://social.silicon.moe/@moreal" />
-<link rel="me" href="https://hackers.pub/@moreal" />
-<meta name="author" content="Moreal (Lee Dogeon)" />
-<meta name="fediverse:creator" content="moreal@hackers.pub" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>moreal&#39;s blog</title>
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="http://127.0.0.1:8080//static/style.css">
+  <meta name="description" content="개발과 기술에 대한 블로그">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
 </head>
-<body>
+
+<body class="list">
   <header>
-  <a href="https://moreal.dev/" class="title">
-    <h1></h1>
-  </a>
-  <nav aria-label="moreal dev">
-      <a href="https://moreal.dev/">home</a>
-      <a href="https://moreal.dev/blog/">blog</a>
-      <a href="https:&#x2F;&#x2F;resume.moreal.dev&#x2F;">resume</a>
-  </nav>
-</header>
-
+    <h1>moreal&#39;s blog</h1>
+  </header>
+  
   <main>
-    <h1 id="moreal">moreal</h1>
-<p>안녕하세요, 대한민국의 한 개발자 입니다. 주로 Python, TypeScript, Rust로 코딩을 합니다.<br />
-사람들에게 도움이 되는 일을 하고 싶어하고, 기술적인 부분은 물론이고 비기술적인 부분도 포함하여 문제를 해결하는 것에 관심이 많습니다.</p>
-<h3 id="blog">Blog</h3>
-<p>한국어로 <a href="https://moreal.dev/blog/">블로그</a>를 적습니다.</p>
-<p>맞는 내용을 적으려고 노력하지만, <strong>틀린 부분</strong>이 있을 수 있습니다.</p>
-<p>이전에 작성하던 글들은 아래 링크들에서 확인하실 수 있습니다.</p>
-<ul>
-<li><a href="https://velog.io/@moreal/posts">Velog</a></li>
-</ul>
-<h3 id="contact">Contact</h3>
-<p>Email: <a href="mailto:dev.moreal@gmail.com">dev.moreal@gmail.com</a><br />
-GitHub: <a href="https://github.com/moreal">moreal</a><br />
-Mastodon: <a href="https://social.silicon.moe/@moreal">@moreal@silicon.moe</a><br />
-Hackers' Pub: <a href="https://hackers.pub/@moreal">@moreal@hackers.pub</a><br />
-LinkedIn: <a href="https://www.linkedin.com/in/devmoreal/">devmoreal</a><br />
-적독가: <a href="https://%EC%A0%81%EB%8F%85%EA%B0%80.com/@moreal">@moreal</a></p>
-
+    
+    
+    
+      <section class="year-section">
+        <h2><time datetime="2025">2025</time></h2>
+        <ul>
+          
+          
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2025/04/review-learning-zig/">
+                Zig 공부 회고
+              </a>
+              
+              <time datetime="2025-04-28T15:00:00.000Z">
+                4월 28일
+              </time>
+            </li>
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2025/03/understanding-mastodon-content-warnings-with-fedify-cli/">
+                Fedify CLI로 Content Warnings 이해하기
+              </a>
+              
+              <time datetime="2025-03-29T15:00:00.000Z">
+                3월 29일
+              </time>
+            </li>
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2025/03/verify-myself-by-rel-me-attr/">
+                Hackers&#39; Pub에서 HTML rel 속성으로 자기 인증하는 원리
+              </a>
+              
+              <time datetime="2025-03-18T15:00:00.000Z">
+                3월 18일
+              </time>
+            </li>
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2025/03/what-job-i-want-to-work/">
+                하고 싶은 일
+              </a>
+              
+              <time datetime="2025-03-11T15:00:00.000Z">
+                3월 11일
+              </time>
+            </li>
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2025/01/zola-blog/">
+                블로그 이주
+              </a>
+              
+              <time datetime="2025-01-06T15:00:00.000Z">
+                1월 6일
+              </time>
+            </li>
+          
+        </ul>
+      </section>
+    
+      <section class="year-section">
+        <h2><time datetime="2024">2024</time></h2>
+        <ul>
+          
+          
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2024/09/phanpy-translation-guide/">
+                Phanpy 번역 기여하기
+              </a>
+              
+              <time datetime="2024-09-27T15:00:00.000Z">
+                9월 27일
+              </time>
+            </li>
+          
+        </ul>
+      </section>
+    
+      <section class="year-section">
+        <h2><time datetime="2023">2023</time></h2>
+        <ul>
+          
+          
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2023/03/petabyte-traffic/">
+                페타바이트 트래픽 원인 분석기
+              </a>
+              
+              <time datetime="2023-03-14T15:00:00.000Z">
+                3월 14일
+              </time>
+            </li>
+          
+        </ul>
+      </section>
+    
+      <section class="year-section">
+        <h2><time datetime="2020">2020</time></h2>
+        <ul>
+          
+          
+          
+            <li>
+              <a href="http://127.0.0.1:8080/2020/02/go-interface/">
+                How Go interface works
+              </a>
+              
+              <time datetime="2020-02-21T15:00:00.000Z">
+                2월 21일
+              </time>
+            </li>
+          
+        </ul>
+      </section>
+    
   </main>
-<footer>
-</footer>
+
+  <footer>
+    <p>&copy; 2025 moreal's blog</p>
+  </footer>
 </body>
+
 </html>
