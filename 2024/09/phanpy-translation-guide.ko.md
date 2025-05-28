@@ -88,7 +88,7 @@ Crowdin을 보고 번역을 하는 경우
 설명해보겠습니다.
 
 ![](./crowdin-translation-word-screenshot.png)
-![alt text](../../static/images/${UUID}.png)
+
 글을 적을 때 기준 "Current" 라는 문장이 미번역 되어 있습니다. 그리고 아래
 `src/pages/accounts.jsx:55` 라는 경로와 라인을 알려주는 "Context" 파트가
 있습니다. `accounts` 페이지라고 하는 것 같아 "계정들..." 을 눌러봤는데 달리
