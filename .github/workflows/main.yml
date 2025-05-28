@@ -21,7 +21,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno run --allow-read --allow-net --allow-env=SASS_PATH --allow-write=public_html main.ts
+      - run: deno run --allow-read --allow-net --allow-env=SASS_PATH --allow-write=public_html main.ts --base-url https://blog.moreal.dev/
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
