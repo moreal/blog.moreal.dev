@@ -146,7 +146,7 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
   });
 
 function getMarkdownIt() {
-  return new MarkdownIt("commonmark").use(title);
+  return MarkdownIt("commonmark").use(title).enable("strikethrough");
 }
 
 if (args.remove) {
