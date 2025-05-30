@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    직지―정적 사이트 생성기 툴킷 — 잡다한 블로그
+  </title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <meta name="description" content="블로그 포스트">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="post">
+  
+  <header class="post-header">
+    <time datetime="2025-05-29T15:00:00.000Z" class="publish-date">
+      2025년 5월 29일
+    </time>
+  </header>
+  
+
+  <main>
+    <article>
+      <h1>직지―정적 사이트 생성기 툴킷</h1>
+<p>직지는 정적 사이트 생성기를 만들기 위한 툴킷입니다. 직지를 활용하면 프로그래머블하게 커스텀 가능한 정적 사이트 생성기를 만들 수 있습니다. 언젠가 알게 되어 스타를 눌러놨었고 최근 <a href="../jikji-blog">블로그 정적 생성 워크플로우를 변경</a>하면서 활용하였습니다.</p>
+<p>직지를 활용하게 된 것은 정적 사이트를 생성하는 흐름이 잘 정의되어 있다고 느꼈기 때문입니다.</p>
+<ol>
+<li>소스가 되는 파일들을 읽어들입니다. (<code>scanFiles</code>)</li>
+<li>파일들에 대해 적절한 변환을 거칩니다. (<code>Pipeline#transform</code>)</li>
+<li>파일들을 적절한 위치로 이동시킵니다. (<code>Pipeline#move</code>)</li>
+<li>그리고 실제로 파일로 써내립니다. (<code>writeFiles</code>)</li>
+</ol>
+<p>위와 같은 과정을 정의하는 것을 <code>Pipeline</code> 이라고 부르고,</p>
+<p>블로그에 크게 신경쓰고 싶지 않지만 추가적으로 커스텀하여 사용하게 되어 사례가 쌓인다면 추가적으로 글로 남겨보도록 하겠습니다.</p>
+
+    </article>
+  </main>
+</body>
+
+</html>
