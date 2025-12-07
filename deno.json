@@ -12,6 +12,6 @@
     }
   },
   "tasks": {
-    "dev": "deno run -P=script main.ts --serve"
+    "dev": "deno run -P=script main.ts --serve --watch"
   }
 }
