@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
+  "permissions": {
+    "script": {
+      "read": ["site.yaml", "20*/**/*.md", "templates"],
+      "net": {
+        "allow": ["127.0.0.1:8080"]
+      },
+      "write": {
+        "allow": ["public_html"]
+      }
+    }
+  },
+  "tasks": {
+    "dev": "deno run -P=script main.ts --serve"
+  }
+}
