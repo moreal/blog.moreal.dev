@@ -2,6 +2,7 @@
 
 * {
   box-sizing: border-box;
+  word-break: keep-all;
 }
 
 @media (min-width: 50rem) {
@@ -63,7 +64,7 @@ body {
     max-width: 42rem;
     margin: 0 auto;
     padding: 2rem 1rem;
-    
+
     .year-section {
       margin-bottom: 3rem;
 
@@ -135,21 +136,21 @@ body {
     img {
       max-width: 100%;
     }
-    
+
     .post-header {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      
+
       .publish-date {
         font-size: 0.85rem;
         color: #666;
         font-weight: 300;
-        
+
         @media (prefers-color-scheme: dark) {
           color: #999;
         }
-        
+
         // 모바일에서는 상대 위치로 변경
         @media (max-width: 768px) {
           position: static;
@@ -182,7 +183,7 @@ body {
       padding: 1rem;
       border-radius: 4px;
       overflow-x: auto;
-      
+
       @media (prefers-color-scheme: dark) {
         background: #2d2d2d;
       }
@@ -219,19 +220,19 @@ body {
 
   header {
     margin-bottom: 2rem;
-    
+
     nav {
       margin-bottom: 1rem;
-      
+
       .home-link {
         color: #666;
         font-size: 0.9rem;
         text-decoration: none;
-        
+
         &:hover {
           text-decoration: underline;
         }
-        
+
         @media (prefers-color-scheme: dark) {
           color: #999;
         }
@@ -242,24 +243,24 @@ body {
   footer {
     margin-top: 3rem;
     text-align: center;
-    
+
     .navigation {
       margin-top: 2rem;
-      
+
       .back-to-list {
         color: #0066cc;
         text-decoration: none;
-        
+
         &:hover {
           text-decoration: underline;
         }
       }
     }
-    
+
     p {
       color: #666;
       font-size: 0.9rem;
-      
+
       @media (prefers-color-scheme: dark) {
         color: #999;
       }
