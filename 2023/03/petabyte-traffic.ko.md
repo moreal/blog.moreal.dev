@@ -5,6 +5,17 @@ published: 2023-03-15T00:00:00+09:00
 페타바이트 트래픽 원인 분석기
 ======================
 
+---
+
+> ⚠️ **2026년 1월 7일 업데이트.**
+> 
+> [aws/aws-cloudwatch-agent] 저장소에서 본 글에서 말하는 cAdvisor 관련 코드가 사라졌음을 확인했습니다 ([PR]). 때문에 본 글에서 발견한 에러는 더 이상 유효하지 않을 것으로 추정합니다.
+
+[aws/aws-cloudwatch-agent]: https://github.com/aws/amazon-cloudwatch-agent
+[PR]: https://github.com/aws/amazon-cloudwatch-agent/pull/862
+
+---
+
 ## 대시보드에 보이는 이상한 단위
 
 회사에서는 운영하는 서비스의 상태를 확인하고 주의 사항을 공유하기 위한 주간
