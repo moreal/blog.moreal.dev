@@ -6,7 +6,7 @@ How Go interface works
 ======================
 
 의문
---
+----
 
 `utilForever/falcon`의 간단한 프로토타입을 만들면서
 `CompilerProxy` 인터페이스를 구현하는 `GccCompilerProxy` 구조체를
@@ -39,7 +39,7 @@ func NewGccCompilerProxy() *GccCompilerProxy {
 당연히 _`*interface` = `*struct`_ 대입이 될 거라 생각했지만
 컴파일러는 제게 에러 메시지 만을 남겼습니다.
 
-> Cannot use 'NewGccCompilerProxy()' (type \*GccCompilerProxy) as type
+> Cannot use ‘NewGccCompilerProxy()’ (type \*GccCompilerProxy) as type
 > \*CompilerProxy in assignment
 
 저 컴파일 에러 메시지를 보고서 생각에 빠졌습니다.
@@ -83,7 +83,7 @@ Go Spec 레퍼런스를 보면 _인터페이스는 메소드의 집합이다_
 
 
 Go Interface 구조체 (itab, 만드는 법)
-------------------------------
+-------------------------------------
 
 Go에서 인터페이스는 `iface`라는 이름의 구조체입니다.
 타입을 설명하는 `itab`의 포인터와 실제 데이터를 가리키는
@@ -161,7 +161,7 @@ dumped SSA to ./ssa.html
 
 
 인터페이스 메소드 호출
-------------
+----------------------
 
 인터페이스에서 메소드를 호출 하는 것은 `itab` 구조체의
 필드 `fun` 가상 테이블에서 함수 포인터를 가져와서
@@ -174,7 +174,7 @@ dumped SSA to ./ssa.html
 
 
 마무리
----
+------
 
 Golang에서 vm 없이 동적 타입을 어떻게 다루는지, interface가
 어떻게 생겼는지, 컴파일러 과정 및 컴파일러 내부 코드

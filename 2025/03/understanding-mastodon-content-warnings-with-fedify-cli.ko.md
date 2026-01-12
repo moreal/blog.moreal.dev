@@ -3,20 +3,20 @@ published: 2025-03-30T00:00:00+09:00
 ---
 
 Fedify CLI로 Content Warnings 이해하기
-=================================
+======================================
 
 서문 (동기)
--------
+-----------
 
 Mastodon에서 글을 쓸 때 Content Warnings을 자주 쓰는데:
 
 1.  내가 쓰는 글이 어떤 사람에게는 기분 상할 글일 수도
     있을까 하는 걱정도 있고,
 2.  혼자 말을 자주 적는데 소음같이 느껴져서 보고 싶지 않을
-    사람도 있을까 싶어서 "혼자 말" 같은 경고문을 달고
+    사람도 있을까 싶어서 “혼자 말” 같은 경고문을 달고
     적어놓는다.
 
-요즘은 "혼자 말" 대신 요약을 좀 적어놓는 편인 것 같다.
+요즘은 “혼자 말” 대신 요약을 좀 적어놓는 편인 것 같다.
 그런데 Mastodon에서 글을 적으면 몇 글자 더 적을 수 있는지,
 글자 수 제한을 표시해준다. Content Warnings을 적는데도 글자
 수 제한이 줄어드는 것을 보고 본문과 Content Warnings가 같은
@@ -26,7 +26,7 @@ Mastodon에서 글을 쓸 때 Content Warnings을 자주 쓰는데:
 
 
 본문
---
+----
 
 ### Activity 객체 읽어오기
 
@@ -81,7 +81,7 @@ Note {
 
 ### Activity 객체 이해하기
 
-"Content Warnings"에 넣었던 `Content Warning 테스트`라는 문구는
+“Content Warnings”에 넣었던 `Content Warning 테스트`라는 문구는
 `summary` 필드에 들어있었다.
 
 `summary` 필드에 대해 살펴보기 위해서
@@ -138,10 +138,10 @@ HTML로 스타일링할 수도 있고, 여러 언어별로 요약을 제공할
 
 
 결론
---
+----
 
  -  ~~`Content Warnings`에 요약을 적는 건 적절한 용례이다! (?)~~
-     -  +) Hackers' Pub에서
+     -  +) Hackers’ Pub에서
         [댓글]로
         달아주셔서 알게된 놓친 부분인데, `Content Warnings`를
         쓰면 [`as:sensitive`] 확장 속성도 같이 추가되어서
