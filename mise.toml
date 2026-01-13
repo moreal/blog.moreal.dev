@@ -1,4 +1,4 @@
 [tools]
-"cargo:https://github.com/dahlia/hongdown" = "rev:c79718132e7fdfe667f602ce4123e3bb6a80e6b6"
+"cargo:hongdown" = "0.2.0-dev.75+6d4f84bb"
 deno = "latest"
 # "github:dahlia/hongdown" = "latest"
