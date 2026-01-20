@@ -18,13 +18,14 @@
 </head>
 
 <body class="post">
-  <% if (published) { %>
   <header class="post-header">
+    <a href="/" class="back-link">다른 글 보기</a>
+  <% if (published) { %>
     <time datetime="<%= published.toISOString() %>" class="publish-date">
       <%= published.getFullYear() %>년 <%= published.getMonth() + 1 %>월 <%= published.getDate() %>일
     </time>
-  </header>
   <% } %>
+  </header>
 
   <main>
     <article>

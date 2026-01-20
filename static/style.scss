@@ -138,9 +138,28 @@ body {
     }
 
     .post-header {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      .back-link {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 300;
+
+        @media (prefers-color-scheme: dark) {
+          color: #999;
+        }
+
+        &:hover {
+          color: #0066cc;
+
+          @media (prefers-color-scheme: dark) {
+            color: #7da3db;
+          }
+        }
+      }
 
       .publish-date {
         font-size: 0.85rem;
@@ -150,14 +169,12 @@ body {
         @media (prefers-color-scheme: dark) {
           color: #999;
         }
+      }
 
-        // 모바일에서는 상대 위치로 변경
-        @media (max-width: 768px) {
-          position: static;
-          display: block;
-          text-align: right;
-          margin-bottom: 1rem;
-        }
+      @media (max-width: 768px) {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        gap: 0.5rem;
       }
     }
 
