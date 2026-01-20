@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    재현 가능한 커밋 — 잡다한 블로그
+  </title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <meta name="description" content="블로그 포스트">
+  <meta name="og:title" content="재현 가능한 커밋 — 잡다한 블로그">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="post">
+  
+  <header class="post-header">
+    <time datetime="2026-01-20T15:00:00.000Z" class="publish-date">
+      2026년 1월 20일
+    </time>
+  </header>
+  
+
+  <main>
+    <article>
+      <h1>재현 가능한 커밋</h1>
+<p>예전에 올렸던 <a href="https://github.com/RustPython/RustPython/issues/5974">이슈</a>를 요즘 변경 사항들에 맞게(?)
+업데이트했습니다. 솔직히 지금 많이 자동화되어서 꽤 만족하고 있긴 한데(…) 그래도
+요즘 그 위에서 작업하면서 느낀 점을 바탕으로 다시 적었습니다. 그러다 보니
+예전에 회사 일 할때도 느꼈던 걸 지금 다시 느껴서 여기 짤막하게 생각을
+남겨봅니다. 어쩌면 그저 diff 방식이 잘못된 것수도 있겠지만 아무튼.</p>
+<p>사실 너무 간단한 데 변경은 큰 경우들이 있습니다. 여기서 간단하다는 것은
+작업자의 기준입니다. 지금 당장 생각나는 것으로는 아래와 같은 것들이 있습니다:</p>
+<ul>
+<li>클래스명이 바뀌었는데 여기저기서 참조하는 곳이 많아 변경량이 큽니다.</li>
+<li>특정 정규식에 맞춰 전체적으로 변경한 경우.</li>
+<li>포매팅 없던 코드베이스에 포매팅을 적용.</li>
+<li>X 소스로부터 Y로 파일을 복사해온 경우.</li>
+</ul>
+<p>맥락을 알고 보면 사실 간단한 작업이지만, 이것은 GitHub diff로 보게되면 정말
+그대로 base branch와의 diff입니다. 위에 나열한 상황과 같은 맥락 정보를 담고
+있지 않기 때문에 그저 매우 큰 변경사항일 뿐입니다. 그래서 예전에 이를
+해소하고자 PR 설명에 “XX 정규식으로 바꾼 것이므로 YY 같이 해서 검증하실 수
+있습니다” 같이 첨부했던 기억도 있습니다(정확히 어느 PR인지 몰라서 첨부는 못
+하지만..). 사실 그 작업자를 온전히 신뢰하고 잘 했겠지, 하는 것도 방법이고 종종
+그렇게 approve하기도 합니다. 하지만 요즘 Claude Code 등으로 자동으로 작업해서
+PR을 올리기도 하니 스스로가 PR을 올리기 전 리뷰어가 되기도 하면서 더 이 부분이
+신경 쓰이는 것 같습니다.</p>
+<p>그래서 기계적으로 돌렸던 부분이라면 그것은 기계가 다시 실행하면서 검증할 수
+있으므로 그렇게 하고 싶다는 생각이 있었습니다. 커밋을 의도적으로 잘 분리해서
+단위를 만들고 검증해주는 CI는 해당 커밋의 전 커밋으로 기준을 맞추고 커밋 메시지
+등을 통해 취한 액션이 무엇인지 파악한 뒤 그 액션을 실제로 취하고 그 변경사항이
+커밋의 변경사항과 같은지 확인해줍니다. 그러면 사람은 그 외의 커밋들만 리뷰하면
+된다는 아이디어입니다.</p>
+<p>기대하는 사례는 RustPython의 경우 “XX 버전의 라이브러리로 업데이트 한 것이
+맞는지”, “scripts/update_lib” 스크립트를 실행한 것이 맞는지를 검증하는 것이고,
+예전에 생각했던 사례는 코드를 수정할 때 리팩토링 류라면 codemod 도구(e.g.,
+jscodeshift, ast-grep)로 코드를 업데이트 하고 변경 사항이 실제로 그것으로 인한
+것임을 검증하는 것입니다. 그러면 리뷰어가 할 일은 codemod 도구를 실행할 때
+주어진 인자들 뿐입니다.</p>
+
+    </article>
+  </main>
+</body>
+
+</html>
