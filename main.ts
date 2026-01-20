@@ -7,6 +7,7 @@ import {
   markdown,
   MarkdownIt,
   title,
+  footnote
 } from "jsr:@hongminhee/jikji@^0.4.0/markdown";
 import {
   renderListTemplate,
@@ -146,7 +147,7 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
   });
 
 function getMarkdownIt() {
-  return MarkdownIt("commonmark").use(title).enable("strikethrough");
+  return MarkdownIt("commonmark").use(title).use(footnote).enable("strikethrough");
 }
 
 if (args.remove) {
