@@ -1,5 +1,6 @@
 ---
 published: 2026-02-05T22:53:11+09:00
+description: "ap-thread-reader를 개발했던 기억을 글로 기록해봤습니다."
 ---
 
 ap-thread-reader 기록
