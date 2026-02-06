@@ -138,7 +138,7 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
     const posts = p.filter(
       anyRepresentations({
         type: ["text/html"],
-        language: LanguageTag.get("ko"),
+        // language: LanguageTag.get("ko"),
       })
     );
     yield new Resource(baseUrl, [
