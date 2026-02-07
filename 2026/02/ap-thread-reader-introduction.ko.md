@@ -1,5 +1,6 @@
 ---
 published: 2026-02-06T23:40:38+09:00
+description: ap-thread-reader의 기능을 소개합니다.
 ---
 
 ap-thread-reader, ActivityPub-compatible Thread Reader
