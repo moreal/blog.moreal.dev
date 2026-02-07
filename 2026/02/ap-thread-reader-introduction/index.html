@@ -1,0 +1,91 @@
+
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Redirecting...</title>
+        
+    <script>
+    (function () {
+      function _negotiateUsingClientSideJavaScript$internal(document, navigator, multiViews, defaultLanguage) {
+  function parseLanguageTag(tag) {
+    const [lang, ...rest] = tag.toLowerCase().split(/[-_]/);
+    const script = rest.length > 0 && rest[0].length == 4 ? rest[0] : undefined;
+    const region = rest.length > 0 && rest[0].length == 2 ? rest[0] : rest.length > 1 ? rest[1] : undefined;
+    return {
+      language: lang,
+      script,
+      region
+    };
+  }
+  function getPreferability(accept, view) {
+    return (accept.language === view.language ? 16 : 0) + (accept.script === view.script ? 8 : 0) + (accept.script == null ? 4 : 0) + (accept.region === view.region ? 2 : 0) + (accept.region == null ? 1 : 0);
+  }
+  const acceptLanguageCookie = document.cookie.match(/(?:^|;)\s*accept-language=([A-Za-z0-9_-]+)\s*(?:;|$)/)?.[1];
+  if (acceptLanguageCookie != null) {
+    for(const lang in multiViews){
+      if (lang.toLowerCase() === acceptLanguageCookie.toLowerCase()) {
+        return multiViews[lang];
+      }
+    }
+  }
+  const acceptLanguages = navigator.languages ?? (navigator?.language != null ? [
+    navigator.language
+  ] : []);
+  const views = Object.entries(multiViews).map(([k, v])=>[
+      parseLanguageTag(k),
+      v
+    ]);
+  for (const l of acceptLanguages){
+    const acceptLang = parseLanguageTag(l);
+    let maxPref = 0;
+    let mostPrefUrl;
+    for (const [viewLanguage, viewUrl] of views){
+      const pref = getPreferability(acceptLang, viewLanguage);
+      if (pref > maxPref) {
+        maxPref = pref;
+        mostPrefUrl = viewUrl;
+      }
+    }
+    if (maxPref >= 16 && mostPrefUrl != null) {
+      return mostPrefUrl;
+    }
+  }
+  const defaultUrl = defaultLanguage == null ? undefined : multiViews[defaultLanguage];
+  if (defaultUrl != null) {
+    return defaultUrl;
+  }
+}
+      var multiViews = {"en":"https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.en.html","ko":"https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.ko.html"};
+      var defaultLang =
+        undefined || undefined;
+      var url = _negotiateUsingClientSideJavaScript$internal(
+        document,
+        navigator,
+        multiViews,
+        defaultLang
+      );
+      if (url != null) {
+        location.href = url;
+      }
+    })();
+    </script>
+  
+      </head>
+      <body>
+        <script>
+        document.body.style.display = 'none';
+        </script>
+        <p>There are the following languages available:</p>
+        <ul>
+          <li><a rel="alternate" href="https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.en.html"
+          hreflang="en">
+          English (English)
+        </a></li><li><a rel="alternate" href="https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.ko.html"
+          hreflang="ko">
+          Korean (한국어)
+        </a></li>
+        </ul>
+      </body>
+    </html>
+  

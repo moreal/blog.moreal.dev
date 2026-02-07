@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    ap-thread-reader, ActivityPub-compatible Thread Reader — 잡다한 블로그
+  </title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <meta name="description" content="블로그 포스트">
+  <meta name="og:title" content="ap-thread-reader, ActivityPub-compatible Thread Reader — 잡다한 블로그">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="post">
+  <header class="post-header">
+    <a href="/" class="back-link">다른 글 보기</a>
+  
+    <time datetime="2026-02-06T14:40:38.000Z" class="publish-date">
+      2026년 2월 6일
+    </time>
+  
+  </header>
+
+  <main>
+    <article>
+      <h1>ap-thread-reader, ActivityPub-compatible Thread Reader</h1>
+<p>I have previously written a post about <em>ap-thread-reader</em>, and this article
+focuses on explaining its features<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>.</p>
+<hr>
+<p>ap-thread-reader is a tool that helps you view long posts written as a series
+of replies—often due to character limits—on a single page.</p>
+<p>As of the time of writing, you can access it at
+<a href="https://ap-thread-reader.fly.dev">https://ap-thread-reader.fly.dev</a>. By default, you will be greeted with the
+following page.</p>
+<p><img src="./start-page.png" alt=""></p>
+<p>Enter the link to the first post of the thread you would like to read into the
+text box, and you will be taken to a page that displays the entire thread.
+Alternatively, you can navigate directly by entering a URL in the form of
+<code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;</code>. The ability to pass the
+value as a query parameter is particularly useful when setting up shortcuts in
+browsers such as Firefox.</p>
+<p>As an example, I entered a link to a Note hosted on localhost. The result is
+three consecutive posts displayed as shown below.</p>
+<p><img src="./multi-content-lang-en-select.png" alt=""></p>
+<p>You may notice <em>Content Language</em> along with options such as <em>en</em>, <em>ja</em>, and
+<em>ko</em> appearing above the author and timestamp. This feature leverages the
+<code>contentMap</code> provided by ActivityPub Object. If the content offers
+multilingual support through <code>contentMap</code>, it will be reflected accordingly.
+Selecting <em>ko</em>, for instance, will display the content as shown below. You can
+also specify the language via the <code>language</code> URL query parameter (e.g.,
+<code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;&amp;language=ko</code>). If
+<code>contentMap</code> is not provided, the <em>Content Language</em> selection UI will not be
+displayed.</p>
+<p><img src="./multi-content-lang-ko-select.png" alt=""></p>
+<p>By default, the client renders a loading animation first and then renders all
+the content at once after the entire thread has been loaded. This approach can
+be inconvenient when passing the page to a separate translation tool or similar
+service. To address this, the <code>ssr</code> URL query parameter is provided, which
+ensures that a fully rendered result is returned once the entire thread has
+been loaded (e.g.,
+<code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;&amp;ssr=true</code>).</p>
+<hr>
+<p>Note: ap-thread-reader is licensed under AGPL-3.0, and the source code is
+available at <a href="https://github.com/moreal/ap-thread-reader">https://github.com/moreal/ap-thread-reader</a>.</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p><a href="https://blog.moreal.dev/2026/02/ap-thread-reader/">https://blog.moreal.dev/2026/02/ap-thread-reader/</a> <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </main>
+</body>
+
+</html>

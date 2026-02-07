@@ -57,7 +57,7 @@ Flaky하여 살펴보다가 빌드 과정과 CI 실행 과정을 개선하였습
 <li><a href="https://github.com/fedify-dev/fedify/pull/550">Fix traverseCollection() for inline CollectionPage without id #550</a></li>
 <li><a href="https://github.com/fedify-dev/fedify/issues/547">Suggestion: migrate to monorepo tooling #547</a></li>
 </ul>
-<hr />
+<hr>
 <p>앞서 말한 <a href="https://github.com/moreal/ap-thread-reader">ap-thread-reader</a>는 초기에 성능이 굉장히 느렸습니다. 스레드를
 가져오는데 50초가량 걸렸었는데 지금은 10초 정도만 소요합니다. 원래 50초는
 너무나 오래걸려서 Rosettalens 측에서 타임아웃으로 취급하여 읽을 수가 없었는데
@@ -73,7 +73,7 @@ Flaky하여 살펴보다가 빌드 과정과 CI 실행 과정을 개선하였습
 있음에도 없다고 잘못 판단하고 다시 요청하고 있었는데, 이를 해결하니 꽤 많이
 빨라졌습니다. 이 버그를 고친 것이
 <a href="https://github.com/fedify-dev/fedify/pull/550">Fix traverseCollection() for inline CollectionPage without id #550</a> PR입니다.</p>
-<hr />
+<hr>
 <p><a href="https://github.com/moreal/bencodex-rs">bencodex-rs</a> 의 개선도 좀 더 진행했습니다.</p>
 <p>prefix length를 읽는 것과 number를 읽는 것이 실제로는 동일하게 ascii 숫자를
 읽는 것이라 로직을 공용으로 사용했었는데, number는 BigInt여야 하는 탓에
@@ -90,7 +90,7 @@ length를 읽을 때도 BigInt를 사용하는데서 오는 오버헤드가 있�
 <li><a href="https://github.com/moreal/bencodex-rs/pull/37">Skip redundant UTF-8 validation in read_number #37</a></li>
 <li><a href="https://github.com/moreal/bencodex-rs/pull/39">Remove redundant <code>sorted_by()</code> on BTreeMap encoding #39</a></li>
 </ul>
-<hr />
+<hr>
 <p>개발적인 면 외에는 글들을 읽었습니다. 그 중 “모든 프로그래머가 알아야 할
 메모리 이야기” 시리즈는 정말 유익했습니다. 혹여 안 보신 분들이 계시다면
 추천하고 싶습니다. 예전에 이런 것들을 더 잘 알았더라면 이렇게 코드를 짰을텐데

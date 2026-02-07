@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    ap-thread-reader, ActivityPub-compatible Thread Reader — 잡다한 블로그
+  </title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml">
+  <meta name="description" content="블로그 포스트">
+  <meta name="og:title" content="ap-thread-reader, ActivityPub-compatible Thread Reader — 잡다한 블로그">
+  <meta name="author" content="Moreal (Lee Dogeon)" />
+  <meta name="fediverse:creator" content="moreal@hackers.pub" />
+  <link rel="me" href="https://social.silicon.moe/@moreal" />
+  <link rel="me" href="https://hackers.pub/@moreal" />
+</head>
+
+<body class="post">
+  <header class="post-header">
+    <a href="/" class="back-link">다른 글 보기</a>
+  
+    <time datetime="2026-02-06T14:40:38.000Z" class="publish-date">
+      2026년 2월 6일
+    </time>
+  
+  </header>
+
+  <main>
+    <article>
+      <h1>ap-thread-reader, ActivityPub-compatible Thread Reader</h1>
+<p>저는 이미 <em>ap-thread-reader</em>와 관련된 글을 작성했었고 이 글은 기능에 대해
+설명하는데 집중되어 있습니다<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>.</p>
+<hr>
+<p>ap-thread-reader는 글자 수 제한 등으로 인해 답글 형식으로 긴 글을 적은 것을 한
+페이지에서 볼 수 있도록 도와주는 프로그램입니다.</p>
+<p>이 글을 쓰는 시점에서 <a href="https://ap-thread-reader.fly.dev">https://ap-thread-reader.fly.dev</a> 로 접속하실 수
+있습니다. 기본적으로 아래와 같은 페이지에서 시작합니다.</p>
+<p><img src="./start-page.png" alt=""></p>
+<p>텍스트 박스에 읽고 싶은 스레드의 첫 글의 링크를 입력하면 스레드를 보여주는
+페이지로 넘어갑니다. 혹은 <code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;</code>
+꼴로 URL을 직접 입력하여 넘어갈 수 있습니다. 이렇게 쿼리 파라미터로 값을 넣을
+수 있으면 Firefox 등에서 shortcut으로 설정할 때 매우 유용합니다.</p>
+<p>예제로 로컬호스트에서 띄운 Note 링크를 입력해 보았습니다. 그러면 아래처럼 3개의
+글이 연달아 나오게 됩니다.</p>
+<p><img src="./multi-content-lang-en-select.png" alt=""></p>
+<p>그런데 저자 및 작성 시간 위에 <em>Content Language</em> 와 <em>en</em>,
+<em>ja</em>, <em>ko</em> 같은 것이 보입니다. 이는 ActivityPub Object에서 제공하는
+<code>contentMap</code> 을 활용한 것입니다. 만약 <code>contentMap</code> 을 활용하여 다국어를
+제공하고 있다면 이를 반영하여 보여줍니다. <em>ko</em>를 선택해보면 아래와 같이 보이게
+됩니다. URL 쿼리 파라미터 <code>language</code> 로 이를 명시해줄 수 있습니다 (e.g.,
+<code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;&amp;language=ko</code>). 그리고 만약
+<code>contentMap</code> 을 제공해주고 있지 않다면 <em>Content Language</em> 선택 UI는 표시되지
+않습니다.</p>
+<p><img src="./multi-content-lang-ko-select.png" alt=""></p>
+<p>그리고 기본적으로 클라이언트에서 우선 렌더링하여 로딩 애니메이션을 보여주다가
+스레드가 모두 불러와지면 한 번에 렌더링하도록 되어있습니다. 이 방식은 페이지를
+별도 번역 프로그램 등으로 넘길 때 불편합니다. 때문에 스레드가 모두 불러와졌을때
+온전히 렌더링된 결과가 오도록 <code>ssr</code> URL 쿼리 파라미터를 제공합니다 (e.g.,
+<code>https://ap-thread-reader.fly.dev/read?url=&lt;url&gt;&amp;ssr=true</code>)</p>
+<hr>
+<p>Note: ap-thread-reader는 AGPL-3.0 라이센스를 따르며
+<a href="https://github.com/moreal/ap-thread-reader">https://github.com/moreal/ap-thread-reader</a> 에서 소스코드를 확인할 수 있습니다.</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p><a href="https://blog.moreal.dev/2026/02/ap-thread-reader/">https://blog.moreal.dev/2026/02/ap-thread-reader/</a> <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </main>
+</body>
+
+</html>
