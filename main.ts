@@ -3,11 +3,11 @@ import {
   intoMultiView,
 } from "jsr:@hongminhee/jikji@^0.4.0/multiview";
 import {
+  footnote,
   frontMatter,
   markdown,
   MarkdownIt,
   title,
-  footnote
 } from "jsr:@hongminhee/jikji@^0.4.0/markdown";
 import {
   renderListTemplate,
@@ -17,6 +17,7 @@ import { sass } from "jsr:@hongminhee/jikji@^0.4.0/sass";
 import { detectLanguage } from "jsr:@hongminhee/jikji@^0.4.0/path";
 import {
   anyRepresentations,
+  ContentKey,
   havingExtension,
   intoDirectory,
   LanguageTag,
@@ -80,8 +81,7 @@ if (args.help) {
   console.log("  -r, --remove:   Empty the output directory first.");
   console.log("  -s, --serve:    Run an HTTP server.");
   console.log(
-    "  -H, --host:     " +
-      "Hostname to listen HTTP requests.  [127.0.0.1]",
+    "  -H, --host:     " + "Hostname to listen HTTP requests.  [127.0.0.1]",
   );
   console.log("  -p, --port:     Port number to listen HTTP requests.  [8080]");
   console.log(
@@ -126,20 +126,26 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
   .move(replaceBasename(/\.s[ac]ss/, ".css"))
   .transform(frontMatter, { type: "text/markdown" })
   .transform(markdown(getMarkdownIt()), { type: "text/markdown" })
-  .transform(
-    renderTemplate("templates/post.ejs", { baseUrl, site }),
-    { negate: true, language: null },
+  .divide(
+    intoMultiView({
+      negotiator: htmlRedirector,
+      defaultContentKey: ContentKey.get("text/markdown", "ko"),
+    }),
+    (r: Resource) => r.path.href.endsWith("/") && r.size > 1,
   )
-  .transform(
-    renderTemplate("templates/list.ejs", { site }),
-    { exactType: "text/html; list=1" },
-  )
+  .transform(renderTemplate("templates/post.ejs", { baseUrl, site }), {
+    negate: true,
+    language: null,
+  })
+  .transform(renderTemplate("templates/list.ejs", { site }), {
+    exactType: "text/html; list=1",
+  })
   .addSummaries(async function* (p: Pipeline) {
     const posts = p.filter(
       anyRepresentations({
         type: ["text/html"],
-        // language: LanguageTag.get("ko"),
-      })
+        language: LanguageTag.get("ko"),
+      }),
     );
     yield new Resource(baseUrl, [
       await renderListTemplate("templates/list.ejs", posts, { baseUrl, site }),
@@ -147,7 +153,10 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
   });
 
 function getMarkdownIt() {
-  return MarkdownIt("commonmark").use(title).use(footnote).enable("strikethrough");
+  return MarkdownIt("commonmark", { html: true, xhtmlOut: false })
+    .use(title)
+    .use(footnote)
+    .enable("strikethrough");
 }
 
 if (args.remove) {
