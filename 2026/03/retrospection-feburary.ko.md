@@ -1,0 +1,278 @@
+---
+published: 2026-03-02T22:04:31+09:00
+---
+
+2026년 2월 회고
+===============
+
+오늘은 2026년 3월 2일입니다. 어제 처음 회고 글을 적어보려고 할 때는 공기가 참
+따뜻해졌다고 하려고 했는데, 갑자기 다시금 좀 추워졌습니다. 그래도 여전히 비교적
+날씨도 많이 풀렸고 달리기도 좋은 날씨입니다.
+
+어제 이동 중에 Hashnode로 글을 써봤는데 술술 잘 써져서 이번에는 Hashnode로
+작성해보고자 합니다 (정작 그 글은 올리지 않았지만). 원래 블로그에도 복사해서
+같이 게시할 것입니다.
+
+
+W5 회고 이후
+------------
+
+[제 블로그] 글 목록을 보시면 원래는 주간 단위로 회고 글을 적고 있었습니다. 사실
+변명에 가깝지만 당시에 가족사가 있었어서 W6 회고를 작성하지 않았고(정확히는 그
+주는 병원 면회가고 하느라 뭘 못 했지만), 지난 주 즈음에는 퇴원하셨지만 지난주
+회고도 작성하지 않았습니다. 아마 사이즈가 커지기도 해서 미루는 것도 있겠고,
+회고에서 하겠다 다짐한 것을 잘 마무리 짓지 못하고 결국 옆길로 새어나간 것을
+글로 또 적자니 부끄러움도 있었을 것입니다.
+
+“[테스트에 대한 주저리]“ 와 [ap-thread-reader에 대한 설명]도 적었으니 글을 아예
+안 적은 것은 아니니 회고를 적기가 꺼려졌다는 것이 맞는 것 같습니다.
+
+2026 W5 가 딱 2월 1일 까지 였으니 이 글은 2월 전체에 대한 이야기가 되겠습니다.
+
+[제 블로그]: https://blog.moreal.dev/
+[테스트에 대한 주저리]: https://blog.moreal.dev/2026/02/testing/
+[ap-thread-reader에 대한 설명]: https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.ko.html
+
+
+있었던 일
+---------
+
+### Fedify monorepo 적용 시도 (moonrepo)
+
+당시에 Fedify에 기여를 하면서 monorepo 도구를 적용해야 할 필요성을 느꼈고 이를
+[이슈]로 남겼습니다. [Moonrepo] 이야기가 나와서 이를 적용하는 작업도
+시도해봤습니다.
+
+Fedify에서는 Node.js 뿐만 아니라 Deno, Bun도 함께 사용하고 있었고 Moonrepo에서
+Deno toolchain을 지원하기는 하나 Deno workspaces 를 사용하여 서로 암묵적으로
+어떻게 import 관계를 가지는 지 파악하는 것은 지원하지 않았습니다. 그래서 의존성
+그래프를 만들려면 직접 명시해주면 되기도 하지만 이러면 Moonrepo를 사용하는
+의미가 퇴색됩니다. Deno toolchain의 버그라고 생각하고 기여하려고 생각했지만
+Moonrepo의 툴체인이 WASM으로 샌드박싱된 플러그인이기에 `deno info ...` 명령어를
+실행하기 어려워서 의존성을 파악하기는 어렵다고 생각했습니다. 때문에 Fedify 쪽
+이슈에 상황을 남기고 마무리 지었습니다.
+
+[이슈]: https://github.com/fedify-dev/fedify/issues/547
+[Moonrepo]: https://moonrepo.dev/
+
+### compression-golf
+
+지나가다가 [compression-golf] 라는 것을 발견했습니다. [GitHub Archive] 라고
+GitHub 타임라인 이벤트 로그 아카이브를 제공하는 곳이 있는데 여기있는 데이터셋의
+가장 작게 압축하는 코덱을 작성하는 것이었습니다. 압축에 대해서 문외한이었지만
+한 번 해보고 싶어서 찍먹해봤습니다. 어느 정도 압축률을 갖추고 더 뭔가 하기가
+어려워서 리더보드의 다른 분들이 어떻게 했는지 참고했습니다.
+
+우선 다른 분들의 아이디어를 참고하기 전에 아래와 같은 것들을 해봤습니다:
+
+ -  “CreateEvent” 같은 이벤트 타입들을 enum으로 만들고 바이너리로 만듭니다. 그리고
+    그 종류가 16개로 적으므로 4bit만 사용하도록 하였습니다.
+
+ -  저장소 name과 url을 함께 제공하는데 url은
+    `"https://api.github.com/repos/{name}"` 꼴이므로 name만 저장하고 추후
+    복구합니다.
+
+ -  기본적으로 같은 저장소에서 발생하는 이벤트들이 많으므로 이것을 dictionary로
+    만들어서 중복을 줄입니다.
+
+ -  타임스탬프가 문자열로 작성되어 있는데 이를 파싱하여 정수 바이너리로 저장합니다.
+
+ -  GitHub 이벤트들을 1시간 주기로 모아서 제공되는 데이터셋이기 때문에 타임스탬프가
+    거의 비슷한 시간대에 있습니다. 가장 작은 timestamp를 헤더에 기록하고
+    이것과의 diff만을 기록함으로써 타임스탬프를 저장하는데 필요한 크기를
+    줄였습니다. 사실 id와 타임스탬프가 확실히 정렬되어 있다면 더 작은 diff를
+    저장할 수도 있겠지만 그렇지 않아 적용하기 어려웠습니다.
+
+ -  column 단위로 데이터를 모아 별도로 압축하게 하여 압축 효율을 높였습니다.
+
+잘 모르지만 이것저것 해보니 많이 줄기는 했지만 리더보드에 들어가는 것은
+어려워보여서 다른 분들 것을 참고했는데 “아하” 싶었던 부분이 몇 가지 있었습니다.
+
+하나는 아까 위에서 말한 정렬되어 있지 않아 발생하는 문제를 해결하는
+방법이었습니다. 대개 모두 정렬되어 있으나 일부 정렬되어 있지 않다면 그 일부에
+해당하는 record들을 별도로 빼내어 별도로 압축하는 것입니다. 일단 정렬되어
+있다는 것을 보장하는 것만으로 diff가 양수라고 특정할 수 있고, GitHub 같은 경우
+트래픽이 항시 많으니 0, 1, 2초 정도의 차이가 있는 것이 대부분이라고 가정하고
+만약 그렇지 않은 경우 3 (`b11`) 값을 넣고 더 많은 비트를 소비하여 diff를 넣는
+것입니다. 1) 보통의 경우 작은 값으로 저장하고 fallback으로 다른 것을 처리하는
+방법과, 2) 일부 때문에 가정을 할 수 없다면 그 일부를 격리하여 가정을 할 수 있게
+하는 것이 “아하” 포인트 였습니다.
+
+[compression-golf]: https://github.com/agavra/compression-golf
+[GitHub Archive]: https://www.gharchive.org/
+
+### [ap-thread-reader]
+
+Mastodon의 글을 한 페이지로 렌더링하여 번역 서비스에 넘기기 위해 만든
+프로젝트입니다. 아래 두 글에서 설명한 바 있습니다.
+
+ -  <https://blog.moreal.dev/2026/02/ap-thread-reader-introduction/index.ko.html>
+
+ -  <https://blog.moreal.dev/2026/02/ap-thread-reader/>
+
+[ap-thread-reader]: https://github.com/moreal/ap-thread-reader
+
+### [seonbi-rs]
+
+기존에 홍민희 님이 만드신 [seonbi] 라는 프로젝트가 있습니다. 주요 기능으로는
+국한문혼용문에 사용된 한자들을 한글로 변환해주고, 한국어 맞춤법에 맞춰
+[인용 부호](e.g., `<<` -> `『` ) 등을 수정해주며 `...` 같은 경우도 `…` 같이
+적절한 부호로 변경 해줍니다. 그래서 소개 글에서도 “SmartyPants for Korean
+language” 라고 설명하고 있습니다.
+
+Haskell로 작성된 프로젝트이고 이를 사용하려면 실질적으로는 별도의 서버를
+띄워놓고 API로 통신하여야 했습니다. 개인적으로 별도의 API 없이 로컬에서도
+돌리고 싶다는 생각이 있었고, 국한문혼용문을 잘 작성하지는 않지만 한국어
+맞춤법에 맞춰 인용 부호 등을 적절히 바꿔주는 것이 유용하다고 생각하여 시작하게
+되었습니다.
+
+앞서 말한 것 같은 동기도 있었지만 단순 포팅이고 피드백이 매우 명확하다고
+생각했기 때문에 코딩 에이전트에게 어느 정도 일임할 수 있을 것 같아서 쉽게
+시작한 것도 있습니다. Seonbi는 CLI와 HTTP API 인터페이스를 제공하는데 이를
+seonbi-rs에서도 구현하고 인터페이스를 완전히 똑같이 하는 것을 목표로 하도록
+하고 E2E 비교 테스트를 통해서 호환되지 않는 것이 있는지 확인하도록 했습니다.
+
+Rust에서는 napi-rs, wasm-pack, py-o3로 Node.js, Deno, Bun, WASM, Python
+바인딩을 쉽게 만들수 있었습니다. Seonbi 데모 사이트도 동일하게 만들고 WASM으로
+돌아가도록 하였습니다.
+
+그리고 Hollo 라는 ActivityPub 구현체에 네이티브 바인딩으로 갈아끼우는 작업도
+해보았습니다.
+
+<https://github.com/fedify-dev/hollo/pull/381>
+
+구현은 빨리 되었으나 npm, crates.io, PyPI에 첫 배포하는 과정이 가장 오래
+걸렸습니다 (..)
+
+[seonbi-rs]: https://github.com/moreal/seonbi-rs
+[seonbi]: https://github.com/dahlia/seonbi
+[인용 부호]: https://en.wikipedia.org/wiki/Quotation_mark
+
+### [slidev-addon-subtitle]
+
+예전에 발표 자료를 볼 때면 영상에서 말하는 소리를 듣지 않으면 무슨 내용인지
+알기 어려울 때가 종종 있었습니다. 그래서 [sli.dev] 라는 슬라이드를 마크다운으로
+작성할 수 있는 도구가 있는데 여기서 자막을 쉽게 달 수 있도록 도와주는 애드온을
+만들어 봤습니다. 아래는 이 애드온으로 만든 데모 슬라이드이고 나중에 발표 등을
+하게 되면 사용해보려고 합니다.
+
+<https://speakerdeck.com/moreal/slidev-addon-subtitle-demo>
+
+여기서 슬라이드 빌드가 오래 걸려서 모노레포 도구인 Bazel을 사용해서 실제로 다시
+빌드해야 할 때만 빌드하도록 해봤는데, 빌드 과정에서 포트가 이미 사용 중이어서
+다른 포트를 할당 받았음에도 기존 포트를 사용하여 병렬로 실행하면 똑같은 발표
+자료가 2개 생기는 문제가 있었습니다. 그래서 업스트림 저장소에 관련 수정 PR을
+올려고 머지되어 반영되었습니다.
+
+<https://github.com/slidevjs/slidev/pull/2461>
+
+[slidev-addon-subtitle]: https://moreal.github.io/slidev-addon-subtitle/
+[sli.dev]: https://sli.dev/
+
+### 재밌게 읽은 글
+
+이번 달에 재밌게 읽었던 글들을 나열해보려고 합니다.
+
+ -  [Stop Forwarding Errors, Start Designing Them]
+
+ -  [Study of std::io::Error]
+
+ -  성능 엔지니어링
+
+     -  [Why I joined OpenAI]
+
+     -  [컴퓨터 성능 엔지니어링 팀을 언제 채용해야 할까(2025) 1부]
+
+ -  [함수형 프로그래머가 시스템에 대해 잘못 이해하는 것]
+
+ -  [비동기 압박이 느껴지지 않는다]
+
+ -  [결정론적 시뮬레이션 테스트(DST)가 그렇게 대단한 이유는 뭘까?]
+
+ -  [해상도가 낮은데 프롬프트 같은 걸 쓸 수 있을 리가 없다.]
+
+ -  [자바스크립트 생태계 속도 개선하기 - Semver]
+
+ -  [텍스트에서 토큰까지: 토큰화 파이프라인은 어떻게 작동하는가]
+
+ -  [매일 배포하는 팀이 되는 여정(2) — Feature Toggle 활용하기]
+
+ -  [테스트는 새로운 해자 | 다니엘 새위츠]
+
+ -  [The hidden cost of PostgreSQL arrays]
+
+ -  채용 과정 이야기
+
+     -  <https://hiddenest.dev/good-tech-interview-0>
+
+     -  <https://hiddenest.dev/good-tech-interview-1>
+
+     -  <https://hiddenest.dev/good-tech-interview-2>
+
+     -  <https://hiddenest.dev/good-tech-interview-3>
+
+     -  <https://hiddenest.dev/good-tech-interview-4>
+
+ -  [Scala 3 Capture Checking 완전 가이드]
+
+ -  멱등성 이야기
+
+     -  [Postgres에서 Stripe 스타일의 멱등성 키 구현하기]
+
+     -  [원자적 트랜잭션으로 멱등 API 구현하기]
+
+     -  [멱등성을 통해 견고하고 예측 가능한 API 설계하기]
+
+[Stop Forwarding Errors, Start Designing Them]: https://fast.github.io/blog/stop-forwarding-errors-start-designing-them/
+[Study of std::io::Error]: https://matklad.github.io/2020/10/15/study-of-std-io-error.html
+[Why I joined OpenAI]: https://www.brendangregg.com/blog/2026-02-07/why-i-joined-openai.html
+[컴퓨터 성능 엔지니어링 팀을 언제 채용해야 할까(2025) 1부]: https://rosettalens.com/s/ko/when-to-hire-a-computer-performance-engineering-team-2025-part1
+[함수형 프로그래머가 시스템에 대해 잘못 이해하는 것]: https://rosettalens.com/s/ko/what-functional-programmers-get-wrong-about-systems
+[비동기 압박이 느껴지지 않는다]: https://rosettalens.com/s/ko/async-pressure
+[결정론적 시뮬레이션 테스트(DST)가 그렇게 대단한 이유는 뭘까?]: https://rosettalens.com/s/ko/2024-08-20-deterministic-simulation-testing
+[해상도가 낮은데 프롬프트 같은 걸 쓸 수 있을 리가 없다.]: https://rosettalens.com/s/ko/1e0e30f7037dd9
+[자바스크립트 생태계 속도 개선하기 - Semver]: https://rosettalens.com/s/ko/speeding-up-javascript-ecosystem-part-12
+[텍스트에서 토큰까지: 토큰화 파이프라인은 어떻게 작동하는가]: https://rosettalens.com/s/ko/when-tokenization-becomes-token
+[매일 배포하는 팀이 되는 여정(2) — Feature Toggle 활용하기]: https://medium.com/daangn/%EB%A7%A4%EC%9D%BC-%EB%B0%B0%ED%8F%AC%ED%95%98%EB%8A%94-%ED%8C%80%EC%9D%B4-%EB%90%98%EB%8A%94-%EC%97%AC%EC%A0%95-2-feature-toggle-%ED%99%9C%EC%9A%A9%ED%95%98%EA%B8%B0-b52c4a1810cd
+[테스트는 새로운 해자 | 다니엘 새위츠]: https://rosettalens.com/s/ko/tests-are-the-new-moat
+[The hidden cost of PostgreSQL arrays]: https://boringsql.com/posts/good-bad-arrays/
+[Scala 3 Capture Checking 완전 가이드]: https://gist.github.com/guersam/41f8e82ede7e1192585fc68f4ba02ea0
+[Postgres에서 Stripe 스타일의 멱등성 키 구현하기]: https://rosettalens.com/s/ko/idempotency-keys
+[원자적 트랜잭션으로 멱등 API 구현하기]: https://rosettalens.com/s/ko/http-transactions
+[멱등성을 통해 견고하고 예측 가능한 API 설계하기]: https://rosettalens.com/s/ko/idempotency
+
+
+좋았던 점
+---------
+
+Monorepo 도구에 대한 감이 없었는데 Fedify에 적용 시도한 것과
+slidev-addon-subtitle 을 개발하면서 대개 이해를 갖춘 것 같다고 느꼈습니다.
+Monorepo 도구의 핵심은 A 라는 액션을 하기 위해서 앞서 실행해야 하는 액션이
+무엇이 있는지 파악하거나 기술하는 것이고, 각 액션들의 캐시가 유효한 지 확인하고
+유효하지 않다면 invalidate하고 다시 실행하게끔 하고 불필요한 동작을 재차하지
+않게 하여 효율적이게 만드는 것입니다.
+
+compression-golf를 시도해보고, “CS:APP” 를 읽고, “[JVM 밑바닥까지 파헤치기]“ 도
+읽었는데 해상도가 높아지는 것 같아서 좋았습니다.
+
+[JVM 밑바닥까지 파헤치기]: https://product.kyobobook.co.kr/detail/S000213057051
+
+
+아쉬운 점
+---------
+
+Fedify 모노레포 적용 시도, ap-thread-reader, seonbi-rs, slidev-addon-subtitle
+구현 모두 배운 부분이 없지 않지만, 미래에 대한 불안감을 가라앉혀 주는 것은 아닌
+것 같습니다. 오히려 불안을 늘리는 일에 가까운 것 같습니다. 금전적 수입 없이
+이런 야크쉐이빙 같은 것을 하는 것은 좋지 않다는 생각이 들었습니다. W5 회고를
+보니 이러지 말자고 했는데 재차 반복하였습니다.
+
+오픈소스도, 사이드 프로젝트도 좀 더 전략적으로 하고 싶습니다. 하지만 누가 제게
+커리어를 물어보면 저는 솔직히 잘 모르겠다고 느끼고 있습니다. 이 글을 적고
+커리어에 대한 생각도 마저 적어보려고 합니다. “목표 있는 오픈소스 활동” 이 글
+하나이고, “커리어” 가 글 하나가 될 것 입니다.
+
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+목표는 달리 적지 않으려고 합니다. 목표를 도전적으로 적고 지키지 못 했을 때 글
+쓰는 것이 두려워지는 것이 더 문제인 것 같습니다.
