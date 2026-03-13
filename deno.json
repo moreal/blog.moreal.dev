@@ -9,7 +9,9 @@
         "allow": ["127.0.0.1:8080"]
       },
       "ffi": [
-        "./node_modules/.deno/@seonbi+node@0.2.2/node_modules/@seonbi/node/seonbi.darwin-arm64.node"
+        "./node_modules/.deno/@seonbi+node@0.2.2/node_modules/@seonbi/node/seonbi.darwin-arm64.node",
+        "./node_modules/.deno/@seonbi+node@0.2.2/node_modules/@seonbi/node/seonbi.linux-x64-gnu.node",
+        "./node_modules/.deno/@seonbi+node@0.2.2/node_modules/@seonbi/node/seonbi.linux-x64-musl.node"
       ],
       "write": {
         "allow": ["public_html"]
