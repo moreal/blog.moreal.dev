@@ -4,7 +4,7 @@
   "permissions": {
     "script": {
       "read": ["."],
-      "env": ["NAPI_RS_NATIVE_LIBRARY_PATH", "NAPI_RS_FORCE_WASI"],
+      "env": ["NAPI_RS_NATIVE_LIBRARY_PATH", "NAPI_RS_FORCE_WASI", "SASS_PATH"],
       "import": ["cdn.skypack.dev", "jsr.io"],
       "net": {
         "allow": ["127.0.0.1:8080"]
