@@ -21,7 +21,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno run -P=script main.ts --base-url https://blog.moreal.dev/
+      - run: deno run -P=script --allow-sys="cpus,networkInterfaces,hostname" main.ts --base-url https://blog.moreal.dev/
       - run: cp CNAME public_html/CNAME
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
