@@ -32,6 +32,8 @@ import {
 import * as YAML from "jsr:@std/yaml";
 import { writeFiles } from "jsr:@hongminhee/jikji@^0.4.0/file";
 
+import { HanjaRenderingOption, transform, type Configuration } from "seonbi";
+
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { serveDir } from "jsr:@std/http/file-server";
 import { info } from "jsr:@std/log";
@@ -39,6 +41,38 @@ import { join } from "jsr:@std/path";
 
 // Makes logs show up in the console:
 await setupConsoleLog();
+
+function createSeonbiConfiguration(
+  hanjaRendering: HanjaRenderingOption,
+): Configuration {
+  return {
+    contentType: "text/markdown",
+    quote: "CurvedQuotes",
+    cite: "AngleQuotes",
+    arrow: {
+      bidirArrow: true,
+      doubleArrow: true,
+    },
+    ellipsis: true,
+    emDash: true,
+    stop: "Horizontal",
+    hanja: {
+      rendering: hanjaRendering,
+      reading: {
+        initialSoundLaw: true,
+        useDictionaries: ["kr-stdict"],
+      },
+    },
+  } as const;
+}
+
+function transformKoKore(markdown: string) {
+  return transform(createSeonbiConfiguration("HanjaInRuby"), markdown);
+}
+
+function transformKoHangulOnly(markdown: string) {
+  return transform(createSeonbiConfiguration("HangulOnly"), markdown);
+}
 
 // Takes CLI arguments & options:
 const args = parseArgs(Deno.args, {
@@ -125,6 +159,31 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
   .transform(sass(), { type: "text/x-scss" })
   .move(replaceBasename(/\.s[ac]ss/, ".css"))
   .transform(frontMatter, { type: "text/markdown" })
+  .diversify(
+    (xs) =>
+      xs.replace({
+        async body() {
+          const body = await xs.getBody();
+          const decoder = new TextDecoder();
+          const text = typeof body === "string" ? body : decoder.decode(body);
+          return transformKoHangulOnly(text);
+        },
+        language: "ko-Hang",
+      }),
+    { type: "text/markdown", language: "ko-Kore" },
+  )
+  .transform(
+    (xs) =>
+      xs.replace({
+        async body() {
+          const body = await xs.getBody();
+          const decoder = new TextDecoder();
+          const text = typeof body === "string" ? body : decoder.decode(body);
+          return transformKoKore(text);
+        },
+      }),
+    { type: "text/markdown", language: "ko-Kore" },
+  )
   .transform(markdown(getMarkdownIt()), { type: "text/markdown" })
   .divide(
     intoMultiView({
@@ -144,7 +203,7 @@ const pipeline = scanFiles(["2*/**/*", "static/**/*"], { root: srcDir })
     const posts = p.filter(
       anyRepresentations({
         type: ["text/html"],
-        language: LanguageTag.get("ko"),
+        language: LanguageTag.get("ko", "Hang"),
       }),
     );
     yield new Resource(baseUrl, [

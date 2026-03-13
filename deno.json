@@ -1,15 +1,23 @@
 {
   "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
+  "nodeModulesDir": "auto",
   "permissions": {
     "script": {
-      "read": ["site.yaml", "20*/**/*.md", "templates"],
+      "read": ["."],
+      "env": ["NAPI_RS_NATIVE_LIBRARY_PATH", "NAPI_RS_FORCE_WASI"],
       "net": {
         "allow": ["127.0.0.1:8080"]
       },
+      "ffi": [
+        "./node_modules/.deno/@seonbi+node@0.2.2/node_modules/@seonbi/node/seonbi.darwin-arm64.node"
+      ],
       "write": {
         "allow": ["public_html"]
       }
     }
+  },
+  "imports": {
+    "seonbi": "npm:@seonbi/node@^0.2.2"
   },
   "tasks": {
     "dev": "deno run -P=script main.ts --serve --watch"

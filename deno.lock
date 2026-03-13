@@ -33,6 +33,7 @@
     "jsr:@std/streams@^1.0.13": "1.0.13",
     "jsr:@std/yaml@*": "1.0.9",
     "jsr:@std/yaml@^1.0.5": "1.0.9",
+    "npm:@seonbi/node@~0.2.2": "0.2.2",
     "npm:markdown-it-abbr@2": "2.0.0",
     "npm:markdown-it-attrs@^4.3.0": "4.3.1_markdown-it@14.1.0",
     "npm:markdown-it-bracketed-spans@^1.0.1": "1.0.1",
@@ -255,6 +256,47 @@
       ],
       "scripts": true
     },
+    "@seonbi/node-darwin-arm64@0.2.2": {
+      "integrity": "sha512-seMwCWrP57tRU+K4q0UrpulUKW6Iydu6CZqOTqul+p/QhI9iQ3RR4yL374QXi3WI56KcwAFQ+gIfl1PWTVX4NA==",
+      "os": ["darwin"],
+      "cpu": ["arm64"]
+    },
+    "@seonbi/node-darwin-x64@0.2.2": {
+      "integrity": "sha512-ujSO6hJC8sJHQdUsn99sVFhlKhwnSr1QFOMWP+ZRy5knLvgX8vGMTTh3oTF8gajOD0BhhdMK5DEIQg31vSancA==",
+      "os": ["darwin"],
+      "cpu": ["x64"]
+    },
+    "@seonbi/node-linux-arm64-gnu@0.2.2": {
+      "integrity": "sha512-cPR+NPTXCr3nK/oOsm9vAA8cYZy7qwe/++qYgJ6L/5BvfyipOSesBaRIVhbBVuXFm6Y2IjRezhX+krIoMrwuxQ==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@seonbi/node-linux-x64-gnu@0.2.2": {
+      "integrity": "sha512-LyLe7Jy7ltr0D5C7CKkP7mpUeBsWD1ffAnQhgz1IfQXVTxYYEgYRjKOVaCVGCXVE1SKJCis1cG6mEYCehfYpQw==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@seonbi/node-linux-x64-musl@0.2.2": {
+      "integrity": "sha512-gBIYQAB9g0SHvVJ1y9YAvZPGRYKSM6Ll0JG0cYz9VYY4WjjxUpWuqJac/K0fcEvSP46VLXU/WjUjBX74bBLK3A==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@seonbi/node-win32-x64-msvc@0.2.2": {
+      "integrity": "sha512-SHxLaMj/FUAJMmBY4a2oPeCD4uKQ2vKNSNdCCwY+/Q8nRVcPPqtui7owf+7/mJhu6SxXVSBqujOxsrlWvfVgWw==",
+      "os": ["win32"],
+      "cpu": ["x64"]
+    },
+    "@seonbi/node@0.2.2": {
+      "integrity": "sha512-FpsjHw71LUGrss7DwJXcePQPdN8UU4qZi5On67K/LFNYn8tRbdjbh4tlK1rKdx3BwS1m0GGNUMxwpdZ5Dwsi/Q==",
+      "optionalDependencies": [
+        "@seonbi/node-darwin-arm64",
+        "@seonbi/node-darwin-x64",
+        "@seonbi/node-linux-arm64-gnu",
+        "@seonbi/node-linux-x64-gnu",
+        "@seonbi/node-linux-x64-musl",
+        "@seonbi/node-win32-x64-msvc"
+      ]
+    },
     "argparse@2.0.1": {
       "integrity": "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="
     },
@@ -387,5 +429,10 @@
     "uc.micro@2.1.0": {
       "integrity": "sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A=="
     }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@seonbi/node@~0.2.2"
+    ]
   }
 }
