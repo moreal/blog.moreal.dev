@@ -19,7 +19,13 @@
     }
   },
   "imports": {
-    "seonbi": "npm:@seonbi/node@^0.2.2"
+    "seonbi": "npm:@seonbi/node@^0.2.2",
+    "jikji": "jsr:@hongminhee/jikji@^0.4.0",
+    "@std/yaml": "jsr:@std/yaml",
+    "@std/cli": "jsr:@std/cli",
+    "@std/log": "jsr:@std/log",
+    "@std/http": "jsr:@std/http",
+    "@std/path": "jsr:@std/path"
   },
   "tasks": {
     "dev": "deno run -P=script main.ts --serve --watch"

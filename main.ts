@@ -1,20 +1,14 @@
-import {
-  htmlRedirector,
-  intoMultiView,
-} from "jsr:@hongminhee/jikji@^0.4.0/multiview";
+import { htmlRedirector, intoMultiView } from "jikji/multiview";
 import {
   footnote,
   frontMatter,
   markdown,
   MarkdownIt,
   title,
-} from "jsr:@hongminhee/jikji@^0.4.0/markdown";
-import {
-  renderListTemplate,
-  renderTemplate,
-} from "jsr:@hongminhee/jikji@^0.4.0/ejs";
-import { sass } from "jsr:@hongminhee/jikji@^0.4.0/sass";
-import { detectLanguage } from "jsr:@hongminhee/jikji@^0.4.0/path";
+} from "jikji/markdown";
+import { renderListTemplate, renderTemplate } from "jikji/ejs";
+import { sass } from "jikji/sass";
+import { detectLanguage } from "jikji/path";
 import {
   anyRepresentations,
   ContentKey,
@@ -28,16 +22,16 @@ import {
   scanFiles,
   setupConsoleLog,
   when,
-} from "jsr:@hongminhee/jikji@^0.4.0";
-import * as YAML from "jsr:@std/yaml";
-import { writeFiles } from "jsr:@hongminhee/jikji@^0.4.0/file";
+} from "jikji";
+import * as YAML from "@std/yaml";
+import { writeFiles } from "jikji/file";
 
-import { HanjaRenderingOption, transform, type Configuration } from "seonbi";
+import { type Configuration, HanjaRenderingOption, transform } from "seonbi";
 
-import { parseArgs } from "jsr:@std/cli/parse-args";
-import { serveDir } from "jsr:@std/http/file-server";
-import { info } from "jsr:@std/log";
-import { join } from "jsr:@std/path";
+import { parseArgs } from "@std/cli/parse-args";
+import { serveDir } from "@std/http/file-server";
+import { info } from "@std/log";
+import { join } from "@std/path";
 
 // Makes logs show up in the console:
 await setupConsoleLog();
