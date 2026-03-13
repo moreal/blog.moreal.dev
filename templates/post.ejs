@@ -20,6 +20,29 @@
 <body class="post">
   <header class="post-header">
     <a href="/" class="back-link">다른 글 보기</a>
+    <% if (typeof multiViews !== 'undefined' && multiViews) {
+        const langNames = {
+          'ko-Hang': '한국어',
+          'ko-Kore': '國漢文',
+          'en': 'English',
+        };
+        const views = [...multiViews].filter(([key]) => key != null);
+        if (views.length > 1) { %>
+        <nav class="lang-nav">
+        <% for (const [key, href] of views) {
+            const lang = key.language?.toString();
+            const label = langNames[lang] || lang;
+            const current = typeof viewKey !== 'undefined' && viewKey === key;
+        %>
+            <% if (current) { %>
+            <span class="lang-current"><%= label %></span>
+            <% } else { %>
+            <a href="<%= href %>"><%= label %></a>
+            <% } %>
+        <% } %>
+        </nav>
+    <% } } %>
+
   <% if (published) { %>
     <time datetime="<%= published.toISOString() %>" class="publish-date">
       <%= published.getFullYear() %>년 <%= published.getMonth() + 1 %>월 <%= published.getDate() %>일
