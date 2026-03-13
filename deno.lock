@@ -432,6 +432,12 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hongminhee/jikji@0.4",
+      "jsr:@std/cli@*",
+      "jsr:@std/http@*",
+      "jsr:@std/log@*",
+      "jsr:@std/path@*",
+      "jsr:@std/yaml@*",
       "npm:@seonbi/node@~0.2.2"
     ]
   }
