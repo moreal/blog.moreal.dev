@@ -261,7 +261,17 @@ function loadCached(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
 }
 
 export async function getPosts(): Promise<Post[]> {
-  return (await loadCached()).posts;
+  const { posts } = await loadCached();
+  // Draft views are built in dev so they can be previewed at their URL, but
+  // are excluded from the production build entirely (jikji only hid them
+  // from the list page; its list.ejs carried a FIXME to exclude them fully).
+  if (import.meta.env.DEV) return posts;
+  return posts
+    .map((post) => {
+      const views = post.views.filter((view) => !view.draft);
+      return { ...post, views, multiview: views.length > 1 };
+    })
+    .filter((post) => post.views.length > 0);
 }
 
 export async function getPost(postPath: string): Promise<Post> {
