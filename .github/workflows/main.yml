@@ -1,4 +1,4 @@
-name: Build and Deploy Zola
+name: Build and Deploy
 
 on:
   push:
@@ -16,13 +16,13 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+      - run: corepack enable
+      - uses: actions/setup-node@v4
         with:
-          submodules: recursive
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - run: deno run -P=script --allow-net --allow-sys="cpus,networkInterfaces,hostname" main.ts --base-url https://blog.moreal.dev/
-      - run: cp CNAME public_html/CNAME
+          node-version: 24
+          cache: yarn
+      - run: yarn install --immutable
+      - run: yarn build
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

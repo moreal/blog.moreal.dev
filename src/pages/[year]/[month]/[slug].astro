@@ -1,0 +1,18 @@
+---
+import PostView from "../../../components/PostView.astro";
+import Redirector from "../../../components/Redirector.astro";
+import { getPost, getPosts } from "../../../lib/posts";
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({
+    params: { year: post.year, month: post.month, slug: post.slug },
+    props: { path: post.path },
+  }));
+}
+
+const post = await getPost(Astro.props.path);
+---
+{post.multiview
+  ? <Redirector post={post} />
+  : <PostView post={post} view={post.views[0]!} />}

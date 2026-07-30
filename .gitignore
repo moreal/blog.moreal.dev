@@ -1,3 +1,12 @@
-public
 public_html
 node_modules
+.astro
+
+# yarn berry
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

@@ -13,11 +13,5 @@
         },
       },
     },
-    "TypeScript": {
-      "language_servers": ["deno", "!typescript-language-server"],
-    },
-    "JavaScript": {
-      "language_servers": ["deno", "!typescript-language-server"],
-    },
   },
 }
