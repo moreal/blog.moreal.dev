@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@seonbi/node": "^0.2.2",
-    "astro": "^5.0.0",
+    "astro": "^7.1.6",
     "js-yaml": "^5.2.2",
     "markdown-it": "^14.1.0",
     "markdown-it-footnote": "^4.0.0",
