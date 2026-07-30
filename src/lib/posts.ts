@@ -171,6 +171,42 @@ async function walkContent(): Promise<{
   return { files, assets };
 }
 
+// Rendering a ko-Kore file runs seonbi twice, and each seonbi call loads the
+// kr-stdict dictionary (~130ms).  Cache rendered views per source file, keyed
+// by mtime, so a request only re-renders the files that actually changed.
+const viewCache = new Map<string, { mtimeMs: number; views: PostView[] }>();
+
+async function renderFile(
+  sourcePath: string,
+  lang: string,
+): Promise<PostView[]> {
+  const { mtimeMs } = await fs.stat(sourcePath);
+  const cached = viewCache.get(sourcePath);
+  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached.views;
+
+  const source = await fs.readFile(sourcePath, "utf-8");
+  const { meta, body } = parseFrontMatter(source, sourcePath);
+  const views: PostView[] = [];
+  if (lang === "ko-Kore") {
+    // A ko-Kore source yields two views: the original text with Hanja
+    // rendered in ruby, and a derived Hangul-only ko-Hang view.
+    views.push({
+      lang: "ko-Kore",
+      ...renderMarkdown(transform(seonbiConfiguration("HanjaInRuby"), body)),
+      ...meta,
+    });
+    views.push({
+      lang: "ko-Hang",
+      ...renderMarkdown(transform(seonbiConfiguration("HangulOnly"), body)),
+      ...meta,
+    });
+  } else {
+    views.push({ lang, ...renderMarkdown(body), ...meta });
+  }
+  viewCache.set(sourcePath, { mtimeMs, views });
+  return views;
+}
+
 async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
   const { files, assets } = await walkContent();
   const byPath = new Map<string, Post>();
@@ -183,8 +219,6 @@ async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
       continue;
     }
     const [, slug, lang] = match as unknown as [string, string, string];
-    const source = await fs.readFile(file.sourcePath, "utf-8");
-    const { meta, body } = parseFrontMatter(source, file.sourcePath);
 
     const postPath = `${file.year}/${file.month}/${slug}`;
     let post = byPath.get(postPath);
@@ -199,23 +233,7 @@ async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
       };
       byPath.set(postPath, post);
     }
-
-    if (lang === "ko-Kore") {
-      // A ko-Kore source yields two views: the original text with Hanja
-      // rendered in ruby, and a derived Hangul-only ko-Hang view.
-      post.views.push({
-        lang: "ko-Kore",
-        ...renderMarkdown(transform(seonbiConfiguration("HanjaInRuby"), body)),
-        ...meta,
-      });
-      post.views.push({
-        lang: "ko-Hang",
-        ...renderMarkdown(transform(seonbiConfiguration("HangulOnly"), body)),
-        ...meta,
-      });
-    } else {
-      post.views.push({ lang, ...renderMarkdown(body), ...meta });
-    }
+    post.views.push(...(await renderFile(file.sourcePath, lang)));
   }
 
   const posts = [...byPath.values()];
