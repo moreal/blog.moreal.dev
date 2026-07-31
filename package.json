@@ -9,13 +9,15 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/solid-js": "^7.0.1",
     "@seonbi/node": "^0.2.2",
     "astro": "^7.1.6",
     "js-yaml": "^5.2.2",
     "markdown-it": "^14.1.0",
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-title": "^4.0.0",
-    "sass": "^1.80.0"
+    "sass": "^1.80.0",
+    "solid-js": "^1.9.14"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

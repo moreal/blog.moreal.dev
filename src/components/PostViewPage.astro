@@ -1,0 +1,14 @@
+---
+// Thin wrapper so the Container API in [file].ts can render the Solid
+// PostView component (the container renders .astro components).
+import type { Post, PostView as PostViewData } from "../lib/posts";
+import PostView from "./PostView";
+
+interface Props {
+  post: Post;
+  view: PostViewData;
+}
+
+const { post, view } = Astro.props;
+---
+<PostView post={post} view={view} />

@@ -1,7 +1,8 @@
+import solidRenderer from "@astrojs/solid-js/server.js";
 import type { APIContext } from "astro";
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { promises as fs } from "node:fs";
-import PostView from "../../../../components/PostView.astro";
+import PostViewPage from "../../../../components/PostViewPage.astro";
 import { getAssets, getPost, getPosts, viewFilename } from "../../../../lib/posts";
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -68,7 +69,11 @@ export async function GET({ props }: APIContext<Props>) {
     throw new Error(`No ${props.lang} view for ${props.path}`);
   }
   const container = await AstroContainer.create();
-  const html = await container.renderToString(PostView, {
+  container.addServerRenderer({
+    name: "@astrojs/solid-js",
+    renderer: solidRenderer,
+  });
+  const html = await container.renderToString(PostViewPage, {
     props: { post, view },
     partial: false,
   });

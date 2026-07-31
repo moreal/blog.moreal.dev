@@ -1,4 +1,3 @@
----
 import type { Post } from "../lib/posts";
 import { viewFilename } from "../lib/posts";
 import { LANG_LABELS } from "../lib/site";
@@ -7,20 +6,9 @@ interface Props {
   post: Post;
 }
 
-const { post } = Astro.props;
-const multiViews = Object.fromEntries(
-  post.views.map((v) => [v.lang, `/${post.path}/${viewFilename(v.lang)}`]),
-);
----
-<html>
-
-<head>
-  <meta charset="utf-8">
-  <title>Redirecting...</title>
-  {post.views.map((v) => (
-    <link rel="alternate" href={multiViews[v.lang]} hreflang={v.lang} />
-  ))}
-  <script is:inline define:vars={{ multiViews }}>
+function negotiationScript(multiViews: Record<string, string>): string {
+  return `
+    const multiViews = ${JSON.stringify(multiViews)};
     (function () {
       function parseTag(tag) {
         const [language, ...rest] = tag.toLowerCase().split(/[-_]/);
@@ -42,7 +30,7 @@ const multiViews = Object.fromEntries(
           (accept.region == null ? 1 : 0);
       }
       const cookie = document.cookie
-        .match(/(?:^|;)\s*accept-language=([A-Za-z0-9_-]+)\s*(?:;|$)/)?.[1];
+        .match(/(?:^|;)\\s*accept-language=([A-Za-z0-9_-]+)\\s*(?:;|$)/)?.[1];
       if (cookie != null) {
         for (const lang in multiViews) {
           if (lang.toLowerCase() === cookie.toLowerCase()) {
@@ -72,20 +60,36 @@ const multiViews = Object.fromEntries(
         }
       }
     })();
-  </script>
-</head>
+  `;
+}
 
-<body>
-  <p>There are the following languages available:</p>
-  <ul>
-    {post.views.map((v) => (
-      <li>
-        <a rel="alternate" href={multiViews[v.lang]} hreflang={v.lang}>
-          {LANG_LABELS[v.lang] ?? v.lang}
-        </a>
-      </li>
-    ))}
-  </ul>
-</body>
-
-</html>
+export default function Redirector(props: Props) {
+  const { post } = props;
+  const multiViews = Object.fromEntries(
+    post.views.map((v) => [v.lang, `/${post.path}/${viewFilename(v.lang)}`]),
+  );
+  return (
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Redirecting...</title>
+        {post.views.map((v) => (
+          <link rel="alternate" href={multiViews[v.lang]} hreflang={v.lang} />
+        ))}
+        <script innerHTML={negotiationScript(multiViews)} />
+      </head>
+      <body>
+        <p>There are the following languages available:</p>
+        <ul>
+          {post.views.map((v) => (
+            <li>
+              <a rel="alternate" href={multiViews[v.lang]} hreflang={v.lang}>
+                {LANG_LABELS[v.lang] ?? v.lang}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </body>
+    </html>
+  );
+}
