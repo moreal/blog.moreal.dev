@@ -58,6 +58,50 @@ body.list {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
+body.list .tab-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.9rem;
+  font-weight: 300;
+}
+body.list .tab-nav a {
+  color: #666;
+}
+@media (prefers-color-scheme: dark) {
+  body.list .tab-nav a {
+    color: #999;
+  }
+}
+body.list .tab-nav a:hover {
+  color: #0066cc;
+  text-decoration: none;
+}
+@media (prefers-color-scheme: dark) {
+  body.list .tab-nav a:hover {
+    color: #7da3db;
+  }
+}
+body.list .tab-nav .tab-current {
+  font-weight: 500;
+  color: #333;
+  border-bottom: 1px solid #333;
+}
+@media (prefers-color-scheme: dark) {
+  body.list .tab-nav .tab-current {
+    color: #e4e4e4;
+    border-bottom-color: #e4e4e4;
+  }
+}
+body.list .empty {
+  color: #666;
+  font-size: 0.9rem;
+}
+@media (prefers-color-scheme: dark) {
+  body.list .empty {
+    color: #999;
+  }
+}
 body.list .year-section {
   margin-bottom: 3rem;
 }
@@ -183,6 +227,27 @@ body.post .post-header .publish-date {
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+body.post .book-info {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 300;
+  margin: 0 0 1.5rem;
+}
+@media (prefers-color-scheme: dark) {
+  body.post .book-info {
+    color: #999;
+  }
+}
+body.post .book-info cite {
+  font-style: normal;
+  margin-right: 0.5rem;
+}
+body.post .book-info cite::before {
+  content: "『";
+}
+body.post .book-info cite::after {
+  content: "』";
 }
 body.post .post-meta {
   margin-top: 2rem;
