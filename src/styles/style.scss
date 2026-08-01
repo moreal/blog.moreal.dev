@@ -65,6 +65,51 @@ body {
     margin: 0 auto;
     padding: 2rem 1rem;
 
+    .tab-nav {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      font-size: 0.9rem;
+      font-weight: 300;
+
+      a {
+        color: #666;
+
+        @media (prefers-color-scheme: dark) {
+          color: #999;
+        }
+
+        &:hover {
+          color: #0066cc;
+          text-decoration: none;
+
+          @media (prefers-color-scheme: dark) {
+            color: #7da3db;
+          }
+        }
+      }
+
+      .tab-current {
+        font-weight: 500;
+        color: #333;
+        border-bottom: 1px solid #333;
+
+        @media (prefers-color-scheme: dark) {
+          color: #e4e4e4;
+          border-bottom-color: #e4e4e4;
+        }
+      }
+    }
+
+    .empty {
+      color: #666;
+      font-size: 0.9rem;
+
+      @media (prefers-color-scheme: dark) {
+        color: #999;
+      }
+    }
+
     .year-section {
       margin-bottom: 3rem;
 
@@ -199,6 +244,30 @@ body {
         flex-direction: column-reverse;
         align-items: flex-start;
         gap: 0.5rem;
+      }
+    }
+
+    .book-info {
+      font-size: 0.85rem;
+      color: #666;
+      font-weight: 300;
+      margin: 0 0 1.5rem;
+
+      @media (prefers-color-scheme: dark) {
+        color: #999;
+      }
+
+      cite {
+        font-style: normal;
+        margin-right: 0.5rem;
+
+        &::before {
+          content: "\300E"; // 『
+        }
+
+        &::after {
+          content: "\300F"; // 』
+        }
       }
     }
 

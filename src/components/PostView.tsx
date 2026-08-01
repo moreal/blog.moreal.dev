@@ -1,10 +1,19 @@
-import type { Post, PostView as PostViewData } from "../lib/posts";
+import type { BookInfo, Post, PostView as PostViewData } from "../lib/posts";
 import { kstDate, viewFilename } from "../lib/posts";
 import { LANG_LABELS, SITE } from "../lib/site";
 
 interface Props {
   post: Post;
   view: PostViewData;
+}
+
+function bookLine(book: BookInfo): string {
+  return [
+    book.author,
+    book.translator && `${book.translator} 옮김`,
+    book.publisher,
+    book.year !== undefined ? String(book.year) : undefined,
+  ].filter((part): part is string => typeof part === "string").join(" · ");
 }
 
 export default function PostView(props: Props) {
@@ -27,7 +36,14 @@ export default function PostView(props: Props) {
       </head>
       <body class="post">
         <header class="post-header">
-          <a href="/" class="back-link">다른 글 보기</a>
+          {/* Daily notes are absent from the main list, so send readers
+              back to their own tab instead. */}
+          <a
+            href={view.type === "daily" ? "/daily/" : "/"}
+            class="back-link"
+          >
+            다른 글 보기
+          </a>
           {post.multiview && (
             <nav class="lang-nav">
               {post.views.map((v) =>
@@ -50,6 +66,12 @@ export default function PostView(props: Props) {
           </time>
         </header>
         <main>
+          {view.type === "review" && view.book && (
+            <p class="book-info">
+              {view.book.title && <cite>{view.book.title}</cite>}
+              {bookLine(view.book)}
+            </p>
+          )}
           <article innerHTML={view.html} />
         </main>
       </body>

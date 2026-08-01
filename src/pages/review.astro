@@ -1,0 +1,7 @@
+---
+import ListPage from "../components/ListPage";
+import { getPosts } from "../lib/posts";
+
+const posts = await getPosts();
+---
+<ListPage posts={posts} tab="review" />

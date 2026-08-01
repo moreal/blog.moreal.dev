@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "new:daily": "scripts/new-daily.sh",
+    "new:review": "scripts/new-review.sh"
   },
   "dependencies": {
     "@astrojs/solid-js": "^7.0.1",

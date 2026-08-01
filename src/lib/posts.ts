@@ -14,6 +14,18 @@ import path from "node:path";
 // year directories (2020/, 2023/, ...) live.
 const CONTENT_ROOT = process.cwd();
 
+export type PostType = "daily" | "review";
+
+export interface BookInfo {
+  /** Title of the book, not of the post. */
+  title?: string;
+  author?: string;
+  translator?: string;
+  publisher?: string;
+  /** Publication year. */
+  year?: number;
+}
+
 export interface PostView {
   /** Language tag, e.g. "ko-Hang", "ko-Kore", "en". */
   lang: string;
@@ -24,6 +36,10 @@ export interface PostView {
   published: Date;
   description?: string;
   draft: boolean;
+  /** Kind of post; absent for regular articles. */
+  type?: PostType;
+  /** Book metadata; only meaningful for "review" posts. */
+  book?: BookInfo;
 }
 
 export interface Post {
@@ -87,6 +103,25 @@ interface FrontMatter {
   published: Date;
   description?: string;
   draft: boolean;
+  type?: PostType;
+  book?: BookInfo;
+}
+
+function parseBook(data: unknown): BookInfo | undefined {
+  if (typeof data !== "object" || data === null) return undefined;
+  const record = data as Record<string, unknown>;
+  const str = (key: string): string | undefined =>
+    typeof record[key] === "string" ? (record[key] as string) : undefined;
+  const book: BookInfo = {
+    title: str("title"),
+    author: str("author"),
+    translator: str("translator"),
+    publisher: str("publisher"),
+    year: typeof record["year"] === "number" ? record["year"] : undefined,
+  };
+  // A scaffolded "book:" block whose values are still blank parses to all
+  // nulls; treat it as absent so no empty metadata line gets rendered.
+  return Object.values(book).some((v) => v !== undefined) ? book : undefined;
 }
 
 function parseFrontMatter(
@@ -105,6 +140,19 @@ function parseFrontMatter(
   if (published === undefined || Number.isNaN(published.getTime())) {
     throw new Error(`${file}: front matter lacks a "published" timestamp.`);
   }
+  const rawType = data["type"];
+  let type: PostType | undefined;
+  if (rawType !== undefined && rawType !== null) {
+    if (rawType === "daily" || rawType === "review") type = rawType;
+    else {
+      // A typo like "dialy" would otherwise silently demote the post to a
+      // regular article and surface it on the main list; fail fast instead.
+      throw new Error(
+        `${file}: unknown post type ${JSON.stringify(rawType)}; ` +
+          `expected "daily" or "review".`,
+      );
+    }
+  }
   return {
     meta: {
       published,
@@ -112,6 +160,8 @@ function parseFrontMatter(
         typeof data["description"] === "string" ? data["description"] : undefined,
       // jikji treated any non-empty "draft" string as a draft; keep that.
       draft: Boolean(data["draft"]),
+      type,
+      book: parseBook(data["book"]),
     },
     body: source.slice(match[0].length),
   };
