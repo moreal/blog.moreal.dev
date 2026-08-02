@@ -350,3 +350,309 @@ body footer p {
     padding: 1rem;
   }
 }
+
+html.night {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+  html.night body {
+    transition-duration: 480ms;
+  }
+}
+html.night body {
+  background-color: #0f1219;
+  color: #c9cfdb;
+}
+html.night body a:link {
+  color: #8ab0e0;
+}
+html.night body a:visited {
+  color: #8891a3;
+}
+html.night body hr {
+  background-color: #262c3a;
+}
+html.night body.list .tab-nav a {
+  color: #7e8698;
+}
+html.night body.list .tab-nav a:hover {
+  color: #8ab0e0;
+}
+html.night body.list .tab-nav .tab-current {
+  color: #c9cfdb;
+  border-bottom-color: #c9cfdb;
+}
+html.night body.list .empty {
+  color: #7e8698;
+}
+html.night body.list ul .languages,
+html.night body.list ul time {
+  color: #7e8698;
+}
+html.night body.post .post-header .back-link,
+html.night body.post .post-header .publish-date,
+html.night body.post .post-header .lang-nav {
+  color: #7e8698;
+}
+html.night body.post .post-header .back-link:hover {
+  color: #8ab0e0;
+}
+html.night body.post .post-header .lang-nav .lang-current {
+  color: #c9cfdb;
+}
+html.night body.post .book-info,
+html.night body.post .post-meta {
+  color: #7e8698;
+}
+html.night body.post .post-meta {
+  border-top-color: #262c3a;
+}
+html.night body.post pre,
+html.night body.post code {
+  background: #1a2029;
+}
+html.night body.post blockquote {
+  border-left-color: #262c3a;
+  color: #7e8698;
+}
+html.night body footer p {
+  color: #7e8698;
+}
+
+.night-toggle {
+  display: none;
+}
+
+html.js .night-toggle {
+  display: inline-block;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+}
+@media (prefers-color-scheme: dark) {
+  html.js .night-toggle {
+    color: #999;
+  }
+}
+html.js .night-toggle::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+@media (hover: hover) and (pointer: fine) {
+  html.js .night-toggle:hover {
+    color: #0066cc;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  html.js .night-toggle:hover {
+    color: #7da3db;
+  }
+}
+html.js .night-toggle:active {
+  transform: scale(0.97);
+}
+html.js .night-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+html.js .night-toggle .night-label {
+  display: none;
+}
+
+html.js.night .night-toggle {
+  color: #7e8698;
+}
+@media (hover: hover) and (pointer: fine) {
+  html.js.night .night-toggle:hover {
+    color: #8ab0e0;
+  }
+}
+html.js.night .night-toggle .day-label {
+  display: none;
+}
+html.js.night .night-toggle .night-label {
+  display: inline;
+}
+
+.night-note,
+.dark-post,
+.night-only {
+  display: none;
+  opacity: 0;
+  transform: translateY(7px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .night-note,
+  .dark-post,
+  .night-only {
+    transition-property: opacity, transform, display;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition-behavior: allow-discrete;
+  }
+}
+.dark-post > a::before {
+  content: "✦";
+  margin-right: 0.45em;
+  font-size: 0.8em;
+  color: #c9b978;
+}
+.dark-post a:link {
+  color: #a9c4e8;
+  text-shadow: 0 0 16px rgba(170, 197, 255, 0.28);
+}
+
+.night-note {
+  margin: -1.5rem 0 2.25rem;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: #7e8698;
+}
+
+html.night .night-note,
+html.night .night-only {
+  display: block;
+  opacity: 1;
+  transform: none;
+}
+html.night .dark-post {
+  display: list-item;
+  opacity: 1;
+  transform: none;
+}
+html.night body.dark-story .publish-date::after {
+  content: " ✦";
+  color: #c9b978;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.night .dark-post {
+    animation: night-bloom 420ms cubic-bezier(0.215, 0.61, 0.355, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 70ms + 180ms);
+  }
+  html.night .night-only {
+    animation: night-bloom 420ms cubic-bezier(0.215, 0.61, 0.355, 1) backwards;
+    animation-delay: 140ms;
+  }
+  html.night .night-note {
+    animation: night-bloom 480ms cubic-bezier(0.215, 0.61, 0.355, 1) backwards;
+    animation-delay: 90ms;
+  }
+}
+@keyframes night-bloom {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.night-veil {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  .night-veil {
+    background: rgba(26, 26, 26, 0.92);
+  }
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .night-veil {
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .night-veil {
+      background: rgba(26, 26, 26, 0.6);
+    }
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .night-veil {
+    transition: opacity 500ms cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+}
+
+html.js:not(.night) .night-veil,
+html.js.veil-lifting .night-veil {
+  display: grid;
+}
+
+html.veil-lifting .night-veil {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.veil-card {
+  max-width: 24rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .veil-card {
+    transition: transform 500ms cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+}
+.veil-card p {
+  font-weight: 300;
+  margin-bottom: 1.5rem;
+}
+.veil-card button {
+  font: inherit;
+  font-size: 0.95rem;
+  min-height: 44px;
+  padding: 0.5em 1.4em;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: none;
+  color: #333;
+  cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  .veil-card button {
+    border-color: #555;
+    color: #e4e4e4;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .veil-card button:hover {
+    border-color: #333;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  .veil-card button:hover {
+    border-color: #999;
+  }
+}
+.veil-card button:active {
+  transform: scale(0.97);
+}
+.veil-card button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+html.veil-lifting .veil-card {
+  transform: translateY(-14px);
+}
