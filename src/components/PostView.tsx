@@ -66,7 +66,7 @@ export default function PostView(props: Props) {
           </time>
         </header>
         <main>
-          {view.type === "review" && view.book && (
+          {view.type === "reading" && view.book && (
             <p class="book-info">
               {view.book.title && <cite>{view.book.title}</cite>}
               {bookLine(view.book)}

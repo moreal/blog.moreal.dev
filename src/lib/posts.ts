@@ -14,7 +14,7 @@ import path from "node:path";
 // year directories (2020/, 2023/, ...) live.
 const CONTENT_ROOT = process.cwd();
 
-export type PostType = "daily" | "review";
+export type PostType = "daily" | "reading";
 
 export interface BookInfo {
   /** Title of the book, not of the post. */
@@ -38,7 +38,7 @@ export interface PostView {
   draft: boolean;
   /** Kind of post; absent for regular articles. */
   type?: PostType;
-  /** Book metadata; only meaningful for "review" posts. */
+  /** Book metadata; only meaningful for "reading" posts. */
   book?: BookInfo;
 }
 
@@ -143,13 +143,13 @@ function parseFrontMatter(
   const rawType = data["type"];
   let type: PostType | undefined;
   if (rawType !== undefined && rawType !== null) {
-    if (rawType === "daily" || rawType === "review") type = rawType;
+    if (rawType === "daily" || rawType === "reading") type = rawType;
     else {
       // A typo like "dialy" would otherwise silently demote the post to a
       // regular article and surface it on the main list; fail fast instead.
       throw new Error(
         `${file}: unknown post type ${JSON.stringify(rawType)}; ` +
-          `expected "daily" or "review".`,
+          `expected "daily" or "reading".`,
       );
     }
   }

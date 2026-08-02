@@ -2,7 +2,7 @@ import type { Post, PostView } from "../lib/posts";
 import { kstDate, viewFilename } from "../lib/posts";
 import { SITE } from "../lib/site";
 
-export type ListTab = "all" | "daily" | "review";
+export type ListTab = "all" | "daily" | "reading";
 
 interface Props {
   posts: Post[];
@@ -12,7 +12,7 @@ interface Props {
 const TABS: { tab: ListTab; href: string; label: string }[] = [
   { tab: "all", href: "/", label: "전체" },
   { tab: "daily", href: "/daily/", label: "일상" },
-  { tab: "review", href: "/review/", label: "독후감" },
+  { tab: "reading", href: "/reading/", label: "독후감" },
 ];
 
 interface ListItem {
@@ -28,7 +28,7 @@ function collectItems(posts: Post[], tab: ListTab): ListItem[] {
   for (const post of posts) {
     const view = post.views.find((v) => v.lang === "ko-Hang");
     if (view === undefined || view.draft) continue;
-    // The main list carries regular posts and reviews; daily notes appear
+    // The main list carries regular posts and reading notes; daily notes appear
     // only under their own tab so they don't crowd it out.
     const matches = tab === "all" ? view.type !== "daily" : view.type === tab;
     if (!matches) continue;

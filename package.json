@@ -8,7 +8,7 @@
     "check": "astro check",
     "preview": "astro preview",
     "new:daily": "scripts/new-daily.sh",
-    "new:review": "scripts/new-review.sh"
+    "new:reading": "scripts/new-reading.sh"
   },
   "dependencies": {
     "@astrojs/solid-js": "^7.0.1",

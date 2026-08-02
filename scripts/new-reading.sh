@@ -31,7 +31,7 @@ mkdir -p "$year/$month"
 cat > "$path" << EOF
 ---
 published: $now
-type: review
+type: reading
 book:
   title:
   author:
