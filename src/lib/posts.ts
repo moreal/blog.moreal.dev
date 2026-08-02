@@ -36,6 +36,9 @@ export interface PostView {
   published: Date;
   description?: string;
   draft: boolean;
+  /** Tells a dark story; hidden from lists until the reader turns the lights
+   * off. */
+  dark: boolean;
   /** Kind of post; absent for regular articles. */
   type?: PostType;
   /** Book metadata; only meaningful for "reading" posts. */
@@ -103,6 +106,7 @@ interface FrontMatter {
   published: Date;
   description?: string;
   draft: boolean;
+  dark: boolean;
   type?: PostType;
   book?: BookInfo;
 }
@@ -160,6 +164,7 @@ function parseFrontMatter(
         typeof data["description"] === "string" ? data["description"] : undefined,
       // jikji treated any non-empty "draft" string as a draft; keep that.
       draft: Boolean(data["draft"]),
+      dark: Boolean(data["dark"]),
       type,
       book: parseBook(data["book"]),
     },

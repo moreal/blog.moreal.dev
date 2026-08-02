@@ -381,3 +381,400 @@ body {
     padding: 1rem;
   }
 }
+
+// ---------------------------------------------------------------------------
+// 밤: 불을 꺼야 보이는 글.
+//
+// `dark: true`인 글은 평소 목록에 나타나지 않는다.  탭 옆의 "불 끄기"를
+// 누르면 페이지에 어스름이 내려앉고(끌 때는 천천히, 켤 때는 전등답게
+// 즉시), 숨어 있던 글이 ✦ 표시와 함께 하나씩 떠오른다.  글로 직접
+// 들어온 독자에게는 뿌연 장막이 먼저 인사한다.
+// ---------------------------------------------------------------------------
+
+$night-bg: #0f1219;
+$night-ink: #c9cfdb;
+$night-faint: #7e8698;
+$night-link: #8ab0e0;
+$night-visited: #8891a3;
+$night-line: #262c3a;
+$night-star: #c9b978;
+$night-ease: cubic-bezier(0.215, 0.61, 0.355, 1); // ease-out-cubic
+
+html.night {
+  color-scheme: dark;
+}
+
+// Dusk falls slowly; a light switch snaps back on.
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  html.night body {
+    transition-duration: 480ms;
+  }
+}
+
+html.night body {
+  background-color: $night-bg;
+  color: $night-ink;
+
+  a:link {
+    color: $night-link;
+  }
+
+  a:visited {
+    color: $night-visited;
+  }
+
+  hr {
+    background-color: $night-line;
+  }
+
+  &.list {
+    .tab-nav {
+      a {
+        color: $night-faint;
+
+        &:hover {
+          color: $night-link;
+        }
+      }
+
+      .tab-current {
+        color: $night-ink;
+        border-bottom-color: $night-ink;
+      }
+    }
+
+    .empty {
+      color: $night-faint;
+    }
+
+    ul {
+      .languages,
+      time {
+        color: $night-faint;
+      }
+    }
+  }
+
+  &.post {
+    .post-header {
+      .back-link,
+      .publish-date,
+      .lang-nav {
+        color: $night-faint;
+      }
+
+      .back-link:hover {
+        color: $night-link;
+      }
+
+      .lang-nav .lang-current {
+        color: $night-ink;
+      }
+    }
+
+    .book-info,
+    .post-meta {
+      color: $night-faint;
+    }
+
+    .post-meta {
+      border-top-color: $night-line;
+    }
+
+    pre,
+    code {
+      background: #1a2029;
+    }
+
+    blockquote {
+      border-left-color: $night-line;
+      color: $night-faint;
+    }
+  }
+
+  footer p {
+    color: $night-faint;
+  }
+}
+
+// --- 전등 스위치 -----------------------------------------------------------
+
+// Without a script the switch would be a dead knob, so it only appears once
+// NIGHT_INIT has tagged <html> with "js".
+.night-toggle {
+  display: none;
+}
+
+html.js .night-toggle {
+  display: inline-block;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+
+  @media (prefers-color-scheme: dark) {
+    color: #999;
+  }
+
+  // The label is small; give fingers the full 44px they deserve.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -14px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #0066cc;
+
+      @media (prefers-color-scheme: dark) {
+        color: #7da3db;
+      }
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  .night-label {
+    display: none;
+  }
+}
+
+html.js.night .night-toggle {
+  color: $night-faint;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: $night-link;
+    }
+  }
+
+  .day-label {
+    display: none;
+  }
+
+  .night-label {
+    display: inline;
+  }
+}
+
+// --- 밤에만 보이는 것들 ----------------------------------------------------
+
+// The day state doubles as the fade-out target when the lights come back
+// on: opacity/transform sink the posts into the daylight, and
+// transition-behavior: allow-discrete holds off the display flip until the
+// fade completes.  Browsers without allow-discrete snap instantly instead.
+.night-note,
+.dark-post,
+.night-only {
+  display: none;
+  opacity: 0;
+  transform: translateY(7px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .night-note,
+  .dark-post,
+  .night-only {
+    transition-property: opacity, transform, display;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); // ease-out-quad
+    transition-behavior: allow-discrete;
+  }
+}
+
+// The night looks live outside html.night so the posts keep their star and
+// moonlit glow while they dissolve into the morning.
+.dark-post {
+  > a::before {
+    content: "\2726"; // ✦
+    margin-right: 0.45em;
+    font-size: 0.8em;
+    color: $night-star;
+  }
+
+  a:link {
+    color: #a9c4e8;
+    text-shadow: 0 0 16px rgba(170, 197, 255, 0.28);
+  }
+}
+
+.night-note {
+  margin: -1.5rem 0 2.25rem;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: $night-faint;
+}
+
+html.night {
+  .night-note,
+  .night-only {
+    display: block;
+    opacity: 1;
+    transform: none;
+  }
+
+  .dark-post {
+    display: list-item;
+    opacity: 1;
+    transform: none;
+  }
+
+  // A quiet star next to the date marks a dark story being read at night.
+  body.dark-story .publish-date::after {
+    content: " \2726";
+    color: $night-star;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.night {
+    // backwards fill, not both: it must only cover the stagger delay.  A
+    // forwards fill would keep the final keyframe applied at night, and the
+    // spec computes transition targets with the old animation still in
+    // place — the lights-on fade-out would never see opacity change.
+    .dark-post {
+      animation: night-bloom 420ms $night-ease backwards;
+      // --i is the render-order index of the dark post (capped in JSX), so
+      // the hidden posts surface one after another once dusk has settled.
+      animation-delay: calc(var(--i, 0) * 70ms + 180ms);
+    }
+
+    .night-only {
+      animation: night-bloom 420ms $night-ease backwards;
+      animation-delay: 140ms;
+    }
+
+    .night-note {
+      animation: night-bloom 480ms $night-ease backwards;
+      animation-delay: 90ms;
+    }
+  }
+}
+
+@keyframes night-bloom {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// --- 장막: 불 켠 채로 어두운 글에 들어왔을 때 ------------------------------
+
+.night-veil {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(26, 26, 26, 0.92);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or
+    (-webkit-backdrop-filter: blur(1px)) {
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+
+    @media (prefers-color-scheme: dark) {
+      background: rgba(26, 26, 26, 0.6);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: opacity 500ms $night-ease;
+  }
+}
+
+// Readers who arrive with the lights already off walk straight in; the
+// veil-lifting exception keeps the fade-out visible while night falls.
+html.js:not(.night) .night-veil,
+html.js.veil-lifting .night-veil {
+  display: grid;
+}
+
+html.veil-lifting .night-veil {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.veil-card {
+  max-width: 24rem;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: transform 500ms $night-ease;
+  }
+
+  p {
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+  }
+
+  button {
+    font: inherit;
+    font-size: 0.95rem;
+    min-height: 44px;
+    padding: 0.5em 1.4em;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: none;
+    color: #333;
+    cursor: pointer;
+
+    @media (prefers-color-scheme: dark) {
+      border-color: #555;
+      color: #e4e4e4;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        border-color: #333;
+
+        @media (prefers-color-scheme: dark) {
+          border-color: #999;
+        }
+      }
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+  }
+}
+
+html.veil-lifting .veil-card {
+  transform: translateY(-14px);
+}

@@ -1,3 +1,4 @@
+import { NIGHT_INIT, NIGHT_VEIL } from "../lib/night";
 import type { BookInfo, Post, PostView as PostViewData } from "../lib/posts";
 import { kstDate, viewFilename } from "../lib/posts";
 import { LANG_LABELS, SITE } from "../lib/site";
@@ -25,6 +26,7 @@ export default function PostView(props: Props) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script innerHTML={NIGHT_INIT} />
         <title>{fullTitle}</title>
         <link rel="stylesheet" href="/static/style.css" />
         <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml" />
@@ -34,7 +36,7 @@ export default function PostView(props: Props) {
         <meta name="fediverse:creator" content={SITE.fediverseCreator} />
         {SITE.relMe.map((url) => <link rel="me" href={url} />)}
       </head>
-      <body class="post">
+      <body class={view.dark ? "post dark-story" : "post"}>
         <header class="post-header">
           {/* Daily notes are absent from the main list, so send readers
               back to their own tab instead. */}
@@ -74,6 +76,15 @@ export default function PostView(props: Props) {
           )}
           <article innerHTML={view.html} />
         </main>
+        {view.dark && (
+          <div class="night-veil">
+            <div class="veil-card">
+              <p>이 글에는 조금 어두운 이야기가 담겨 있습니다.</p>
+              <button type="button">불 끄고 읽기</button>
+            </div>
+          </div>
+        )}
+        {view.dark && <script innerHTML={NIGHT_VEIL} />}
       </body>
     </html>
   );
