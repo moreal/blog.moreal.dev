@@ -1,0 +1,8 @@
+---
+import NewPost from "../ui/NewPost.tsx";
+import Shell from "./_shell.astro";
+---
+
+<Shell title="새 글">
+  <NewPost client:only="solid-js" />
+</Shell>

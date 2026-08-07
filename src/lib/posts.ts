@@ -102,7 +102,7 @@ function renderMarkdown(markdown: string): { html: string; title: string } {
   return { html, title: env.title ?? "" };
 }
 
-interface FrontMatter {
+export interface FrontMatter {
   published: Date;
   description?: string;
   draft: boolean;
@@ -128,7 +128,7 @@ function parseBook(data: unknown): BookInfo | undefined {
   return Object.values(book).some((v) => v !== undefined) ? book : undefined;
 }
 
-function parseFrontMatter(
+export function parseFrontMatter(
   source: string,
   file: string,
 ): { meta: FrontMatter; body: string } {
@@ -231,16 +231,15 @@ async function walkContent(): Promise<{
 // by mtime, so a request only re-renders the files that actually changed.
 const viewCache = new Map<string, { mtimeMs: number; views: PostView[] }>();
 
-async function renderFile(
-  sourcePath: string,
+/** Renders one source file's text into its language views.  Exported so the
+ * local CMS can preview an unsaved buffer through exactly the pipeline the
+ * published pages use, bypassing the mtime cache below. */
+export function renderViews(
+  source: string,
   lang: string,
-): Promise<PostView[]> {
-  const { mtimeMs } = await fs.stat(sourcePath);
-  const cached = viewCache.get(sourcePath);
-  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached.views;
-
-  const source = await fs.readFile(sourcePath, "utf-8");
-  const { meta, body } = parseFrontMatter(source, sourcePath);
+  file = "(buffer)",
+): PostView[] {
+  const { meta, body } = parseFrontMatter(source, file);
   const views: PostView[] = [];
   if (lang === "ko-Kore") {
     // A ko-Kore source yields two views: the original text with Hanja
@@ -258,6 +257,19 @@ async function renderFile(
   } else {
     views.push({ lang, ...renderMarkdown(body), ...meta });
   }
+  return views;
+}
+
+async function renderFile(
+  sourcePath: string,
+  lang: string,
+): Promise<PostView[]> {
+  const { mtimeMs } = await fs.stat(sourcePath);
+  const cached = viewCache.get(sourcePath);
+  if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached.views;
+
+  const source = await fs.readFile(sourcePath, "utf-8");
+  const views = renderViews(source, lang, sourcePath);
   viewCache.set(sourcePath, { mtimeMs, views });
   return views;
 }
