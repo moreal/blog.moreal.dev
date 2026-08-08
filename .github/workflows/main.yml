@@ -15,16 +15,19 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        # v7.0.1: https://github.com/actions/checkout/tree/3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: corepack enable
-      - uses: actions/setup-node@v4
+      # v7.0.0: https://github.com/actions/setup-node/tree/820762786026740c76f36085b0efc47a31fe5020
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           cache: yarn
       - run: yarn install --immutable
       - run: yarn build
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        # v4.1.0: https://github.com/peaceiris/actions-gh-pages/tree/84c30a85c19949d7eee79c4ff27748b70285e453
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public_html
