@@ -9,6 +9,7 @@ import {
   fingerprintOf,
   findLine,
 } from "./engine.ts";
+import { linkPasteMenu } from "./linkPasteMenu.ts";
 import { livePreview } from "./livePreview.ts";
 
 export default function EditorCodeMirror(props: EditorEngineProps) {
@@ -37,6 +38,7 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
           ]),
           markdown(),
           livePreview({ ...(props.assetBase ? { assetBase: props.assetBase } : {}) }),
+          linkPasteMenu(),
           EditorView.lineWrapping,
           EditorView.domEventHandlers({
             paste: (event) => handleFiles(event, event.clipboardData),

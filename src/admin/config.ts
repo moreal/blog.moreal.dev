@@ -34,6 +34,11 @@ export interface AdminConfig {
    * browser update breaking IME handling is a one-word fix.
    */
   editorEngine: "codemirror" | "textarea";
+  /**
+   * Repo-relative TOML file with per-site cleanup rules for fetched link
+   * titles; see the comment block in that file for the syntax.
+   */
+  linkTitleRulesFile: string;
 }
 
 export const ADMIN_CONFIG: AdminConfig = {
@@ -49,4 +54,5 @@ export const ADMIN_CONFIG: AdminConfig = {
   maxImageBytes: 8 * 1024 * 1024,
   formatOnSave: true,
   editorEngine: "codemirror",
+  linkTitleRulesFile: "src/admin/link-title.toml",
 };

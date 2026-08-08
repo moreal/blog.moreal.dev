@@ -1,0 +1,32 @@
+# 링크 제목 다듬기 규칙 — "제목 가져와 별칭으로"가 가져온 제목에 적용된다.
+#
+# 요청마다 다시 읽으므로 고치면 바로 반영된다 (dev 서버 재시작 불필요).
+# 문법이 틀리면 제목 가져오기가 에러 메시지와 함께 실패하니 바로 알 수 있다.
+#
+# [[rule]] 마다 쓸 수 있는 키:
+#   host         (필수)  "example.com" 은 정확히 그 호스트만.
+#                        "*.example.com" 은 서브도메인과 example.com 자신까지.
+#                        "*" 는 모든 사이트.  배열로 여러 개도 가능.
+#   strip-prefix         제목이 이 문자열로 시작하면 떼어낸다.  배열 가능.
+#   strip-suffix         제목이 이 문자열로 끝나면 떼어낸다.  배열 가능.
+#   replace              JS 정규식 치환: ["정규식", "치환"] 또는
+#                        ["정규식", "치환", "플래그"], 또는 그런 배열의 배열.
+#
+# host가 맞는 규칙은 위에서부터 전부 적용되며, 한 규칙 안에서는
+# strip-prefix → strip-suffix → replace 순서다.  결과가 빈 문자열이 되면
+# 규칙 적용 전 제목으로 되돌린다.
+
+# 꼬리표가 있을 때만 떼어내면서 동시에 겹낫표로 감싼다:
+# "Pandoc - pandoc의 20년 - RosettaLens 번역" → "『Pandoc - pandoc의 20년』"
+[[rule]]
+host = "rosettalens.com"
+replace = ["^(.*) - RosettaLens 번역$", "『$1』"]
+
+[[rule]]
+host = "*.wikipedia.org"
+strip-suffix = [" - 위키백과, 우리 모두의 백과사전", " - Wikipedia"]
+
+# 예: 정규식으로 머리말 떼기
+# [[rule]]
+# host = "github.com"
+# replace = ["^GitHub - ", ""]

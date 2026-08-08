@@ -2,6 +2,7 @@ import type {
   ApiFailure,
   ConfigResponse,
   Lang,
+  LinkTitleResponse,
   PostGroup,
   PostsResponse,
   PreviewResponse,
@@ -56,6 +57,9 @@ export const api = {
     lang: Lang;
   }): Promise<{ views: RenderedView[]; ms: number }> =>
     call<PreviewResponse>("preview", asJson(body)),
+
+  linkTitle: (url: string) =>
+    call<LinkTitleResponse>(`link-title?url=${encodeURIComponent(url)}`),
 
   search: (q: string) =>
     call<{

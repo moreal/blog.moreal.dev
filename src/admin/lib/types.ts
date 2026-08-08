@@ -145,6 +145,16 @@ export type SaveResponse =
     }
   | (ApiFailure & { currentMtimeMs?: number });
 
+export type LinkTitleResponse =
+  | {
+      ok: true;
+      /** Final URL after redirects. */
+      url: string;
+      /** Null when the document has no usable title. */
+      title: string | null;
+    }
+  | ApiFailure;
+
 export type ConfigResponse =
   | {
       ok: true;

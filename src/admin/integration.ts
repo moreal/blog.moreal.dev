@@ -7,6 +7,7 @@ const API_ROUTES = [
   "create",
   "image",
   "image-name",
+  "link-title",
   "preview",
   "search",
   "config",
