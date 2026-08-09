@@ -686,47 +686,13 @@ button.picker:disabled {
   border-bottom: 1px solid var(--line);
 }
 
-.preview-body {
-  overflow: auto;
-  padding: 20px 24px 40vh;
-}
-
-.preview-body .post {
-  max-width: 42em;
-  line-height: 1.7;
-}
-
-.preview-body .post h1 {
-  font-size: 22px;
-  margin: 0 0 16px;
-}
-
-.preview-body .post img {
-  max-width: 100%;
-}
-
-.preview-body .post ruby rt {
-  font-size: 0.55em;
-  color: var(--dim);
-}
-
-.preview-body .post pre {
-  background: var(--bg);
-  padding: 10px 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-}
-
-.preview-body .post code {
-  font-family: var(--mono);
-  font-size: 0.9em;
-}
-
-.preview-body .post blockquote {
-  border-left: 3px solid var(--line);
-  margin-left: 0;
-  padding-left: 14px;
-  color: var(--dim);
+/* The frame renders the published document, so the real /static/style.css
+   inside it owns every rule about the post itself. */
+.preview-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
 }
 
 .lab h1 {

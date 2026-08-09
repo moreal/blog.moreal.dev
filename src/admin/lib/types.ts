@@ -82,7 +82,8 @@ export interface PostAssetInfo {
 export interface RenderedView {
   lang: string;
   title: string;
-  html: string;
+  /** A complete HTML document from the real PostView render, for an iframe. */
+  document: string;
 }
 
 export type ApiError =
@@ -127,6 +128,9 @@ export type PreviewResponse =
   | ApiFailure;
 
 export interface PreviewRequest {
+  /** Repo-relative, e.g. "2026/02/career.ko-Hang.md"; the preview needs the
+   * post's URL path to render its header, language nav and asset base. */
+  file: string;
   frontmatter: FrontMatterForm;
   body: string;
   lang: Lang;

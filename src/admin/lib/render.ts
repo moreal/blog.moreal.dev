@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import { renderViews } from "../../lib/posts.ts";
-import type { RenderedView } from "./types.ts";
+import { renderViews, type PostView } from "../../lib/posts.ts";
 
 /**
  * Preview for an unsaved buffer, through exactly the pipeline the published
@@ -12,9 +11,9 @@ import type { RenderedView } from "./types.ts";
  * dictionary (~130ms per call, and a ko-Kore source needs two calls).
  */
 const MAX = 32;
-const cache = new Map<string, RenderedView[]>();
+const cache = new Map<string, PostView[]>();
 
-export function renderBuffer(source: string, lang: string): RenderedView[] {
+export function renderBuffer(source: string, lang: string): PostView[] {
   const key =
     createHash("sha256").update(source).digest("hex").slice(0, 32) + ":" + lang;
   const hit = cache.get(key);
@@ -24,11 +23,7 @@ export function renderBuffer(source: string, lang: string): RenderedView[] {
     cache.set(key, hit);
     return hit;
   }
-  const views = renderViews(source, lang).map((v) => ({
-    lang: v.lang,
-    title: v.title,
-    html: v.html,
-  }));
+  const views = renderViews(source, lang);
   cache.set(key, views);
   if (cache.size > MAX) {
     const oldest = cache.keys().next();

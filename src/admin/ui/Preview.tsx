@@ -3,19 +3,17 @@ import type { RenderedView } from "../lib/types.ts";
 import { LANG_LABEL } from "./api.ts";
 
 /**
- * The published rendering, not a lookalike: this HTML comes from posts.ts, so a
- * ko-Kore source shows its Hanja ruby and its derived Hangul view exactly as
- * they will ship.  That is the one thing the inline live preview cannot show,
- * which is why this exists as a toggle rather than a permanent split.
+ * The published page itself, not a lookalike: the server renders PostView.tsx
+ * through the Container API and this drops the resulting document into an
+ * iframe, so the real stylesheet, header, language nav and night veil all apply.
+ * That is what the inline live preview cannot show, which is why this exists as
+ * a toggle rather than a permanent split.
  */
 export default function Preview(props: {
   views: RenderedView[];
   ms: number;
   loading: boolean;
   error?: string;
-  assetBase: string;
-  publishedLabel?: string;
-  bookLine?: string;
   realUrl?: string;
   /** 0..1 of the editor's scroll, mirrored here. */
   scroll?: number;
@@ -25,16 +23,31 @@ export default function Preview(props: {
   const [active, setActive] = createSignal(0);
   const current = () => props.views[Math.min(active(), props.views.length - 1)];
 
-  let bodyEl: HTMLDivElement | undefined;
+  // A signal rather than a bare `let`, so the effects below re-run when the
+  // frame is mounted or replaced, not only when the document changes.
+  const [frame, setFrame] = createSignal<HTMLIFrameElement>();
+
   // Proportional rather than element-anchored: the rendered HTML has no stable
   // mapping back to source lines once seonbi has run over it.
-  createEffect(() => {
+  const applyScroll = () => {
     const ratio = props.scroll;
-    if (ratio === undefined || bodyEl === undefined) return;
-    const max = bodyEl.scrollHeight - bodyEl.clientHeight;
+    const root = frame()?.contentDocument?.scrollingElement;
+    if (ratio === undefined || root == null) return;
+    const max = root.scrollHeight - root.clientHeight;
     if (max <= 0) return;
     const target = ratio * max;
-    if (Math.abs(bodyEl.scrollTop - target) > 4) bodyEl.scrollTop = target;
+    if (Math.abs(root.scrollTop - target) > 4) root.scrollTop = target;
+  };
+  createEffect(applyScroll);
+
+  // Assigned imperatively so an unchanged document is never rewritten: setting
+  // srcdoc reloads the frame, which resets the scroll and refetches the
+  // stylesheet, and a save re-runs the preview with identical output often.
+  createEffect(() => {
+    const el = frame();
+    const doc = current()?.document;
+    if (el === undefined || doc === undefined) return;
+    if (el.srcdoc !== doc) el.srcdoc = doc;
   });
 
   return (
@@ -73,35 +86,18 @@ export default function Preview(props: {
         <div class="preview-error">{props.error}</div>
       </Show>
 
-      <div class="preview-body" ref={bodyEl}>
-        <Show when={current()} fallback={<div class="empty">미리보기 없음</div>}>
-          {(v) => (
-            // Mirrors PostView.tsx: the title lives inside the rendered HTML
-            // (markdown-it-title only reads it), so nothing is added here.
-            <div class="post">
-              <Show when={props.publishedLabel}>
-                <div class="publish-date">{props.publishedLabel}</div>
-              </Show>
-              <Show when={props.bookLine}>
-                <p class="book-info">{props.bookLine}</p>
-              </Show>
-              <article innerHTML={rebase(v().html, props.assetBase)} />
-            </div>
-          )}
-        </Show>
-      </div>
+      <Show when={current()} fallback={<div class="empty">미리보기 없음</div>}>
+        {/* Not sandboxed: the scroll mirroring above needs same-origin access,
+            and allow-same-origin plus allow-scripts would lift the sandbox
+            anyway.  This is a localhost-only tool showing the author's own
+            drafts. */}
+        <iframe
+          class="preview-frame"
+          title="발행 미리보기"
+          ref={setFrame}
+          onLoad={applyScroll}
+        />
+      </Show>
     </aside>
-  );
-}
-
-/**
- * Rewrite relative image sources to the dev asset route.  A <base> element
- * would apply to the whole admin document, so the rewrite is done here instead.
- */
-function rebase(html: string, base: string): string {
-  return html.replace(
-    /(<img\b[^>]*\bsrc=")(\.\/)?([^"/][^"]*)"/g,
-    (all, head: string, _dot: string, rest: string) =>
-      /^(https?:|data:)/.test(rest) ? all : `${head}${base}${rest}"`,
   );
 }

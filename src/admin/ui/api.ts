@@ -52,6 +52,7 @@ export const api = {
     call<SourceResponse>(`source?file=${encodeURIComponent(file)}`),
 
   preview: (body: {
+    file: string;
     frontmatter: unknown;
     body: string;
     lang: Lang;

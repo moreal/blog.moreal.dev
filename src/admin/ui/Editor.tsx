@@ -102,41 +102,12 @@ export default function Editor() {
   }
 
   // The post's own published URL directory, which is what `./foo.png` in the
-  // markdown is relative to.  The admin page lives elsewhere, so the preview
-  // needs it spelled out absolutely.
+  // markdown is relative to.  The inline live preview draws inside the admin
+  // page, which lives elsewhere, so it needs this spelled out absolutely.  (The
+  // publish preview is its own document and carries a <base> instead.)
   const assetBase = () => {
     const src = loaded();
     return src ? `/${src.postPath}/` : "";
-  };
-
-  // Mirrors what PostView.tsx puts around the article.
-  const publishedLabel = () => {
-    const iso = fm().published;
-    if (iso === "") return "";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "";
-    const p = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Seoul",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    }).formatToParts(d);
-    // Number() drops the zero padding, matching kstDate() in posts.ts.
-    const at = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
-    return `${at("year")}년 ${at("month")}월 ${at("day")}일`;
-  };
-
-  const bookLine = () => {
-    const b = fm().book;
-    if (fm().type !== "reading" || b === undefined) return "";
-    return [
-      b.author,
-      b.translator !== undefined ? `${b.translator} 옮김` : undefined,
-      b.publisher,
-      b.year !== undefined ? String(b.year) : undefined,
-    ]
-      .filter((x): x is string => typeof x === "string")
-      .join(" · ");
   };
 
   // Seed from the server once, then never re-render the surface from a signal:
@@ -249,6 +220,7 @@ export default function Editor() {
     setPreviewErr("");
     try {
       const res = await api.preview({
+        file: src.file,
         frontmatter: fm(),
         body: body(),
         lang: src.lang,
@@ -369,9 +341,6 @@ export default function Editor() {
                     ms={previewMs()}
                     loading={previewing()}
                     error={previewErr()}
-                    assetBase={assetBase()}
-                    publishedLabel={publishedLabel()}
-                    {...(bookLine() !== "" ? { bookLine: bookLine() } : {})}
                     realUrl={`/${src.postPath}/`}
                     scroll={scroll()}
                     onClose={() => setShowPreview(false)}

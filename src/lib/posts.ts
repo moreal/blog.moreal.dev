@@ -260,6 +260,18 @@ export function renderViews(
   return views;
 }
 
+/** Orders a post's views for the language nav.  Exported alongside
+ * renderViews() so the local CMS's preview can order an unsaved buffer's views
+ * exactly the way the published page will. */
+export function sortPostViews(views: PostView[]): void {
+  // Like jikji, a ko-Kore source lists its original view before the derived
+  // ko-Hang one; views from separate files are ordered alphabetically.
+  const hasKore = views.some((v) => v.lang === "ko-Kore");
+  const rank = (v: PostView): number =>
+    hasKore ? (v.lang === "ko-Kore" ? 0 : v.lang === "ko-Hang" ? 1 : 2) : 0;
+  views.sort((a, b) => rank(a) - rank(b) || a.lang.localeCompare(b.lang, "en"));
+}
+
 async function renderFile(
   sourcePath: string,
   lang: string,
@@ -305,14 +317,7 @@ async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
 
   const posts = [...byPath.values()];
   for (const post of posts) {
-    // Like jikji, a ko-Kore source lists its original view before the derived
-    // ko-Hang one; views from separate files are ordered alphabetically.
-    const hasKore = post.views.some((v) => v.lang === "ko-Kore");
-    const rank = (v: PostView): number =>
-      hasKore ? (v.lang === "ko-Kore" ? 0 : v.lang === "ko-Hang" ? 1 : 2) : 0;
-    post.views.sort(
-      (a, b) => rank(a) - rank(b) || a.lang.localeCompare(b.lang, "en"),
-    );
+    sortPostViews(post.views);
     post.multiview = post.views.length > 1;
   }
   return { posts, assets };
