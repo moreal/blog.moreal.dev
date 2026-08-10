@@ -25,6 +25,17 @@ const POST_DIR = /^(20\d\d)\/(\d{2})\/([A-Za-z0-9][A-Za-z0-9._-]*)$/;
 export const CREATE_SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
 /**
+ * A daily note's slug is its date, so which dates exist is a naming rule and
+ * lives here with the rest.  Both patterns above accept `2026-02-31`; a real
+ * calendar day is the check that keeps it out of a file name.
+ */
+export function isCalendarDate(value: string): boolean {
+  if (!/^20\d\d-\d\d-\d\d$/.test(value)) return false;
+  const t = Date.parse(`${value}T00:00:00Z`);
+  return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === value;
+}
+
+/**
  * Everything outside this set is rejected before any regex runs, which is what
  * makes traversal structurally impossible rather than merely unlikely: it kills
  * backslashes, percent-encoding (`..%2f`), absolute paths and NUL truncation in

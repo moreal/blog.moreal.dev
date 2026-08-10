@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { APIRoute } from "astro";
-import { readForm, splitSource } from "../lib/frontmatter.ts";
+import { kstIsoOn, nowKstIso, readForm, splitSource } from "../lib/frontmatter.ts";
 import { checkRequest, describe, fail, json } from "../lib/guard.ts";
 import {
   CONTENT_ROOT,
@@ -9,11 +9,12 @@ import {
   LANGS,
   PathError,
   assertNoSymlink,
+  isCalendarDate,
   postFileName,
   resolvePostDir,
   resolvePostFile,
 } from "../lib/paths.ts";
-import { type PostKind, scaffold } from "../lib/scaffold.ts";
+import { type PostKind, type ScaffoldInput, scaffold } from "../lib/scaffold.ts";
 import type { FrontMatterForm, Lang } from "../lib/types.ts";
 
 export const prerender = false;
@@ -23,7 +24,11 @@ interface CreateRequest {
   lang: Lang;
   slug?: string;
   title?: string;
-  publishedAt?: string;
+  /**
+   * Day the post is published on, "YYYY-MM-DD"; defaults to today in KST.
+   * For a daily note it therefore also decides the file name and the title.
+   */
+  date?: string;
   description?: string;
   draft?: boolean;
   dark?: boolean;
@@ -76,7 +81,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     let year: string;
     let month: string;
     let slug: string;
-    let input = { ...req };
+    let input: ScaffoldInput = { ...req };
 
     if (req.translationOf !== undefined && req.translationOf !== "") {
       // Deriving the location from the existing post is the whole mechanism:
@@ -90,7 +95,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       }
       input = {
         ...input,
-        publishedAt: req.publishedAt ?? from.form.published,
+        publishedAt: from.form.published,
         ...(from.form.type !== undefined
           ? { kind: from.form.type as PostKind }
           : { kind: "regular" as PostKind }),
@@ -103,9 +108,20 @@ export const POST: APIRoute = async ({ request, url }) => {
           : {}),
       };
     } else {
-      const built = scaffold(input);
+      const asked = req.date ?? "";
+      if (asked !== "" && !isCalendarDate(asked)) {
+        return fail("bad-request", "날짜는 실제로 있는 YYYY-MM-DD 여야 합니다.");
+      }
+      // Resolved here rather than left to scaffold()'s default because the day
+      // picks the directory, and for a daily note the file name too.  Only the
+      // day moves: a backdated note keeps the current time of day, so its
+      // timestamp stays plausible and it still sorts within its own day.
+      const published = asked === "" ? nowKstIso() : kstIsoOn(asked);
+      input = { ...input, publishedAt: published };
+
+      const day = published.split("T")[0] ?? "";
       if (req.kind === "daily") {
-        slug = built.dateSlug;
+        slug = day;
       } else {
         if (req.slug === undefined || !CREATE_SLUG.test(req.slug)) {
           return fail(
@@ -115,10 +131,8 @@ export const POST: APIRoute = async ({ request, url }) => {
         }
         slug = req.slug;
       }
-      [year, month] = [
-        built.dateSlug.slice(0, 4),
-        built.dateSlug.slice(5, 7),
-      ] as [string, string];
+      year = day.slice(0, 4);
+      month = day.slice(5, 7);
     }
 
     const rel = `${year}/${month}/${postFileName(slug, req.lang)}`;

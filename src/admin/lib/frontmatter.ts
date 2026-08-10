@@ -143,6 +143,15 @@ export function nowKstIso(now: Date = new Date()): string {
 }
 
 /**
+ * The same wall clock, but on `day` ("YYYY-MM-DD"): what a backdated post is
+ * published at.  Cutting the day off a timestamp belongs beside the function
+ * that spells the timestamp, so the offset cannot drift from the format.
+ */
+export function kstIsoOn(day: string, now: Date = new Date()): string {
+  return day + nowKstIso(now).slice(10);
+}
+
+/**
  * Setext underline sized to display width, where a CJK character occupies two
  * columns -- the rule scripts/new-daily.sh implements and hongdown enforces.
  * Only a fallback: the scaffold writes an ATX heading and lets hongdown convert

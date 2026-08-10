@@ -93,13 +93,23 @@ export const LANG_LABEL: Record<string, string> = {
   "en": "English",
 };
 
-/** Grouped by KST year, matching how the site's own list page reads. */
-export function kstYear(iso: string): string {
-  const d = new Date(iso);
+/**
+ * "2026-08-10" in Asia/Seoul whatever zone the machine is in -- the browser's
+ * half of the rule nowKstIso() applies on the server, which cannot be imported
+ * here because lib/ reaches node:fs.
+ */
+export function kstDate(at: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
     year: "numeric",
-  }).format(d);
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
+/** Grouped by KST year, matching how the site's own list page reads. */
+export function kstYear(iso: string): string {
+  return kstDate(new Date(iso)).slice(0, 4);
 }
 
 export function kstDateTime(iso: string): string {

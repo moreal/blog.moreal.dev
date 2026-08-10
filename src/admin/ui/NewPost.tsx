@@ -1,6 +1,6 @@
 import { Show, createResource, createSignal } from "solid-js";
 import type { Lang } from "../lib/types.ts";
-import { LANG_LABEL, api } from "./api.ts";
+import { LANG_LABEL, api, kstDate } from "./api.ts";
 
 type Kind = "daily" | "reading" | "regular";
 
@@ -11,6 +11,11 @@ const KINDS: { id: Kind; label: string; note: string }[] = [
 ];
 
 const LANGS: Lang[] = ["ko-Hang", "ko-Kore", "en"];
+
+/** The file the server will write, named the way postFileName() names it. */
+function filePreview(day: string, name: string, lang: Lang): string {
+  return `${day.slice(0, 4)}/${day.slice(5, 7)}/${name}.${lang}.md`;
+}
 
 export default function NewPost() {
   const params = new URLSearchParams(location.search);
@@ -23,6 +28,8 @@ export default function NewPost() {
   );
   const [slug, setSlug] = createSignal("");
   const [title, setTitle] = createSignal("");
+  const today = kstDate();
+  const [date, setDate] = createSignal(today);
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
 
@@ -36,6 +43,8 @@ export default function NewPost() {
   );
 
   const slugOk = () => kind() === "daily" || /^[a-z0-9][a-z0-9-]*$/.test(slug());
+  // An emptied or half-typed date input reads as "", so guard before sending.
+  const dateOk = () => kind() !== "daily" || /^20\d\d-\d\d-\d\d$/.test(date());
 
   async function create() {
     setBusy(true);
@@ -47,7 +56,7 @@ export default function NewPost() {
         body: JSON.stringify({
           kind: kind(),
           lang: lang(),
-          ...(kind() === "daily" ? {} : { slug: slug() }),
+          ...(kind() === "daily" ? { date: date() } : { slug: slug() }),
           ...(title() !== "" ? { title: title() } : {}),
           ...(isTranslation ? { translationOf } : {}),
         }),
@@ -137,7 +146,8 @@ export default function NewPost() {
             onInput={(e) => setSlug(e.currentTarget.value)}
           />
           <p class="lab-sub">
-            파일이 됩니다: <code>{`${new Date().toISOString().slice(0, 4)}/${new Date().toISOString().slice(5, 7)}/${slug() || "…"}.${lang()}.md`}</code>
+            파일이 됩니다:{" "}
+            <code>{filePreview(today, slug() || "…", lang())}</code>
           </p>
         </div>
 
@@ -153,10 +163,34 @@ export default function NewPost() {
         </div>
       </Show>
 
-      <Show when={kind() === "daily"}>
-        <p class="lab-sub">
-          파일명과 제목은 오늘 날짜로 정해집니다.
-        </p>
+      <Show when={kind() === "daily" && !isTranslation}>
+        <div class="fm-block">
+          <h2>날짜</h2>
+          <span class="fm-inline">
+            <input
+              class="search"
+              type="date"
+              value={date()}
+              onInput={(e) => setDate(e.currentTarget.value)}
+            />
+            <button
+              class="small"
+              disabled={date() === today}
+              onClick={() => setDate(today)}
+            >
+              오늘
+            </button>
+          </span>
+          <p class="lab-sub">
+            파일명과 제목이 이 날짜가 됩니다:{" "}
+            <code>
+              {dateOk() ? filePreview(date(), date(), lang()) : "…"}
+            </code>
+            <Show when={dateOk() && date() !== today}>
+              {" "}발행 시각은 그 날의 지금 시각으로 적힙니다.
+            </Show>
+          </p>
+        </div>
       </Show>
 
       <Show when={error()}>
@@ -164,7 +198,11 @@ export default function NewPost() {
       </Show>
 
       <div class="toolbar">
-        <button class="primary" onClick={create} disabled={busy() || !slugOk()}>
+        <button
+          class="primary"
+          onClick={create}
+          disabled={busy() || !slugOk() || !dateOk()}
+        >
           {busy() ? "만드는 중…" : "만들고 편집"}
         </button>
         <a class="btn" href="/admin">
