@@ -122,7 +122,8 @@ export function frontMatterEquals(a: string, b: string): boolean {
 /**
  * "2026-08-07T23:05:11+09:00" in Asia/Seoul regardless of the machine's zone.
  * scripts/get-now.sh uses local time and would be wrong abroad; on a KST
- * machine the output is identical.
+ * machine the output is identical. ui/api.ts has the browser's twin of this
+ * function, since lib/ (here) reaches node:fs and can't be imported client-side.
  */
 export function nowKstIso(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-CA", {

@@ -12,7 +12,7 @@ import ImageNameDialog, {
   type ImageNameResult,
 } from "./ImageNameDialog.tsx";
 import Preview from "./Preview.tsx";
-import { LANG_LABEL, api } from "./api.ts";
+import { LANG_LABEL, api, nowKstIso } from "./api.ts";
 import type { EditorHandle } from "./engine.ts";
 
 const DRAFT_PREFIX = "cms-draft:";
@@ -322,7 +322,7 @@ export default function Editor() {
                   setFm(next);
                   setDirty(true);
                 }}
-                nowIso={() => new Date().toISOString().slice(0, 19) + "+09:00"}
+                nowIso={() => nowKstIso()}
               />
 
               <div class="editor-main" classList={{ split: showPreview() }}>
