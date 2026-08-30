@@ -1,4 +1,5 @@
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { shouldAutofocusImageDialog } from "./mobile.ts";
 
 export interface ImageNameRequest {
   suggestion: string;
@@ -46,8 +47,11 @@ export default function ImageNameDialog(props: {
   }
 
   onMount(() => {
-    input?.focus();
-    input?.select();
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (shouldAutofocusImageDialog(coarsePointer)) {
+      input?.focus();
+      input?.select();
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
