@@ -1,5 +1,5 @@
 import { serializeFrontMatter, setextUnderline } from "./frontmatter.ts";
-import { nowKstIso } from "../shared/dates.ts";
+import { calendarDateOf, nowKstIso } from "../shared/dates.ts";
 import type { FrontMatterForm, Lang } from "./types.ts";
 
 export type PostKind = "daily" | "reading" | "regular";
@@ -9,9 +9,9 @@ export type PostKind = "daily" | "reading" | "regular";
  * unpadded, and the script's per-language wording.
  */
 export function dailyTitle(iso: string, lang: Lang): string {
-  const [date] = iso.split("T");
-  const [y, m, d] = (date ?? "").split("-").map((n) => Number.parseInt(n, 10));
-  if (lang === "en") return date ?? "";
+  const date = calendarDateOf(iso);
+  const [y, m, d] = date.split("-").map((n) => Number.parseInt(n, 10));
+  if (lang === "en") return date;
   const unit = lang === "ko-Kore" ? ["年", "月", "日"] : ["년", "월", "일"];
   return `${y}${unit[0]} ${m}${unit[1]} ${d}${unit[2]}`;
 }
@@ -38,7 +38,7 @@ export interface Scaffold {
 
 export function scaffold(input: ScaffoldInput): Scaffold {
   const published = input.publishedAt ?? nowKstIso();
-  const dateSlug = published.split("T")[0] ?? "";
+  const dateSlug = calendarDateOf(published);
 
   const fm: FrontMatterForm = { published };
   if (input.description !== undefined && input.description !== "") {

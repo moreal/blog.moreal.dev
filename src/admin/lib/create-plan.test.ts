@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { planNewPost, planTranslation } from "./create-plan.ts";
+import { planNewPost, planTranslation, parseTranslationSource } from "./create-plan.ts";
 
 const request = { kind: "regular", lang: "en", slug: "a-post", date: "2024-02-29" } as const;
 
@@ -53,4 +53,30 @@ test("translation defaults missing original kind and title, retaining request fl
   assert.deepEqual(planTranslation(request, "2020/03/original", null), {
     ok: false, error: "not-found", message: "2020/03/original 에 원본이 없습니다.",
   });
+});
+
+test("a new post without a date is published at the current Seoul time, and a backdated one keeps that clock", () => {
+  const newYearInSeoul = new Date("2025-12-31T15:00:00Z");
+  for (const date of [undefined, ""]) {
+    const result = planNewPost({ ...request, date }, newYearInSeoul);
+    assert.ok(result.ok);
+    assert.deepEqual([result.plan.year, result.plan.month], ["2026", "01"]);
+    assert.equal(result.plan.input.publishedAt, "2026-01-01T00:00:00+09:00");
+  }
+  const daily = planNewPost({ kind: "daily", lang: "en" }, newYearInSeoul);
+  assert.ok(daily.ok);
+  assert.equal(daily.plan.slug, "2026-01-01");
+  const backdated = planNewPost(request, new Date("2026-09-08T01:23:45Z"));
+  assert.ok(backdated.ok);
+  assert.equal(backdated.plan.input.publishedAt, "2024-02-29T10:23:45+09:00");
+});
+
+test("a translation source is the original's front matter and its first non-blank body line, trimmed", () => {
+  const original = "---\npublished: 2020-03-01T10:00:00+09:00\ntype: reading\ndark: true\n---\n\n  Original title  \n==============\n\nText\n";
+  assert.deepEqual(parseTranslationSource(original, "original.en.md"), {
+    form: { published: "2020-03-01T10:00:00+09:00", type: "reading", dark: true },
+    heading: "Original title",
+  });
+  const untitled = parseTranslationSource("---\npublished: 2020-03-01T10:00:00+09:00\n---\n\n", "original.en.md");
+  assert.equal(untitled.heading, "");
 });

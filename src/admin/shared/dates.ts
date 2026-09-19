@@ -48,6 +48,10 @@ export function kstIsoOn(calendarDate: string, now: Date = new Date()): string {
   return kstIso(calendarDate, readKstWallClock(now).clockTime);
 }
 
+export function calendarDateOf(iso: string): string {
+  return iso.split("T")[0] ?? "";
+}
+
 export function kstDate(at: Date = new Date()): string {
   return readKstWallClock(at).calendarDate;
 }

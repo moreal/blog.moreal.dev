@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { kstDate, kstDateTime, kstIsoOn, kstYear, nowKstIso } from "./dates.ts";
+import { calendarDateOf, kstDate, kstDateTime, kstIsoOn, kstYear, nowKstIso } from "./dates.ts";
 
 test("server and browser dates roll over together at midnight in Seoul", () => {
   const before = new Date("2025-12-31T14:59:59Z");
@@ -22,4 +22,9 @@ test("backdating changes the day while retaining the Seoul wall clock", () => {
 test("the post list shows publication times on the Seoul calendar", () => {
   assert.match(kstDateTime("2025-12-31T14:59:00Z"), /^2025\. 12\. 31\. /);
   assert.match(kstDateTime("2025-12-31T15:00:00Z"), /^2026\. 1\. 1\. /);
+});
+
+test("the calendar date of a timestamp is read as written, without converting its offset", () => {
+  assert.equal(calendarDateOf("2026-01-01T00:30:00+09:00"), "2026-01-01");
+  assert.equal(calendarDateOf("2026-01-01"), "2026-01-01");
 });
