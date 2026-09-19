@@ -7,7 +7,7 @@ import {
   formatAndReadSavedPost,
   replacePostFileAtomically,
 } from "../lib/save.ts";
-import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json, readJsonBody } from "../lib/guard.ts";
 import { PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
 import type { FrontMatterForm } from "../lib/types.ts";
 
@@ -26,12 +26,8 @@ export const POST: APIRoute = async ({ request, url }) => {
   const bad = checkRequest(request, url, { contentType: "application/json" });
   if (bad !== null) return bad;
 
-  let req: SaveRequest;
-  try {
-    req = (await request.json()) as SaveRequest;
-  } catch {
-    return fail("bad-request", "body is not JSON");
-  }
+  const req = await readJsonBody<SaveRequest>(request);
+  if (req instanceof Response) return req;
   if (typeof req.file !== "string" || typeof req.body !== "string") {
     return fail("bad-request", "expected { file, frontmatter, body, ... }");
   }

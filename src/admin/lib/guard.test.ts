@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkRequest, errorMessageForClient, fail, json } from "./guard.ts";
+import {
+  checkRequest,
+  errorMessageForClient,
+  fail,
+  failForThrown,
+  json,
+  readJsonBody,
+} from "./guard.ts";
 import { PathError } from "./paths.ts";
 
 const adminUrl = new URL("http://localhost:4321/admin/api/save");
@@ -49,6 +56,33 @@ test("a path error is already written for the client and passes through as is", 
 test("a thrown non-error value is shown as its string form", () => {
   assert.equal(errorMessageForClient("plain failure"), "plain failure");
   assert.equal(errorMessageForClient(42), "42");
+});
+
+test("a thrown path error is the client's mistake, and anything else is an io failure", async () => {
+  const badPath = failForThrown(new PathError("path is not repo-relative"));
+  assert.equal(badPath.status, 400);
+  assert.deepEqual(await badPath.json(), {
+    ok: false,
+    error: "bad-request",
+    message: "path is not repo-relative",
+  });
+  const io = failForThrown(new Error(`EACCES: permission denied, open '${process.cwd()}/2026/02/post.en.md'`));
+  assert.equal(io.status, 500);
+  assert.deepEqual(await io.json(), {
+    ok: false,
+    error: "io",
+    message: "EACCES: permission denied, open '2026/02/post.en.md'",
+  });
+});
+
+test("a JSON body is parsed as is, and anything else is rejected as a bad request", async () => {
+  const bodyOf = (text: string) => new Request(adminUrl, { method: "POST", body: text });
+  assert.deepEqual(await readJsonBody(bodyOf('{"kind":"daily"}')), { kind: "daily" });
+  assert.equal(await readJsonBody(bodyOf("null")), null);
+  const rejected = await readJsonBody(bodyOf("{kind"));
+  assert.ok(rejected instanceof Response);
+  assert.equal(rejected.status, 400);
+  assert.deepEqual(await rejected.json(), { ok: false, error: "bad-request", message: "body is not JSON" });
 });
 
 test("a request from the admin page itself passes, with or without an Origin header", () => {

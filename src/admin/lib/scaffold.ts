@@ -2,7 +2,9 @@ import { serializeFrontMatter } from "./frontmatter.ts";
 import { calendarDateOf, nowKstIso } from "../shared/dates.ts";
 import type { BookInfo, FrontMatterForm, Lang } from "./types.ts";
 
-export type PostKind = "daily" | "reading" | "regular";
+export const POST_KINDS = ["daily", "reading", "regular"] as const;
+
+export type PostKind = (typeof POST_KINDS)[number];
 
 export interface ScaffoldInput {
   kind: PostKind;

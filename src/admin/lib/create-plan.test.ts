@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { planNewPost, planTranslation, parseTranslationSource } from "./create-plan.ts";
+import {
+  type CreateRequest,
+  parseTranslationSource,
+  planCreation,
+  planNewPost,
+  planTranslation,
+  postFileOf,
+  unknownLangOrKindMessage,
+} from "./create-plan.ts";
 
 const request = { kind: "regular", lang: "en", slug: "a-post", date: "2024-02-29" } as const;
 
@@ -79,4 +87,41 @@ test("a translation source is the original's front matter and its first non-blan
   });
   const untitled = parseTranslationSource("---\npublished: 2020-03-01T10:00:00+09:00\n---\n\n", "original.en.md");
   assert.equal(untitled.heading, "");
+});
+
+test("a request names one of the known languages and kinds, and the language is checked first", () => {
+  assert.equal(unknownLangOrKindMessage(request), null);
+  assert.equal(unknownLangOrKindMessage({ ...request, kind: "daily", lang: "ko-Kore" }), null);
+  const unknownLang = { ...request, lang: "fr" } as unknown as CreateRequest;
+  assert.equal(unknownLangOrKindMessage(unknownLang), 'unknown language "fr"');
+  const unknownKind = { ...request, kind: "poem" } as unknown as CreateRequest;
+  assert.equal(unknownLangOrKindMessage(unknownKind), 'unknown kind "poem"');
+  const unknownBoth = { ...request, lang: "fr", kind: "poem" } as unknown as CreateRequest;
+  assert.equal(unknownLangOrKindMessage(unknownBoth), 'unknown language "fr"');
+  assert.equal(unknownLangOrKindMessage({} as CreateRequest), "unknown language undefined");
+});
+
+test("a request without an original to translate plans a new post", async () => {
+  const now = new Date("2026-09-08T01:23:45Z");
+  for (const translationOf of [undefined, ""]) {
+    assert.deepEqual(await planCreation({ ...request, translationOf }, now), planNewPost({ ...request, translationOf }, now));
+  }
+});
+
+test("a request naming an original plans its translation from the original on disk", async () => {
+  assert.deepEqual(await planCreation({ ...request, translationOf: "2000/01/no-such-post" }), {
+    ok: false, error: "not-found", message: "2000/01/no-such-post 에 원본이 없습니다.",
+  });
+  await assert.rejects(planCreation({ ...request, translationOf: "../outside" }), { message: "path is not repo-relative" });
+});
+
+test("a planned post is written as its slug and language under its year and month", () => {
+  const newPost = planNewPost(request);
+  assert.ok(newPost.ok);
+  assert.equal(postFileOf(newPost.plan), "2024/02/a-post.en.md");
+  const translation = planTranslation({ ...request, lang: "ko-Kore" }, "2020/03/original", {
+    form: { published: "2020-03-01T10:00:00+09:00" }, heading: "",
+  });
+  assert.ok(translation.ok);
+  assert.equal(postFileOf(translation.plan), "2020/03/original.ko-Kore.md");
 });

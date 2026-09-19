@@ -30,6 +30,19 @@ export function fail(error: ApiErrorCode, message: string): Response {
   return json({ ok: false, error, message } satisfies ApiFailure, HTTP_STATUS_BY_ERROR[error]);
 }
 
+export function failForThrown(error: unknown): Response {
+  if (error instanceof PathError) return fail("bad-request", error.message);
+  return fail("io", errorMessageForClient(error));
+}
+
+export async function readJsonBody<T>(request: Request): Promise<T | Response> {
+  try {
+    return (await request.json()) as T;
+  } catch {
+    return fail("bad-request", "body is not JSON");
+  }
+}
+
 export function errorMessageForClient(error: unknown): string {
   if (error instanceof PathError) return error.message;
   const message = error instanceof Error ? error.message : String(error);

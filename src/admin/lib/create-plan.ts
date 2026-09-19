@@ -4,7 +4,7 @@ import { readForm, splitSource } from "./frontmatter.ts";
 import { calendarDateOf, kstIsoOn, nowKstIso } from "../shared/dates.ts";
 import { CREATE_SLUG, LANGS, postFileName } from "../shared/post-files.ts";
 import { isCalendarDate, resolvePostDir } from "./paths.ts";
-import type { PostKind, ScaffoldInput } from "./scaffold.ts";
+import { POST_KINDS, type PostKind, type ScaffoldInput } from "./scaffold.ts";
 import type { FrontMatterForm, Lang } from "./types.ts";
 
 export interface CreateRequest {
@@ -41,6 +41,12 @@ interface CreationFailure {
 }
 
 export type CreationPlanResult = { ok: true; plan: CreationPlan } | CreationFailure;
+
+export function unknownLangOrKindMessage(req: CreateRequest): string | null {
+  if (!LANGS.includes(req.lang)) return `unknown language ${JSON.stringify(req.lang)}`;
+  if (!POST_KINDS.includes(req.kind)) return `unknown kind ${JSON.stringify(req.kind)}`;
+  return null;
+}
 
 function failure(error: CreationFailure["error"], message: string): CreationFailure {
   return { ok: false, error, message };
@@ -96,6 +102,16 @@ export function planTranslation(
   return { ok: true, plan: { year, month, slug, input } };
 }
 
+export async function planCreation(req: CreateRequest, now: Date = new Date()): Promise<CreationPlanResult> {
+  const originalPostPath = req.translationOf;
+  if (originalPostPath === undefined || originalPostPath === "") return planNewPost(req, now);
+  return planTranslation(req, originalPostPath, await readTranslationSource(originalPostPath));
+}
+
+export function postFileOf(plan: CreationPlan): string {
+  return `${plan.year}/${plan.month}/${postFileName(plan.slug, plan.input.lang)}`;
+}
+
 function firstNonBlankLine(text: string): string {
   return text.split("\n").find((line) => line.trim() !== "")?.trim() ?? "";
 }
@@ -119,7 +135,7 @@ async function findSiblingSource(postPath: string): Promise<{ abs: string; name:
   return name === undefined ? null : { abs: path.join(monthDir, name), name };
 }
 
-export async function readTranslationSource(postPath: string): Promise<TranslationSource | null> {
+async function readTranslationSource(postPath: string): Promise<TranslationSource | null> {
   const sibling = await findSiblingSource(postPath);
   if (sibling === null) return null;
   return parseTranslationSource(await fs.readFile(sibling.abs, "utf-8"), sibling.name);

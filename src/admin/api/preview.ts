@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { serializeFrontMatter } from "../lib/frontmatter.ts";
-import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json, readJsonBody } from "../lib/guard.ts";
 import { PathError, resolvePostFile } from "../lib/paths.ts";
 import { LANGS } from "../shared/post-files.ts";
 import { renderPreviewDocument } from "../lib/preview-doc.ts";
@@ -12,12 +12,8 @@ export const POST: APIRoute = async ({ request, url }) => {
   const bad = checkRequest(request, url, { contentType: "application/json" });
   if (bad !== null) return bad;
 
-  let body: PreviewRequest;
-  try {
-    body = (await request.json()) as PreviewRequest;
-  } catch {
-    return fail("bad-request", "body is not JSON");
-  }
+  const body = await readJsonBody<PreviewRequest>(request);
+  if (body instanceof Response) return body;
   if (
     typeof body.file !== "string" ||
     typeof body.body !== "string" ||

@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
-import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
+import { checkRequest, fail, failForThrown, json } from "../lib/guard.ts";
 import { suggestImageName } from "../lib/image-name.ts";
-import { PathError, resolvePostFile } from "../lib/paths.ts";
+import { resolvePostFile } from "../lib/paths.ts";
 import { listAssets } from "../lib/scan.ts";
 
 export const prerender = false;
@@ -37,7 +37,6 @@ export const GET: APIRoute = async ({ request, url }) => {
     });
     return json({ ok: true, suggestion, ext, existing, dir: ref.postPath });
   } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    return fail("io", errorMessageForClient(e));
+    return failForThrown(e);
   }
 };

@@ -2,7 +2,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
-import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
+import { fileExists, writeWithoutClobbering } from "../lib/files.ts";
+import { checkRequest, errorMessageForClient, fail, failForThrown, json } from "../lib/guard.ts";
 import { PathError, assertNoSymlink, contentPath, resolvePostFile } from "../lib/paths.ts";
 import { listAssets } from "../lib/scan.ts";
 
@@ -62,24 +63,19 @@ export const POST: APIRoute = async ({ request, url }) => {
     // The bundle is named after the bare slug and shared by every language
     // variant of the post, so it may well already exist.
     await fs.mkdir(path.dirname(abs), { recursive: true });
-    if (!overwrite) {
-      try {
-        await fs.access(abs);
-        return json(
-          {
-            ok: false,
-            error: "exists",
-            message: `${fileName} 이(가) 이미 있습니다.`,
-            existing: (await listAssets(ref.postPath)).map((a) => a.file),
-          },
-          409,
-        );
-      } catch {
-        // Free; carry on.
-      }
+    if (!overwrite && (await fileExists(abs))) {
+      return json(
+        {
+          ok: false,
+          error: "exists",
+          message: `${fileName} 이(가) 이미 있습니다.`,
+          existing: (await listAssets(ref.postPath)).map((a) => a.file),
+        },
+        409,
+      );
     }
     const bytes = Buffer.from(await blob.arrayBuffer());
-    await fs.writeFile(abs, bytes, overwrite ? {} : { flag: "wx" });
+    await (overwrite ? fs.writeFile(abs, bytes) : writeWithoutClobbering(abs, bytes));
 
     return json({
       ok: true,
@@ -91,7 +87,6 @@ export const POST: APIRoute = async ({ request, url }) => {
       bytes: bytes.length,
     });
   } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    return fail("io", errorMessageForClient(e));
+    return failForThrown(e);
   }
 };
