@@ -9,6 +9,15 @@ import {
 import type { PostFileRef } from "./paths.ts";
 import type { FrontMatterForm } from "./types.ts";
 
+const MTIME_TOLERANCE_MS = 1;
+
+export function changedSinceLoaded(expectedMtimeMs: unknown, mtimeMs: number): boolean {
+  return (
+    typeof expectedMtimeMs === "number" &&
+    Math.abs(mtimeMs - expectedMtimeMs) > MTIME_TOLERANCE_MS
+  );
+}
+
 interface EditedPost {
   frontmatter: FrontMatterForm;
   fenceRaw?: string;

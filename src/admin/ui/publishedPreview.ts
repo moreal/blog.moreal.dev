@@ -1,11 +1,10 @@
 import { createSignal, type Accessor } from "solid-js";
-import type { FrontMatterForm, RenderedView, SourceResponse } from "../lib/types.ts";
-import { api } from "./api.ts";
-
-type LoadedSource = Extract<SourceResponse, { ok: true }> | null | undefined;
+import type { FrontMatterForm, RenderedView } from "../lib/types.ts";
+import { errorMessage } from "../shared/errors.ts";
+import { api, type LoadedSource } from "./api.ts";
 
 export function createPublishedPreview(
-  source: Accessor<LoadedSource>,
+  source: Accessor<LoadedSource | null | undefined>,
   frontmatter: Accessor<FrontMatterForm>,
   body: Accessor<string>,
 ) {
@@ -30,7 +29,7 @@ export function createPublishedPreview(
       setViews(res.views);
       setElapsedMs(res.ms);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import type { Post } from "../lib/posts";
-import { viewFilename } from "../lib/posts";
+import { viewUrl } from "../lib/posts";
 import { languageLabel } from "../lib/site";
 
 interface Props {
@@ -66,25 +66,25 @@ function negotiationScript(multiViews: Record<string, string>): string {
 export default function Redirector(props: Props) {
   const { post } = props;
   const multiViews = Object.fromEntries(
-    post.views.map((v) => [v.lang, `/${post.path}/${viewFilename(v.lang)}`]),
+    post.views.map((view) => [view.lang, viewUrl(post.path, view.lang)]),
   );
   return (
     <html>
       <head>
         <meta charset="utf-8" />
         <title>Redirecting...</title>
-        {post.views.map((v) => (
-          <link rel="alternate" href={multiViews[v.lang]} hreflang={v.lang} />
+        {post.views.map((view) => (
+          <link rel="alternate" href={multiViews[view.lang]} hreflang={view.lang} />
         ))}
         <script innerHTML={negotiationScript(multiViews)} />
       </head>
       <body>
         <p>There are the following languages available:</p>
         <ul>
-          {post.views.map((v) => (
+          {post.views.map((view) => (
             <li>
-              <a rel="alternate" href={multiViews[v.lang]} hreflang={v.lang}>
-                {languageLabel(v.lang)}
+              <a rel="alternate" href={multiViews[view.lang]} hreflang={view.lang}>
+                {languageLabel(view.lang)}
               </a>
             </li>
           ))}

@@ -1,4 +1,9 @@
 import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  imageMarkdown,
+  isImageBaseName,
+  normalizedImageBaseName,
+} from "../shared/image-names.ts";
 import { shouldAutofocusImageDialog } from "./mobile.ts";
 
 export interface ImageNameRequest {
@@ -31,17 +36,17 @@ export default function ImageNameDialog(props: {
   const fileName = () => name().trim() + props.request.ext;
   const collides = createMemo(() =>
     props.request.existing.some(
-      (f) => f.toLowerCase() === fileName().toLowerCase(),
+      (existingName) => existingName.toLowerCase() === fileName().toLowerCase(),
     ),
   );
-  const valid = () =>
-    /^[a-z0-9][a-z0-9._-]*$/.test(name().trim().toLowerCase()) &&
-    (!collides() || overwrite());
+  const normalizedName = () => normalizedImageBaseName(name());
+  const nameAllowed = () => isImageBaseName(normalizedName());
+  const valid = () => nameAllowed() && (!collides() || overwrite());
 
   function confirm() {
     if (!valid()) return;
     props.onConfirm({
-      name: name().trim().toLowerCase(),
+      name: normalizedName(),
       overwrite: overwrite(),
     });
   }
@@ -88,7 +93,7 @@ export default function ImageNameDialog(props: {
           → <code>{props.request.dir}/{fileName()}</code>
         </p>
         <p class="modal-dest dim">
-          본문에는 <code>![](./{fileName()})</code> 로 들어갑니다.
+          본문에는 <code>{imageMarkdown(fileName())}</code> 로 들어갑니다.
         </p>
 
         <Show when={collides()}>
@@ -102,7 +107,7 @@ export default function ImageNameDialog(props: {
           </label>
         </Show>
 
-        <Show when={name().trim() !== "" && !/^[a-z0-9][a-z0-9._-]*$/.test(name().trim().toLowerCase())}>
+        <Show when={name().trim() !== "" && !nameAllowed()}>
           <p class="modal-dest bad">
             영소문자·숫자·하이픈·밑줄만 쓸 수 있습니다.
           </p>

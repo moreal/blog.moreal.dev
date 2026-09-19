@@ -1,3 +1,4 @@
+import { errorMessage } from "../shared/errors.ts";
 import { PathError } from "./paths.ts";
 import type { ApiErrorCode, ApiFailure } from "./types.ts";
 
@@ -35,6 +36,17 @@ export function failForThrown(error: unknown): Response {
   return fail("io", errorMessageForClient(error));
 }
 
+export async function badRequestOnPathError<T>(
+  resolve: () => T | Promise<T>,
+): Promise<T | Response> {
+  try {
+    return await resolve();
+  } catch (error) {
+    if (error instanceof PathError) return fail("bad-request", error.message);
+    throw error;
+  }
+}
+
 export async function readJsonBody<T>(request: Request): Promise<T | Response> {
   try {
     return (await request.json()) as T;
@@ -45,8 +57,7 @@ export async function readJsonBody<T>(request: Request): Promise<T | Response> {
 
 export function errorMessageForClient(error: unknown): string {
   if (error instanceof PathError) return error.message;
-  const message = error instanceof Error ? error.message : String(error);
-  return withoutRepositoryPath(message);
+  return withoutRepositoryPath(errorMessage(error));
 }
 
 function withoutRepositoryPath(message: string): string {

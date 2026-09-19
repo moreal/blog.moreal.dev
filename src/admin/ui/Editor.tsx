@@ -13,14 +13,20 @@ import Preview from "./Preview.tsx";
 import { languageLabel } from "../../lib/site.ts";
 import { api } from "./api.ts";
 import { nowKstIso } from "../shared/dates.ts";
+import { errorMessage } from "../shared/errors.ts";
 import type { EditorHandle } from "./engine.ts";
+import { publishedPostHref } from "./links.ts";
+import { draftStashFor } from "./draftStash.ts";
+import { formatterWarningOf, savedStatus, type SavedPost } from "./saveOutcome.ts";
 
-const DRAFT_PREFIX = "cms-draft:";
+const OVERWRITE_QUESTION =
+  "파일이 편집기 밖에서 바뀌었습니다.\n확인을 누르면 내 내용으로 덮어씁니다.";
 
 export default function Editor() {
   const file = new URLSearchParams(location.search).get("file") ?? "";
   const [loaded] = createResource(() => (file === "" ? null : api.source(file)));
   const [cfg] = createResource(() => api.config());
+  const drafts = draftStashFor(file, localStorage);
 
   const [body, setBody] = createSignal("");
   const [fm, setFm] = createSignal<Form>({ published: "" });
@@ -41,7 +47,7 @@ export default function Editor() {
 
   const publishedAssetBase = () => {
     const src = loaded();
-    return src ? `/${src.postPath}/` : "";
+    return src ? publishedPostHref(src.postPath) : "";
   };
 
   let sourceSeeded = false;
@@ -53,8 +59,8 @@ export default function Editor() {
     setFm(src.frontmatter);
     setFenceRaw(src.fenceRaw);
     setMtimeMs(src.mtimeMs);
-    const stash = localStorage.getItem(DRAFT_PREFIX + src.file);
-    if (stash !== null && stash !== src.body) setRecovered(stash);
+    const draft = drafts.read();
+    if (draft !== null && draft !== src.body) setRecovered(draft);
   };
 
   onMount(() => {
@@ -79,7 +85,35 @@ export default function Editor() {
     setBody(next);
     setDirty(true);
     setStatus("");
-    if (file !== "") localStorage.setItem(DRAFT_PREFIX + file, next);
+    if (file !== "") drafts.keep(next);
+  }
+
+  async function requestSave(force: boolean): Promise<SaveResponse> {
+    const res = await fetch("/admin/api/save", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        file,
+        frontmatter: fm(),
+        body: body(),
+        fenceRaw: fenceRaw(),
+        expectedMtimeMs: force ? -1 : mtimeMs(),
+      }),
+    });
+    return (await res.json()) as SaveResponse;
+  }
+
+  function applySaved(saved: SavedPost) {
+    setFenceRaw(saved.fenceRaw);
+    setMtimeMs(saved.mtimeMs);
+    handle?.replaceAll(saved.body);
+    setBody(saved.body);
+    setDirty(false);
+    drafts.discard();
+    setStatus(savedStatus(saved));
+    const formatterWarning = formatterWarningOf(saved);
+    if (formatterWarning !== undefined) setWarning(formatterWarning);
+    if (publishedPreview.visible()) void publishedPreview.refresh();
   }
 
   async function save(force = false) {
@@ -88,51 +122,24 @@ export default function Editor() {
     setStatus("저장 중…");
     setWarning("");
     try {
-      const res = await fetch("/admin/api/save", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          file,
-          frontmatter: fm(),
-          body: body(),
-          fenceRaw: fenceRaw(),
-          expectedMtimeMs: force ? -1 : mtimeMs(),
-        }),
-      });
-      const data = (await res.json()) as SaveResponse;
-      if (!data.ok) {
-        if (data.error === "stale") {
-          setStatus("");
-          if (
-            confirm(
-              "파일이 편집기 밖에서 바뀌었습니다.\n확인을 누르면 내 내용으로 덮어씁니다.",
-            )
-          ) {
-            setSaving(false);
-            return save(true);
-          }
-          location.reload();
-          return;
-        }
-        setStatus("");
-        setWarning(`저장 실패: ${data.message}`);
+      const saved = await requestSave(force);
+      if (saved.ok) {
+        applySaved(saved);
         return;
       }
-      setFenceRaw(data.fenceRaw);
-      setMtimeMs(data.mtimeMs);
-      handle?.replaceAll(data.body);
-      setBody(data.body);
-      setDirty(false);
-      localStorage.removeItem(DRAFT_PREFIX + file);
-      setStatus(data.formatted ? "저장됨 · hongdown 적용" : "저장됨");
-      if (data.formatterWarning !== undefined) setWarning(data.formatterWarning);
-      else if (data.formatterNotices !== undefined) {
-        setWarning(`hongdown: ${data.formatterNotices}`);
+      setStatus("");
+      if (saved.error !== "stale") {
+        setWarning(`저장 실패: ${saved.message}`);
+        return;
       }
-      if (publishedPreview.visible()) void publishedPreview.refresh();
+      if (confirm(OVERWRITE_QUESTION)) {
+        setSaving(false);
+        return save(true);
+      }
+      location.reload();
     } catch (e) {
       setStatus("");
-      setWarning(`저장 실패: ${e instanceof Error ? e.message : String(e)}`);
+      setWarning(`저장 실패: ${errorMessage(e)}`);
     } finally {
       setSaving(false);
     }
@@ -204,7 +211,7 @@ export default function Editor() {
                     <button
                       class="small"
                       onClick={() => {
-                        localStorage.removeItem(DRAFT_PREFIX + file);
+                        drafts.discard();
                         setRecovered(null);
                       }}
                     >
@@ -231,7 +238,7 @@ export default function Editor() {
                   onImagePaste={images.paste}
                   assetBase={publishedAssetBase}
                   onScroll={setScroll}
-                  ref={(h) => (handle = h)}
+                  ref={(editorHandle) => (handle = editorHandle)}
                 />
                 <Show when={publishedPreview.visible()}>
                   <Preview
@@ -239,7 +246,7 @@ export default function Editor() {
                     ms={publishedPreview.elapsedMs()}
                     loading={publishedPreview.loading()}
                     error={publishedPreview.error()}
-                    realUrl={`/${src.postPath}/`}
+                    realUrl={publishedPostHref(src.postPath)}
                     scroll={scroll()}
                     onClose={publishedPreview.close}
                     onRefresh={() => void publishedPreview.refresh()}

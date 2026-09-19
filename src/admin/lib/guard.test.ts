@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  badRequestOnPathError,
   checkRequest,
   errorMessageForClient,
   fail,
@@ -133,4 +134,28 @@ test("the origin is checked before the content type", async () => {
     jsonBody,
   );
   assert.equal((await rejected?.json()).error, "forbidden");
+});
+
+test("a path that fails to resolve is answered as a bad request", async () => {
+  const response = await badRequestOnPathError(() => {
+    throw new PathError("path is not repo-relative");
+  });
+  assert.ok(response instanceof Response);
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: "bad-request",
+    message: "path is not repo-relative",
+  });
+});
+
+test("a resolved path is handed back, and any other failure is left to the caller", async () => {
+  assert.equal(await badRequestOnPathError(() => "2026/02/career.ko-Hang.md"), "2026/02/career.ko-Hang.md");
+  assert.equal(await badRequestOnPathError(async () => 1), 1);
+  await assert.rejects(
+    badRequestOnPathError(async () => {
+      throw new Error("disk on fire");
+    }),
+    { message: "disk on fire" },
+  );
 });

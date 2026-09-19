@@ -5,6 +5,7 @@ import {
   type ViewUpdate,
   keymap,
 } from "@codemirror/view";
+import { errorMessage } from "../shared/errors.ts";
 import {
   LINK_PASTE_ACTIONS,
   type LinkPasteAction,
@@ -50,16 +51,44 @@ export function linkPasteMenu(
   ];
 }
 
-/** One line, no whitespace, parseable, http(s) -- anything else pastes natively. */
-function asPastedUrl(text: string): string | null {
-  const t = text.trim();
-  if (t === "" || /\s/.test(t) || !/^https?:\/\//i.test(t)) return null;
+const HTTP_URL_START = /^https?:\/\//i;
+
+function isParseableUrl(text: string): boolean {
   try {
-    new URL(t);
+    new URL(text);
+    return true;
   } catch {
-    return null;
+    return false;
   }
-  return t;
+}
+
+export function pastedBareUrl(text: string): string | null {
+  const candidate = text.trim();
+  if (candidate === "" || /\s/.test(candidate) || !HTTP_URL_START.test(candidate)) return null;
+  return isParseableUrl(candidate) ? candidate : null;
+}
+
+const VIEWPORT_MARGIN = 8;
+const CARET_GAP = 6;
+
+interface Size {
+  width: number;
+  height: number;
+}
+
+export function menuPlacement(
+  caret: { left: number; top: number; bottom: number },
+  menu: Size,
+  viewport: Size,
+): { left: number; top: number } {
+  const below = caret.bottom + CARET_GAP;
+  const fitsBelow = below + menu.height <= viewport.height - VIEWPORT_MARGIN;
+  const top = fitsBelow ? below : caret.top - menu.height - CARET_GAP;
+  const rightmostLeft = viewport.width - menu.width - VIEWPORT_MARGIN;
+  return {
+    left: Math.max(VIEWPORT_MARGIN, Math.min(caret.left, rightmostLeft)),
+    top: Math.max(VIEWPORT_MARGIN, top),
+  };
 }
 
 function renderItem(b: HTMLButtonElement, action: LinkPasteAction) {
@@ -99,7 +128,7 @@ class MenuController {
     if (dt === null) return false;
     // Files belong to the image-paste handler in EditorCodeMirror.tsx.
     for (const item of dt.items) if (item.kind === "file") return false;
-    const url = asPastedUrl(dt.getData("text/plain"));
+    const url = pastedBareUrl(dt.getData("text/plain"));
     if (url === null) return false;
     event.preventDefault();
     const { from, to } = this.view.state.selection.main;
@@ -208,14 +237,13 @@ class MenuController {
       this.close();
       return;
     }
-    const pad = 8;
-    const w = menu.dom.offsetWidth;
-    const h = menu.dom.offsetHeight;
-    let top = coords.bottom + 6;
-    if (top + h > window.innerHeight - pad) top = coords.top - h - 6;
-    menu.dom.style.left =
-      `${Math.max(pad, Math.min(coords.left, window.innerWidth - w - pad))}px`;
-    menu.dom.style.top = `${Math.max(pad, top)}px`;
+    const { left, top } = menuPlacement(
+      coords,
+      { width: menu.dom.offsetWidth, height: menu.dom.offsetHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    menu.dom.style.left = `${left}px`;
+    menu.dom.style.top = `${top}px`;
   }
 
   private setActive(i: number) {
@@ -245,7 +273,7 @@ class MenuController {
       // menu; the stale result (and its error) is simply dropped.
       if (this.menu !== menu) return;
       this.clearBusy(menu);
-      menu.errorEl.textContent = e instanceof Error ? e.message : String(e);
+      menu.errorEl.textContent = errorMessage(e);
       menu.errorEl.hidden = false;
       this.position();
       return;

@@ -7,6 +7,7 @@ import { onCleanup } from "solid-js";
 import {
   type CaretMark,
   type EditorEngineProps,
+  blockInsertion,
   fingerprintOf,
   findLine,
 } from "./engine.ts";
@@ -45,8 +46,8 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
             paste: (event) => handleFiles(event, event.clipboardData),
             drop: (event) => handleFiles(event, event.dataTransfer),
           }),
-          EditorView.updateListener.of((u) => {
-            if (u.docChanged) props.onChange(u.state.doc.toString());
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) props.onChange(update.state.doc.toString());
           }),
           EditorView.domEventHandlers({
             scroll: (_event, v) => {
@@ -119,12 +120,10 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
 function insertBlock(view: EditorView, text: string) {
   const { from, to } = view.state.selection.main;
   const line = view.state.doc.lineAt(from);
-  // Keep the image on a line of its own so hongdown treats it as a block.
-  const before = line.text.slice(0, from - line.from).trim() === "" ? "" : "\n\n";
-  // Always leave a blank line after, and park the caret there: sitting at the
-  // image's own end would count as touching it, which keeps the live preview
-  // showing raw markdown for the picture just pasted.
-  const insert = before + text + "\n\n";
+  const insert = blockInsertion(line.text.slice(0, from - line.from), text);
+  // The caret parks on the blank line after the block: sitting at the image's
+  // own end would count as touching it, which keeps the live preview showing
+  // raw markdown for the picture just pasted.
   view.dispatch({
     changes: { from, to, insert },
     selection: { anchor: from + insert.length },

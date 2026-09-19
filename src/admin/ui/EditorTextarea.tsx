@@ -3,6 +3,7 @@ import { onCleanup } from "solid-js";
 import {
   type CaretMark,
   type EditorEngineProps,
+  blockInsertion,
   fingerprintOf,
   findLine,
 } from "./engine.ts";
@@ -39,11 +40,10 @@ export default function EditorTextarea(props: EditorEngineProps) {
     event.preventDefault();
     void props.onImagePaste(files).then((text) => {
       if (text === null || el === undefined) return;
-      const { selectionStart: s, selectionEnd: e, value } = el;
-      const before = /(^|\n)\s*$/.test(value.slice(0, s)) ? "" : "\n\n";
-      const insert = before + text + "\n\n";
-      el.value = value.slice(0, s) + insert + value.slice(e);
-      el.selectionStart = el.selectionEnd = s + insert.length;
+      const { selectionStart, selectionEnd, value } = el;
+      const insert = blockInsertion(value.slice(0, selectionStart), text);
+      el.value = value.slice(0, selectionStart) + insert + value.slice(selectionEnd);
+      el.selectionStart = el.selectionEnd = selectionStart + insert.length;
       props.onChange(el.value);
       el.focus();
     });

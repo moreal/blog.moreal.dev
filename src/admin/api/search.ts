@@ -1,65 +1,29 @@
-import { promises as fs } from "node:fs";
 import type { APIRoute } from "astro";
+import { readTextOrNull } from "../lib/files.ts";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { contentPath } from "../lib/paths.ts";
 import { scanPosts } from "../lib/scan.ts";
-import { findSourceMatches } from "../lib/search.ts";
+import { searchSources } from "../lib/search.ts";
+import type { SearchResponse } from "../lib/types.ts";
+import { isSearchableQuery } from "../shared/search-query.ts";
 
 export const prerender = false;
-
-const MAX_HITS = 60;
 
 export const GET: APIRoute = async ({ request, url }) => {
   const bad = checkRequest(request, url);
   if (bad !== null) return bad;
 
-  const q = (url.searchParams.get("q") ?? "").trim();
-  if (q.length < 2) {
-    return json({ ok: true, query: q, hits: [], truncated: false });
+  const query = (url.searchParams.get("q") ?? "").trim();
+  if (!isSearchableQuery(query)) {
+    return json({ ok: true, query, hits: [], truncated: false } satisfies SearchResponse);
   }
 
   try {
-    const needle = q.toLowerCase();
     const groups = await scanPosts();
-    const hits: {
-      file: string;
-      postPath: string;
-      lang: string;
-      title: string;
-      line: number;
-      excerpt: string;
-      count: number;
-    }[] = [];
-    let truncated = false;
-
-    for (const g of groups) {
-      for (const s of g.sources) {
-        const abs = contentPath(s.file);
-        let text: string;
-        try {
-          text = await fs.readFile(abs, "utf-8");
-        } catch {
-          continue;
-        }
-        const matches = findSourceMatches(text, needle);
-        if (matches === null) continue;
-        if (hits.length >= MAX_HITS) {
-          truncated = true;
-          break;
-        }
-        hits.push({
-          file: s.file,
-          postPath: s.postPath,
-          lang: s.lang,
-          title: s.title || s.slug,
-          ...matches,
-        });
-      }
-      if (truncated) break;
-    }
-
-    hits.sort((a, b) => b.count - a.count);
-    return json({ ok: true, query: q, hits, truncated });
+    const found = await searchSources(groups, query.toLowerCase(), (file) =>
+      readTextOrNull(contentPath(file)),
+    );
+    return json({ ok: true, query, ...found } satisfies SearchResponse);
   } catch (e) {
     return fail("io", errorMessageForClient(e));
   }

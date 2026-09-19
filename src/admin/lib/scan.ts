@@ -4,11 +4,13 @@ import MarkdownIt from "markdown-it";
 import title from "markdown-it-title";
 import {
   fileNames,
+  postPathOf,
   walkContent,
   type AssetDirectory,
   type SourceFile,
 } from "../../lib/posts.ts";
 import { readForm, splitSource } from "./frontmatter.ts";
+import { errorMessage } from "../shared/errors.ts";
 import { LANGS, derivedLangsOf } from "../shared/post-files.ts";
 import { CONTENT_ROOT, contentPath, splitPostFileName } from "./paths.ts";
 import type { Lang, PostAssetInfo, PostGroup, PostSourceSummary } from "./types.ts";
@@ -33,10 +35,6 @@ function firstHeading(body: string): string {
   const env: { title?: string } = {};
   sourceTitleParser.render(body, env);
   return env.title ?? "";
-}
-
-function postPathOf({ year, month, slug }: { year: string; month: string; slug: string }): string {
-  return `${year}/${month}/${slug}`;
 }
 
 function postSourceOf(sourceFile: SourceFile): PostSource | null {
@@ -90,8 +88,7 @@ async function summarize(source: PostSource): Promise<PostSourceSummary> {
   try {
     return { ...summaryWithoutFrontMatter, ...frontMatterSummary(text, source.file) };
   } catch (error) {
-    const parseError = error instanceof Error ? error.message : String(error);
-    return { ...summaryWithoutFrontMatter, parseError };
+    return { ...summaryWithoutFrontMatter, parseError: errorMessage(error) };
   }
 }
 

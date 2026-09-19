@@ -6,7 +6,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import { For, Show, createSignal, onCleanup } from "solid-js";
 import { createStore, produce, reconcile } from "solid-js/store";
 import {
-  EVENT_TYPES, PANES, SEED, VERDICTS,
+  EVENT_TYPES, PANES, SEED, VERDICTS, verdictKey,
   type LogEntry, type PaneId,
 } from "./imeLabModel.ts";
 import { codepoints, eventDetail, eventRowClass } from "./imeLabEvents.ts";
@@ -27,17 +27,17 @@ export default function ImeLab() {
   const [log, setLog] = createStore<LogEntry[]>([]);
   // Derived from PANES so adding a pane cannot leave this behind.
   const [values, setValues] = createStore<Record<PaneId, string>>(
-    Object.fromEntries(PANES.map((p) => [p.id, SEED])) as Record<
+    Object.fromEntries(PANES.map((pane) => [pane.id, SEED])) as Record<
       PaneId,
       string
     >,
   );
   const [verdicts, setVerdicts] = createStore<Record<string, boolean>>({});
   const [paneOn, setPaneOn] = createStore<Record<string, boolean>>(
-    Object.fromEntries(PANES.map((p) => [p.id, true])),
+    Object.fromEntries(PANES.map((pane) => [pane.id, true])),
   );
   const [typeOn, setTypeOn] = createStore<Record<string, boolean>>(
-    Object.fromEntries(EVENT_TYPES.map((t) => [t, true])),
+    Object.fromEntries(EVENT_TYPES.map((type) => [type, true])),
   );
   const [follow, setFollow] = createSignal(true);
 
@@ -79,8 +79,8 @@ export default function ImeLab() {
       if (!e.defaultPrevented) return;
       setLog(
         produce((entries) => {
-          const it = entries.find((x) => x.seq === id);
-          if (it) it.detail["defaultPrevented"] = true;
+          const entry = entries.find((candidate) => candidate.seq === id);
+          if (entry) entry.detail["defaultPrevented"] = true;
         }),
       );
     });
@@ -146,16 +146,16 @@ export default function ImeLab() {
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           EditorView.lineWrapping,
           EditorView.domEventHandlers(domHandlers as DomHandlers),
-          EditorView.updateListener.of((u) => {
-            if (!u.docChanged) return;
+          EditorView.updateListener.of((update) => {
+            if (!update.docChanged) return;
             const changes: string[] = [];
-            u.changes.iterChanges((fa, ta, fb, tb, ins) => {
+            update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
               changes.push(
-                `${fa}-${ta}→${fb}-${tb} ${JSON.stringify(ins.toString())}`,
+                `${fromA}-${toA}→${fromB}-${toB} ${JSON.stringify(inserted.toString())}`,
               );
             });
             recordEvent("codemirror", "cm-update", "cm-update", {
-              composing: u.view.composing,
+              composing: update.view.composing,
               changes,
             });
           }),
@@ -177,7 +177,7 @@ export default function ImeLab() {
     codeMirrorView?.dispatch({
       changes: { from: 0, to: codeMirrorView.state.doc.length, insert: SEED },
     });
-    for (const p of PANES) setValues(p.id, SEED);
+    for (const pane of PANES) setValues(pane.id, SEED);
   }
 
   function clearLog() {
@@ -195,7 +195,7 @@ export default function ImeLab() {
   }
 
   const visibleEntries = () =>
-    log.filter((e) => paneOn[e.pane] && typeOn[e.type] !== false);
+    log.filter((entry) => paneOn[entry.pane] && typeOn[entry.type] !== false);
 
   return (
     <div class="lab">
@@ -232,7 +232,7 @@ export default function ImeLab() {
                 <h3>{pane.title}</h3>
                 <code>{pane.note}</code>
                 <span class="count">
-                  {log.filter((e) => e.pane === pane.id).length}
+                  {log.filter((entry) => entry.pane === pane.id).length}
                 </span>
               </div>
 
@@ -266,8 +266,8 @@ export default function ImeLab() {
                 <div>
                   <b>코드포인트</b>{" "}
                   <For each={codepoints(values[pane.id])}>
-                    {(c) => (
-                      <span class={c.hanja ? "hanja" : undefined}>{c.cp} </span>
+                    {(codepoint) => (
+                      <span class={codepoint.hanja ? "hanja" : undefined}>{codepoint.cp} </span>
                     )}
                   </For>
                 </div>
@@ -279,12 +279,9 @@ export default function ImeLab() {
                     <label>
                       <input
                         type="checkbox"
-                        checked={verdicts[`${pane.id}:${i()}`] === true}
+                        checked={verdicts[verdictKey(pane.id, i())] === true}
                         onChange={(e) =>
-                          setVerdicts(
-                            `${pane.id}:${i()}`,
-                            e.currentTarget.checked,
-                          )
+                          setVerdicts(verdictKey(pane.id, i()), e.currentTarget.checked)
                         }
                       />
                       {label}
@@ -311,14 +308,14 @@ export default function ImeLab() {
         <button onClick={reset}>본문 초기화</button>
         <div class="filters">
           <For each={PANES}>
-            {(p) => (
+            {(pane) => (
               <label>
                 <input
                   type="checkbox"
-                  checked={paneOn[p.id]}
-                  onChange={(e) => setPaneOn(p.id, e.currentTarget.checked)}
+                  checked={paneOn[pane.id]}
+                  onChange={(e) => setPaneOn(pane.id, e.currentTarget.checked)}
                 />
-                {p.title}
+                {pane.title}
               </label>
             )}
           </For>
@@ -336,14 +333,14 @@ export default function ImeLab() {
         </label>
         <div class="filters">
           <For each={EVENT_TYPES}>
-            {(t) => (
+            {(type) => (
               <label>
                 <input
                   type="checkbox"
-                  checked={typeOn[t]}
-                  onChange={(e) => setTypeOn(t, e.currentTarget.checked)}
+                  checked={typeOn[type]}
+                  onChange={(e) => setTypeOn(type, e.currentTarget.checked)}
                 />
-                {t}
+                {type}
               </label>
             )}
           </For>
@@ -373,19 +370,17 @@ export default function ImeLab() {
             </thead>
             <tbody>
               <For each={visibleEntries()}>
-                {(e) => {
-                  return (
-                    <tr class={eventRowClass(e)}>
-                      <td class="seq">{e.seq}</td>
-                      <td class="t">{e.t}</td>
-                      <td>{e.pane}</td>
-                      <td>{e.source}</td>
-                      <td class="type">{e.type}</td>
-                      <td class="detail">{JSON.stringify(e.detail)}</td>
-                      <td class="detail">{JSON.stringify(e.value)}</td>
-                    </tr>
-                  );
-                }}
+                {(entry) => (
+                  <tr class={eventRowClass(entry)}>
+                    <td class="seq">{entry.seq}</td>
+                    <td class="t">{entry.t}</td>
+                    <td>{entry.pane}</td>
+                    <td>{entry.source}</td>
+                    <td class="type">{entry.type}</td>
+                    <td class="detail">{JSON.stringify(entry.detail)}</td>
+                    <td class="detail">{JSON.stringify(entry.value)}</td>
+                  </tr>
+                )}
               </For>
             </tbody>
           </table>

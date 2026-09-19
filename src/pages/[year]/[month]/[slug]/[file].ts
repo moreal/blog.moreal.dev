@@ -1,31 +1,26 @@
 import type { APIContext } from "astro";
 import { promises as fs } from "node:fs";
+import { assetContentType } from "../../../../lib/asset-content-type";
 import { createPostPageRenderer } from "../../../../lib/post-page";
-import { getAssets, getPost, getPosts, viewFilename } from "../../../../lib/posts";
+import {
+  getAssets,
+  getPost,
+  getPosts,
+  viewFilename,
+  type Post,
+  type PostAsset,
+} from "../../../../lib/posts";
 
-const CONTENT_TYPES: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-};
+type ViewProps = { kind: "view"; path: string; lang: string };
+type AssetProps = { kind: "asset"; sourcePath: string };
+type Props = ViewProps | AssetProps;
 
-type Props =
-  | { kind: "view"; path: string; lang: string }
-  | { kind: "asset"; sourcePath: string };
-
-export async function getStaticPaths() {
-  const paths = [];
-  // Language-specific view files of multiview posts, e.g.
-  // /2026/03/botkit/index.ko-hang.html.  The bare /2026/03/botkit/ URL is
-  // handled by ../[slug].astro (a post page or a language redirector).
-  for (const post of await getPosts()) {
-    if (!post.multiview) continue;
-    for (const view of post.views) {
-      paths.push({
+// The bare post URL, e.g. /2026/03/botkit/, is served by ../[slug].astro.
+function languageViewRoutes(posts: Post[]) {
+  return posts
+    .filter((post) => post.multiview)
+    .flatMap((post) =>
+      post.views.map((view) => ({
         params: {
           year: post.year,
           month: post.month,
@@ -33,42 +28,49 @@ export async function getStaticPaths() {
           file: viewFilename(view.lang),
         },
         props: { kind: "view", path: post.path, lang: view.lang } as Props,
-      });
-    }
-  }
-  // Files sitting next to the posts (images etc.), copied to the same URL.
-  for (const asset of await getAssets()) {
-    paths.push({
-      params: {
-        year: asset.year,
-        month: asset.month,
-        slug: asset.slug,
-        file: asset.file,
-      },
-      props: { kind: "asset", sourcePath: asset.sourcePath } as Props,
-    });
-  }
-  return paths;
+      })),
+    );
 }
 
-export async function GET({ props }: APIContext<Props>) {
-  if (props.kind === "asset") {
-    const body = await fs.readFile(props.sourcePath);
-    const ext = props.sourcePath.slice(props.sourcePath.lastIndexOf("."));
-    const type = CONTENT_TYPES[ext.toLowerCase()] ?? "application/octet-stream";
-    return new Response(new Uint8Array(body), {
-      headers: { "Content-Type": type },
-    });
-  }
+function assetRoutes(assets: PostAsset[]) {
+  return assets.map((asset) => ({
+    params: {
+      year: asset.year,
+      month: asset.month,
+      slug: asset.slug,
+      file: asset.file,
+    },
+    props: { kind: "asset", sourcePath: asset.sourcePath } as Props,
+  }));
+}
 
-  const post = await getPost(props.path);
-  const view = post.views.find((v) => v.lang === props.lang);
+export async function getStaticPaths() {
+  return [
+    ...languageViewRoutes(await getPosts()),
+    ...assetRoutes(await getAssets()),
+  ];
+}
+
+async function assetResponse({ sourcePath }: AssetProps): Promise<Response> {
+  const body = await fs.readFile(sourcePath);
+  return new Response(new Uint8Array(body), {
+    headers: { "Content-Type": assetContentType(sourcePath) },
+  });
+}
+
+async function languageViewResponse({ path, lang }: ViewProps): Promise<Response> {
+  const post = await getPost(path);
+  const view = post.views.find((candidate) => candidate.lang === lang);
   if (view === undefined) {
-    throw new Error(`No ${props.lang} view for ${props.path}`);
+    throw new Error(`No ${lang} view for ${path}`);
   }
   const renderPostPage = await createPostPageRenderer();
   const html = await renderPostPage(post, view);
   return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
+}
+
+export async function GET({ props }: APIContext<Props>) {
+  return props.kind === "asset" ? assetResponse(props) : languageViewResponse(props);
 }

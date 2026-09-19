@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { SourceResponse } from "../lib/types.ts";
+import type { LoadedSource } from "./api.ts";
 import { createImagePaste } from "./imagePaste.ts";
 import { createPublishedPreview } from "./publishedPreview.ts";
 
-type Source = Extract<SourceResponse, { ok: true }>;
-const source: Source = {
+const source: LoadedSource = {
   ok: true, file: "2026/09/post.en.md", postPath: "2026/09/post",
   year: "2026", month: "09", slug: "post", lang: "en",
   fenceRaw: "---\n---", body: "original", frontmatter: { published: "" },

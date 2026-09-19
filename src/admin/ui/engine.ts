@@ -19,6 +19,15 @@ export interface EditorHandle {
   focus: () => void;
 }
 
+const CARET_AT_LINE_START = /(^|\n)\s*$/;
+
+const BLANK_LINE = "\n\n";
+
+export function blockInsertion(textBeforeCaret: string, block: string): string {
+  const separator = CARET_AT_LINE_START.test(textBeforeCaret) ? "" : BLANK_LINE;
+  return separator + block + BLANK_LINE;
+}
+
 /**
  * hongdown rewraps every paragraph, so the caret cannot be restored by offset.
  * Remember which line it was on and what that line started with, then find the

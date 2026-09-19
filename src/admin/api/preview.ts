@@ -1,7 +1,14 @@
 import type { APIRoute } from "astro";
 import { serializeFrontMatter } from "../lib/frontmatter.ts";
-import { checkRequest, errorMessageForClient, fail, json, readJsonBody } from "../lib/guard.ts";
-import { PathError, resolvePostFile } from "../lib/paths.ts";
+import {
+  badRequestOnPathError,
+  checkRequest,
+  errorMessageForClient,
+  fail,
+  json,
+  readJsonBody,
+} from "../lib/guard.ts";
+import { resolvePostFile } from "../lib/paths.ts";
 import { LANGS } from "../shared/post-files.ts";
 import { renderPreviewDocument } from "../lib/preview-doc.ts";
 import type { Lang, PreviewRequest, PreviewResponse } from "../lib/types.ts";
@@ -25,13 +32,8 @@ export const POST: APIRoute = async ({ request, url }) => {
     return fail("bad-request", `unknown language ${JSON.stringify(body.lang)}`);
   }
 
-  let ref;
-  try {
-    ref = resolvePostFile(body.file);
-  } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    throw e;
-  }
+  const ref = await badRequestOnPathError(() => resolvePostFile(body.file));
+  if (ref instanceof Response) return ref;
   if (ref.lang !== body.lang) {
     return fail("bad-request", "lang does not match the file name");
   }

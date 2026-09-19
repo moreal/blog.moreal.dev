@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { errorMessage } from "../shared/errors.ts";
 import { CONTENT_ROOT } from "./paths.ts";
 
 const run = promisify(execFile);
@@ -108,8 +109,7 @@ function withoutContentRoot(message: string): string {
 }
 
 function formatterCrashed(error: unknown): FormatResult {
-  const message = error instanceof Error ? error.message : String(error);
-  return { formatted: false, warning: withoutContentRoot(message) };
+  return { formatted: false, warning: withoutContentRoot(errorMessage(error)) };
 }
 
 /**

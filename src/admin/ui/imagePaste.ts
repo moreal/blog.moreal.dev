@@ -1,8 +1,7 @@
 import { createSignal, type Accessor } from "solid-js";
-import type { SourceResponse } from "../lib/types.ts";
+import type { LoadedSource } from "./api.ts";
 import type { ImageNameRequest, ImageNameResult } from "./ImageNameDialog.tsx";
 
-type LoadedSource = Extract<SourceResponse, { ok: true }> | null | undefined;
 type ImageNameSuggestion = Omit<ImageNameRequest, "preview">;
 type ImageFailure = { ok: false; message: string };
 type ImageNameResponse = ({ ok: true } & ImageNameSuggestion) | ImageFailure;
@@ -33,7 +32,7 @@ async function uploadImage(
 }
 
 export function createImagePaste(
-  source: Accessor<LoadedSource>,
+  source: Accessor<LoadedSource | null | undefined>,
   warn: (message: string) => void,
 ) {
   const [dialog, setDialog] = createSignal<ImageNameRequest | null>(null);

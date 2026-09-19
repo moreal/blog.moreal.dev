@@ -3,7 +3,12 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { composeSavedSource, formatAndReadSavedPost, replacePostFileAtomically } from "./save.ts";
+import {
+  changedSinceLoaded,
+  composeSavedSource,
+  formatAndReadSavedPost,
+  replacePostFileAtomically,
+} from "./save.ts";
 import { resolvePostFile } from "./paths.ts";
 
 const frontmatter = { published: "2026-09-08T10:00:00+09:00", draft: true };
@@ -45,4 +50,16 @@ test("failed replacement removes the temporary file and preserves the destinatio
   await assert.rejects(replacePostFileAtomically(destination, "new content"));
   assert.deepEqual(await fs.readdir(directory), ["post.ko-Hang.md"]);
   assert.ok((await fs.stat(destination)).isDirectory());
+});
+
+test("a file is unchanged since it was loaded while its mtime is within a millisecond of the one the editor holds", () => {
+  assert.equal(changedSinceLoaded(1000, 1000), false);
+  assert.equal(changedSinceLoaded(1000.4, 1001), false);
+  assert.equal(changedSinceLoaded(1000, 1002), true);
+  assert.equal(changedSinceLoaded(1002, 1000), true);
+});
+
+test("a save that names no mtime skips the check", () => {
+  assert.equal(changedSinceLoaded(undefined, 1000), false);
+  assert.equal(changedSinceLoaded("1000", 5), false);
 });

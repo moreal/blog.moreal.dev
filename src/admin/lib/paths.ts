@@ -35,12 +35,6 @@ export interface PostFileRef extends PostPathParts {
   postPath: string;
 }
 
-export function isCalendarDate(value: string): boolean {
-  if (!/^20\d\d-\d\d-\d\d$/.test(value)) return false;
-  const midnightUtc = Date.parse(`${value}T00:00:00Z`);
-  return !Number.isNaN(midnightUtc) && new Date(midnightUtc).toISOString().slice(0, 10) === value;
-}
-
 export function contentPath(rel: string, root: string = CONTENT_ROOT): string {
   return path.join(root, ...rel.split("/"));
 }

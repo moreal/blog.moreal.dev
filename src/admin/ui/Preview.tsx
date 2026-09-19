@@ -54,12 +54,12 @@ export default function Preview(props: {
     <aside class="preview">
       <div class="preview-head">
         <For each={props.views}>
-          {(v, i) => (
+          {(view, index) => (
             <button
-              class={i() === active() ? "primary small" : "small"}
-              onClick={() => setActive(i())}
+              class={index() === active() ? "primary small" : "small"}
+              onClick={() => setActive(index())}
             >
-              {languageLabel(v.lang)}
+              {languageLabel(view.lang)}
             </button>
           )}
         </For>

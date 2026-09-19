@@ -1,20 +1,13 @@
 import { NIGHT_INIT, NIGHT_VEIL } from "../lib/night";
-import type { BookInfo, Post, PostView as PostViewData } from "../lib/posts";
-import { kstDate, viewFilename } from "../lib/posts";
+import { backLinkHref, bookLine, descriptionOf, primaryLanguage } from "../lib/post-view";
+import type { Post, PostView as PostViewData } from "../lib/posts";
+import { kstDate, viewUrl } from "../lib/posts";
 import { SITE, languageLabel } from "../lib/site";
+import AuthorMeta from "./AuthorMeta";
 
 interface Props {
   post: Post;
   view: PostViewData;
-}
-
-function bookLine(book: BookInfo): string {
-  return [
-    book.author,
-    book.translator && `${book.translator} 옮김`,
-    book.publisher,
-    book.year !== undefined ? String(book.year) : undefined,
-  ].filter((part): part is string => typeof part === "string").join(" · ");
 }
 
 export default function PostView(props: Props) {
@@ -22,7 +15,7 @@ export default function PostView(props: Props) {
   const published = kstDate(view.published);
   const fullTitle = `${view.title} — ${SITE.title}`;
   return (
-    <html lang={view.lang.split("-")[0]}>
+    <html lang={primaryLanguage(view.lang)}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,34 +23,27 @@ export default function PostView(props: Props) {
         <title>{fullTitle}</title>
         <link rel="stylesheet" href="/static/style.css" />
         <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml" />
-        <meta name="description" content={view.description || "블로그 포스트"} />
+        <meta name="description" content={descriptionOf(view)} />
         <meta name="og:title" content={fullTitle} />
-        <meta name="author" content={SITE.author} />
-        <meta name="fediverse:creator" content={SITE.fediverseCreator} />
-        {SITE.relMe.map((url) => <link rel="me" href={url} />)}
+        <AuthorMeta />
       </head>
       <body class={view.dark ? "post dark-story" : "post"}>
         <header class="post-header">
-          {/* Daily notes are absent from the main list, so send readers
-              back to their own tab instead. */}
-          <a
-            href={view.type === "daily" ? "/daily/" : "/"}
-            class="back-link"
-          >
+          <a href={backLinkHref(view)} class="back-link">
             다른 글 보기
           </a>
           {post.multiview && (
             <nav class="lang-nav">
-              {post.views.map((v) =>
-                v.lang === view.lang
+              {post.views.map((otherView) =>
+                otherView.lang === view.lang
                   ? (
                     <span class="lang-current">
-                      {languageLabel(v.lang)}
+                      {languageLabel(otherView.lang)}
                     </span>
                   )
                   : (
-                    <a href={`/${post.path}/${viewFilename(v.lang)}`}>
-                      {languageLabel(v.lang)}
+                    <a href={viewUrl(post.path, otherView.lang)}>
+                      {languageLabel(otherView.lang)}
                     </a>
                   )
               )}

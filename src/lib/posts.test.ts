@@ -10,7 +10,9 @@ import {
   renderViews,
   sortPostViews,
   splitFrontMatter,
+  postPathOf,
   viewFilename,
+  viewUrl,
   walkContent,
   withoutDrafts,
   type Post,
@@ -244,4 +246,12 @@ test("draft views are dropped, and so are posts left with no view", () => {
       ["published", ["en", "ko-Hang"], true],
     ],
   );
+});
+
+test("a post's path joins its year, month and slug", () => {
+  assert.equal(postPathOf({ year: "2026", month: "03", slug: "botkit" }), "2026/03/botkit");
+});
+
+test("a language view of a multiview post is served from its own file under the post path", () => {
+  assert.equal(viewUrl("2026/03/botkit", "ko-Kore"), "/2026/03/botkit/index.ko-kore.html");
 });

@@ -1,7 +1,8 @@
-import { promises as fs } from "node:fs";
 import path from "node:path";
 import { parse } from "smol-toml";
 import { ADMIN_CONFIG } from "../config.ts";
+import { errorMessage } from "../shared/errors.ts";
+import { readTextOrNull } from "./files.ts";
 import { CONTENT_ROOT, contentPath } from "./paths.ts";
 
 export class TitleRuleError extends Error {}
@@ -29,14 +30,6 @@ export async function loadTitleRules(root: string = CONTENT_ROOT): Promise<Title
   const rulesToml = await readTextOrNull(contentPath(rulesFile, root));
   if (rulesToml === null) return [];
   return parseTitleRules(rulesToml, path.basename(rulesFile));
-}
-
-async function readTextOrNull(abs: string): Promise<string | null> {
-  try {
-    return await fs.readFile(abs, "utf-8");
-  } catch {
-    return null;
-  }
 }
 
 export function parseTitleRules(rulesToml: string, fileName: string): TitleRule[] {
@@ -137,7 +130,7 @@ function isReplacementTuple(entry: unknown): entry is [string, string, string?] 
 }
 
 function ruleErrorCausedBy(error: unknown, location: string): TitleRuleError {
-  return new TitleRuleError(`${location}: ${error instanceof Error ? error.message : String(error)}`);
+  return new TitleRuleError(`${location}: ${errorMessage(error)}`);
 }
 
 export function applyTitleRules(title: string, hostname: string, rules: readonly TitleRule[]): string {

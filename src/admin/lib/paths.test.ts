@@ -8,7 +8,6 @@ import {
   PathError,
   assertNoSymlink,
   contentPath,
-  isCalendarDate,
   resolvePostDir,
   resolvePostFile,
   splitPostFileName,
@@ -98,15 +97,6 @@ test("parent segments, absolute paths and empty segments are not repo-relative",
     "2026//02/career.en.md",
   ]) {
     assertPathError(() => resolvePostFile(rel), "path is not repo-relative");
-  }
-});
-
-test("a date is a calendar date only when that day exists in 20xx", () => {
-  for (const day of ["2024-02-29", "2026-12-31", "2000-01-01"]) {
-    assert.equal(isCalendarDate(day), true, day);
-  }
-  for (const day of ["2023-02-29", "2026-02-31", "2026-13-01", "2026-00-10", "2026-2-3", "1999-12-31", "2026-02-03T00:00"]) {
-    assert.equal(isCalendarDate(day), false, day);
   }
 });
 

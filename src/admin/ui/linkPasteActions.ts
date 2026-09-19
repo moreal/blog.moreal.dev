@@ -37,22 +37,22 @@ export interface LinkPasteAction {
   ) => LinkPasteOutcome | null | Promise<LinkPasteOutcome | null>;
 }
 
-/**
- * `]` and `\` would end or corrupt the label, and an unbalanced `)` in the URL
- * would end the destination early -- `<>` is always safe for the destination.
- */
-function mdLink(
-  alias: string,
-  url: string,
-): { text: string; aliasStart: number; aliasEnd: number } {
-  const label = alias.replace(/([\\[\]])/g, "\\$1");
-  const dest = /[()<>]/.test(url) ? `<${url}>` : url;
-  return {
-    text: `[${label}](${dest})`,
-    aliasStart: 1,
-    aliasEnd: 1 + label.length,
-  };
+const LABEL_BREAKING_CHARACTERS = /([\\[\]])/g;
+const DESTINATION_BREAKING_CHARACTERS = /[()<>]/;
+
+function escapedLabel(alias: string): string {
+  return alias.replace(LABEL_BREAKING_CHARACTERS, "\\$1");
 }
+
+function safeDestination(url: string): string {
+  return DESTINATION_BREAKING_CHARACTERS.test(url) ? `<${url}>` : url;
+}
+
+export function markdownLink(alias: string, url: string): string {
+  return `[${escapedLabel(alias)}](${safeDestination(url)})`;
+}
+
+const CARET_INSIDE_EMPTY_LABEL = { anchor: "[".length, head: "[".length };
 
 export const LINK_PASTE_ACTIONS: readonly LinkPasteAction[] = [
   {
@@ -66,12 +66,8 @@ export const LINK_PASTE_ACTIONS: readonly LinkPasteAction[] = [
     label: "별칭 달기",
     hint: "[별칭](URL)",
     run: ({ url, replacedText }) => {
-      const { text, aliasStart } = mdLink(replacedText, url);
-      // With a former selection the alias is already written, so the caret
-      // moves on; with none it parks inside the empty brackets.
-      return replacedText === ""
-        ? { text, selection: { anchor: aliasStart, head: aliasStart } }
-        : { text };
+      const text = markdownLink(replacedText, url);
+      return replacedText === "" ? { text, selection: CARET_INSIDE_EMPTY_LABEL } : { text };
     },
   },
   {
@@ -84,7 +80,7 @@ export const LINK_PASTE_ACTIONS: readonly LinkPasteAction[] = [
       if (title === null) {
         throw new Error("문서에서 제목을 찾지 못했습니다.");
       }
-      return { text: mdLink(title, url).text };
+      return { text: markdownLink(title, url) };
     },
   },
 ];

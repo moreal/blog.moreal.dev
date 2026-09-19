@@ -13,6 +13,36 @@ const API_ROUTES = [
   "config",
 ] as const;
 
+const ADMIN_MARKERS = ["/admin/api/", "src/admin/"];
+
+const TEXT_OUTPUT_FILE = /\.(html|js|css|json|xml)$/;
+
+export function adminPathnames(pathnames: string[]): string[] {
+  return pathnames.filter(
+    (pathname) => pathname.startsWith("admin") || pathname.startsWith("__admin"),
+  );
+}
+
+export async function outputFilesMentioningAdmin(outputRoot: string): Promise<string[]> {
+  const { promises: fs } = await import("node:fs");
+  const found: string[] = [];
+  const walk = async (directory: string): Promise<void> => {
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const child = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        await walk(child);
+      } else if (TEXT_OUTPUT_FILE.test(entry.name)) {
+        const text = await fs.readFile(child, "utf-8");
+        if (ADMIN_MARKERS.some((marker) => text.includes(marker))) {
+          found.push(child.slice(outputRoot.length));
+        }
+      }
+    }
+  };
+  await walk(outputRoot);
+  return found;
+}
+
 /**
  * A CMS for editing this blog's posts, served only by `astro dev`.
  *
@@ -78,37 +108,18 @@ export default function adminCms(): AstroIntegration {
       // It exists because "verified once" is not the same as "cannot regress":
       // a stray import from a site page would otherwise ship the CMS silently.
       async "astro:build:done"({ dir, pages, logger }) {
-        const leaked = pages
-          .map((p) => p.pathname)
-          .filter((p) => p.startsWith("admin") || p.startsWith("__admin"));
-        if (leaked.length > 0) {
+        const leakedRoutes = adminPathnames(pages.map((page) => page.pathname));
+        if (leakedRoutes.length > 0) {
           throw new Error(
-            `admin routes reached the build output: ${leaked.join(", ")}`,
+            `admin routes reached the build output: ${leakedRoutes.join(", ")}`,
           );
         }
 
-        const { promises: fs } = await import("node:fs");
         const { fileURLToPath } = await import("node:url");
-        const root = fileURLToPath(dir);
-        const MARKERS = ["/admin/api/", "src/admin/"];
-        const hits: string[] = [];
-        const walk = async (abs: string): Promise<void> => {
-          for (const e of await fs.readdir(abs, { withFileTypes: true })) {
-            const child = `${abs}/${e.name}`;
-            if (e.isDirectory()) {
-              await walk(child);
-            } else if (/\.(html|js|css|json|xml)$/.test(e.name)) {
-              const text = await fs.readFile(child, "utf-8");
-              if (MARKERS.some((m) => text.includes(m))) {
-                hits.push(child.slice(root.length));
-              }
-            }
-          }
-        };
-        await walk(root);
-        if (hits.length > 0) {
+        const leakedCode = await outputFilesMentioningAdmin(fileURLToPath(dir));
+        if (leakedCode.length > 0) {
           throw new Error(
-            `admin code reached the build output: ${hits.join(", ")}`,
+            `admin code reached the build output: ${leakedCode.join(", ")}`,
           );
         }
         logger.info("no admin code in the build output");

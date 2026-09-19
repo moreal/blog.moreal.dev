@@ -5,6 +5,8 @@ export type { BookInfo, PostType };
 
 export type Lang = "ko-Hang" | "ko-Kore" | "en";
 
+export type PostKind = "daily" | "reading" | "regular";
+
 /**
  * Front matter in the shape the editor form edits.  `published` stays a raw
  * string: parsing it through YAML and back would requote the timestamp, and
@@ -141,6 +143,20 @@ export type LinkTitleResponse =
       /** Null when the document has no usable title. */
       title: string | null;
     }
+  | ApiFailure;
+
+export interface SearchHit {
+  file: string;
+  postPath: string;
+  lang: Lang;
+  title: string;
+  line: number;
+  excerpt: string;
+  count: number;
+}
+
+export type SearchResponse =
+  | { ok: true; query: string; hits: SearchHit[]; truncated: boolean }
   | ApiFailure;
 
 export type ClientConfig = Pick<

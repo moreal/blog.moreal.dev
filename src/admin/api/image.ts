@@ -3,14 +3,21 @@ import path from "node:path";
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
 import { fileExists, writeWithoutClobbering } from "../lib/files.ts";
-import { checkRequest, errorMessageForClient, fail, failForThrown, json } from "../lib/guard.ts";
+import {
+  badRequestOnPathError,
+  checkRequest,
+  errorMessageForClient,
+  fail,
+  failForThrown,
+  json,
+} from "../lib/guard.ts";
 import { extensionFromMimeType } from "../lib/image-type.ts";
-import { PathError, assertNoSymlink, contentPath, resolvePostFile } from "../lib/paths.ts";
+import { imageSizeProblem, uploadedImageFileName } from "../lib/image-upload.ts";
+import { assertNoSymlink, contentPath, resolvePostFile } from "../lib/paths.ts";
 import { listAssetNames } from "../lib/scan.ts";
+import { imageMarkdown } from "../shared/image-names.ts";
 
 export const prerender = false;
-
-const BASE_NAME = /^[a-z0-9][a-z0-9._-]*$/;
 
 export const POST: APIRoute = async ({ request, url }) => {
   const bad = checkRequest(request, url, { contentType: "multipart/form-data" });
@@ -34,26 +41,16 @@ export const POST: APIRoute = async ({ request, url }) => {
   const imageType = extensionFromMimeType(blob.type);
   if (!imageType.ok) return fail("unsupported-type", imageType.message);
   const { ext } = imageType;
-  if (blob.size > ADMIN_CONFIG.maxImageBytes) {
-    return fail(
-      "too-large",
-      `${Math.round(blob.size / 1024)}KB — 상한은 ${Math.round(ADMIN_CONFIG.maxImageBytes / 1024)}KB입니다.`,
-    );
-  }
-  const base = name.trim().toLowerCase();
-  if (!BASE_NAME.test(base) || base.includes("..")) {
+  const sizeProblem = imageSizeProblem(blob.size, ADMIN_CONFIG.maxImageBytes);
+  if (sizeProblem !== null) return fail("too-large", sizeProblem);
+  const fileName = uploadedImageFileName(name, ext);
+  if (fileName === null) {
     return fail("bad-name", "이름은 영소문자·숫자·하이픈·밑줄만 쓸 수 있습니다.");
   }
 
-  let ref;
-  try {
-    ref = resolvePostFile(mdFile);
-  } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    throw e;
-  }
+  const ref = await badRequestOnPathError(() => resolvePostFile(mdFile));
+  if (ref instanceof Response) return ref;
 
-  const fileName = base.endsWith(ext) ? base : base + ext;
   const rel = `${ref.postPath}/${fileName}`;
   const abs = contentPath(rel);
 
@@ -79,9 +76,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     return json({
       ok: true,
       assetPath: rel,
-      // URL-relative, matching how every existing post references its images:
-      // correct next to the published index.html, not on disk.
-      markdown: `![](./${fileName})`,
+      markdown: imageMarkdown(fileName),
       previewUrl: `/${rel}`,
       bytes: bytes.length,
     });

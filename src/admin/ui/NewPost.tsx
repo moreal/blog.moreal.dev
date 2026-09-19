@@ -1,21 +1,21 @@
 import { Show, createResource, createSignal } from "solid-js";
-import type { Lang } from "../lib/types.ts";
+import type { Lang, PostKind } from "../lib/types.ts";
 import { languageLabel } from "../../lib/site.ts";
 import { api } from "./api.ts";
-import { kstDate } from "../shared/dates.ts";
-import { CREATE_SLUG, LANGS, postFileName } from "../shared/post-files.ts";
+import { editorHref } from "./links.ts";
+import { POST_KIND_LABELS } from "./postKinds.ts";
+import { kstDate, looksLikeCalendarDate, yearAndMonthOf } from "../shared/dates.ts";
+import { errorMessage } from "../shared/errors.ts";
+import { CREATE_SLUG, LANGS, postFilePath } from "../shared/post-files.ts";
 
-type Kind = "daily" | "reading" | "regular";
-
-const KINDS: { id: Kind; label: string; note: string }[] = [
-  { id: "regular", label: "일반 글", note: "목록의 기본 탭에 실립니다" },
-  { id: "daily", label: "일상", note: "파일명이 날짜가 되고 /daily/ 로 갑니다" },
-  { id: "reading", label: "독후감", note: "책 정보 칸이 생기고 /reading/ 으로 갑니다" },
+const KINDS: { id: PostKind; label: string; note: string }[] = [
+  { id: "regular", label: POST_KIND_LABELS.regular, note: "목록의 기본 탭에 실립니다" },
+  { id: "daily", label: POST_KIND_LABELS.daily, note: "파일명이 날짜가 되고 /daily/ 로 갑니다" },
+  { id: "reading", label: POST_KIND_LABELS.reading, note: "책 정보 칸이 생기고 /reading/ 으로 갑니다" },
 ];
 
-/** The file the server will write. */
-function filePreview(day: string, name: string, lang: Lang): string {
-  return `${day.slice(0, 4)}/${day.slice(5, 7)}/${postFileName(name, lang)}`;
+function fileTheServerWillWrite(day: string, slug: string, lang: Lang): string {
+  return postFilePath(yearAndMonthOf(day), slug, lang);
 }
 
 export default function NewPost() {
@@ -23,7 +23,7 @@ export default function NewPost() {
   const translationOf = params.get("translationOf") ?? "";
   const isTranslation = translationOf !== "";
 
-  const [kind, setKind] = createSignal<Kind>("regular");
+  const [kind, setKind] = createSignal<PostKind>("regular");
   const [lang, setLang] = createSignal<Lang>(
     (params.get("lang") as Lang | null) ?? "ko-Hang",
   );
@@ -39,13 +39,12 @@ export default function NewPost() {
     () => (isTranslation ? translationOf : null),
     async (postPath) => {
       const all = await api.posts();
-      return all.groups.find((g) => g.postPath === postPath) ?? null;
+      return all.groups.find((group) => group.postPath === postPath) ?? null;
     },
   );
 
   const slugOk = () => kind() === "daily" || CREATE_SLUG.test(slug());
-  // An emptied or half-typed date input reads as "", so guard before sending.
-  const dateOk = () => kind() !== "daily" || /^20\d\d-\d\d-\d\d$/.test(date());
+  const dateInputComplete = () => kind() !== "daily" || looksLikeCalendarDate(date());
 
   async function create() {
     setBusy(true);
@@ -69,9 +68,9 @@ export default function NewPost() {
         setError(data.message);
         return;
       }
-      location.href = `/admin/edit?file=${encodeURIComponent(data.file)}`;
+      location.href = editorHref(data.file);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -103,13 +102,13 @@ export default function NewPost() {
         <div class="fm-block">
           <h2>종류</h2>
           <div class="pickers">
-            {KINDS.map((k) => (
+            {KINDS.map((kindOption) => (
               <button
-                class={kind() === k.id ? "picker on" : "picker"}
-                onClick={() => setKind(k.id)}
+                class={kind() === kindOption.id ? "picker on" : "picker"}
+                onClick={() => setKind(kindOption.id)}
               >
-                <b>{k.label}</b>
-                <em>{k.note}</em>
+                <b>{kindOption.label}</b>
+                <em>{kindOption.note}</em>
               </button>
             ))}
           </div>
@@ -119,17 +118,17 @@ export default function NewPost() {
       <div class="fm-block">
         <h2>언어</h2>
         <div class="pickers">
-          {LANGS.map((l) => (
+          {LANGS.map((langOption) => (
             <button
-              class={lang() === l ? "picker on" : "picker"}
-              disabled={isTranslation && existing()?.missingLangs.includes(l) === false}
-              onClick={() => setLang(l)}
+              class={lang() === langOption ? "picker on" : "picker"}
+              disabled={isTranslation && existing()?.missingLangs.includes(langOption) === false}
+              onClick={() => setLang(langOption)}
             >
-              <b>{languageLabel(l)}</b>
+              <b>{languageLabel(langOption)}</b>
               <em>
-                {l === "ko-Kore"
+                {langOption === "ko-Kore"
                   ? "漢字로 쓰면 한글 뷰가 자동 생성됩니다"
-                  : l}
+                  : langOption}
               </em>
             </button>
           ))}
@@ -148,7 +147,7 @@ export default function NewPost() {
           />
           <p class="lab-sub">
             파일이 됩니다:{" "}
-            <code>{filePreview(today, slug() || "…", lang())}</code>
+            <code>{fileTheServerWillWrite(today, slug() || "…", lang())}</code>
           </p>
         </div>
 
@@ -185,9 +184,9 @@ export default function NewPost() {
           <p class="lab-sub">
             파일명과 제목이 이 날짜가 됩니다:{" "}
             <code>
-              {dateOk() ? filePreview(date(), date(), lang()) : "…"}
+              {dateInputComplete() ? fileTheServerWillWrite(date(), date(), lang()) : "…"}
             </code>
-            <Show when={dateOk() && date() !== today}>
+            <Show when={dateInputComplete() && date() !== today}>
               {" "}발행 시각은 그 날의 지금 시각으로 적힙니다.
             </Show>
           </p>
@@ -202,7 +201,7 @@ export default function NewPost() {
         <button
           class="primary"
           onClick={create}
-          disabled={busy() || !slugOk() || !dateOk()}
+          disabled={busy() || !slugOk() || !dateInputComplete()}
         >
           {busy() ? "만드는 중…" : "만들고 편집"}
         </button>

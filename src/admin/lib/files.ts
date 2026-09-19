@@ -9,6 +9,14 @@ export async function fileExists(abs: string): Promise<boolean> {
   }
 }
 
+export async function readTextOrNull(abs: string): Promise<string | null> {
+  try {
+    return await fs.readFile(abs, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
 export async function writeWithoutClobbering(abs: string, data: string | Uint8Array): Promise<void> {
   await fs.writeFile(abs, data, { flag: "wx" });
 }

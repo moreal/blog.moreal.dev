@@ -1,49 +1,33 @@
-import { Show } from "solid-js";
-import type { BookInfo, FrontMatterForm as Form } from "../lib/types.ts";
-import { KST_OFFSET } from "../shared/dates.ts";
+import { For, Show } from "solid-js";
+import type { BookInfo, FrontMatterForm as Form, PostType } from "../lib/types.ts";
+import { datetimeLocalValue, kstIsoFromDatetimeLocal } from "../shared/dates.ts";
+import { withBookField, withFormField } from "./frontMatterEdits.ts";
+import { POST_KIND_LABELS } from "./postKinds.ts";
 
 /**
  * The form owns the front matter and the editor buffer owns only the body, so
  * the CMS structurally cannot write invalid YAML.
  */
 
-/** "2026-08-07T23:05:11+09:00" <-> the value a datetime-local input wants. */
-function toLocalInput(iso: string): string {
-  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2})?/.exec(iso);
-  return m === null ? "" : `${m[1]}T${m[2]}`;
-}
-
-function fromLocalInput(value: string, previous: string): string {
-  if (value === "") return previous;
-  const secs = /T\d{2}:\d{2}(:\d{2})/.exec(previous)?.[1] ?? ":00";
-  return `${value}${secs}${KST_OFFSET}`;
-}
+const BOOK_INPUTS: { key: keyof BookInfo; label: string; type: "text" | "number" }[] = [
+  { key: "title", label: "책 제목", type: "text" },
+  { key: "author", label: "지은이", type: "text" },
+  { key: "translator", label: "옮긴이", type: "text" },
+  { key: "publisher", label: "펴낸곳", type: "text" },
+  { key: "year", label: "펴낸해", type: "number" },
+];
 
 export default function FrontMatterForm(props: {
   value: Form;
   onChange: (next: Form) => void;
   nowIso: () => string;
 }) {
-  const set = <K extends keyof Form>(key: K, v: Form[K]) => {
-    const next = { ...props.value };
-    if (v === undefined || v === false || v === "") delete next[key];
-    else next[key] = v;
-    props.onChange(next);
+  const set = <Key extends keyof Form>(key: Key, value: Form[Key]) => {
+    props.onChange(withFormField(props.value, key, value));
   };
 
-  const setBook = (key: keyof BookInfo, v: string) => {
-    const book: BookInfo = { ...props.value.book };
-    if (key === "year") {
-      const n = Number.parseInt(v, 10);
-      if (Number.isNaN(n)) delete book.year;
-      else book.year = n;
-    } else if (v === "") delete book[key];
-    else book[key] = v;
-    const next: Form = { ...props.value, book };
-    // An all-blank book block parses to undefined anyway (parseBook in
-    // posts.ts); dropping it here keeps it out of the file entirely.
-    if (Object.values(book).every((x) => x === undefined)) delete next.book;
-    props.onChange(next);
+  const setBook = (key: keyof BookInfo, input: string) => {
+    props.onChange(withBookField(props.value, key, input));
   };
 
   return (
@@ -53,11 +37,11 @@ export default function FrontMatterForm(props: {
         <span class="fm-inline">
           <input
             type="datetime-local"
-            value={toLocalInput(props.value.published)}
+            value={datetimeLocalValue(props.value.published)}
             onChange={(e) =>
               set(
                 "published",
-                fromLocalInput(e.currentTarget.value, props.value.published),
+                kstIsoFromDatetimeLocal(e.currentTarget.value, props.value.published),
               )
             }
           />
@@ -86,13 +70,13 @@ export default function FrontMatterForm(props: {
               "type",
               e.currentTarget.value === ""
                 ? undefined
-                : (e.currentTarget.value as "daily" | "reading"),
+                : (e.currentTarget.value as PostType),
             )
           }
         >
-          <option value="">일반 글</option>
-          <option value="daily">일상</option>
-          <option value="reading">독후감</option>
+          <option value="">{POST_KIND_LABELS.regular}</option>
+          <option value="daily">{POST_KIND_LABELS.daily}</option>
+          <option value="reading">{POST_KIND_LABELS.reading}</option>
         </select>
       </label>
 
@@ -120,46 +104,18 @@ export default function FrontMatterForm(props: {
 
       <Show when={props.value.type === "reading"}>
         <div class="fm-book">
-          <label class="fm-row">
-            <span>책 제목</span>
-            <input
-              type="text"
-              value={props.value.book?.title ?? ""}
-              onInput={(e) => setBook("title", e.currentTarget.value)}
-            />
-          </label>
-          <label class="fm-row">
-            <span>지은이</span>
-            <input
-              type="text"
-              value={props.value.book?.author ?? ""}
-              onInput={(e) => setBook("author", e.currentTarget.value)}
-            />
-          </label>
-          <label class="fm-row">
-            <span>옮긴이</span>
-            <input
-              type="text"
-              value={props.value.book?.translator ?? ""}
-              onInput={(e) => setBook("translator", e.currentTarget.value)}
-            />
-          </label>
-          <label class="fm-row">
-            <span>펴낸곳</span>
-            <input
-              type="text"
-              value={props.value.book?.publisher ?? ""}
-              onInput={(e) => setBook("publisher", e.currentTarget.value)}
-            />
-          </label>
-          <label class="fm-row">
-            <span>펴낸해</span>
-            <input
-              type="number"
-              value={props.value.book?.year ?? ""}
-              onInput={(e) => setBook("year", e.currentTarget.value)}
-            />
-          </label>
+          <For each={BOOK_INPUTS}>
+            {(input) => (
+              <label class="fm-row">
+                <span>{input.label}</span>
+                <input
+                  type={input.type}
+                  value={props.value.book?.[input.key] ?? ""}
+                  onInput={(e) => setBook(input.key, e.currentTarget.value)}
+                />
+              </label>
+            )}
+          </For>
         </div>
       </Show>
     </div>

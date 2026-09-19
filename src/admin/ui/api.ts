@@ -7,6 +7,7 @@ import type {
   PreviewRequest,
   PreviewResponse,
   RenderedView,
+  SearchResponse,
   SourceResponse,
 } from "../lib/types.ts";
 
@@ -17,6 +18,8 @@ export class ApiError extends Error {
 }
 
 type Ok<T> = Extract<T, { ok: true }>;
+
+export type LoadedSource = Ok<SourceResponse>;
 
 async function call<T extends { ok: boolean }>(
   path: string,
@@ -58,26 +61,5 @@ export const api = {
     call<LinkTitleResponse>(`link-title?url=${encodeURIComponent(url)}`),
 
   search: (q: string) =>
-    call<{
-      ok: true;
-      query: string;
-      hits: SearchHit[];
-      truncated: boolean;
-    }>(`search?q=${encodeURIComponent(q)}`),
+    call<SearchResponse>(`search?q=${encodeURIComponent(q)}`),
 };
-
-export interface SearchHit {
-  file: string;
-  postPath: string;
-  lang: string;
-  title: string;
-  line: number;
-  excerpt: string;
-  count: number;
-}
-
-export function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}

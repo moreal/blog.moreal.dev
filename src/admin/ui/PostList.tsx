@@ -2,7 +2,18 @@ import { For, Show, createMemo, createResource, createSignal } from "solid-js";
 import type { PostGroup, PostSourceSummary } from "../lib/types.ts";
 import { languageLabel } from "../../lib/site.ts";
 import { api } from "./api.ts";
-import { kstDateTime, kstYear } from "../shared/dates.ts";
+import { kstDateTime } from "../shared/dates.ts";
+import { isSearchableQuery } from "../shared/search-query.ts";
+import { editorHref, newTranslationHref, publishedPostHref } from "./links.ts";
+import { POST_KIND_LABELS } from "./postKinds.ts";
+import {
+  firstListedPublished,
+  groupsByPublishedYear,
+  matchesFilter,
+  matchesQuery,
+  sourceCount,
+  type PostFilter,
+} from "./postListView.ts";
 
 /** Debounced so typing does not read every post on every keystroke. */
 function useDebounced<T>(source: () => T, ms: number): () => T {
@@ -16,30 +27,13 @@ function useDebounced<T>(source: () => T, ms: number): () => T {
   return value;
 }
 
-type Filter = "all" | "daily" | "reading" | "draft" | "asset";
-
-const FILTERS: { id: Filter; label: string }[] = [
+const FILTERS: { id: PostFilter; label: string }[] = [
   { id: "all", label: "전체" },
-  { id: "daily", label: "일상" },
-  { id: "reading", label: "독후감" },
+  { id: "daily", label: POST_KIND_LABELS.daily },
+  { id: "reading", label: POST_KIND_LABELS.reading },
   { id: "draft", label: "초안" },
   { id: "asset", label: "이미지 있음" },
 ];
-
-function matchesFilter(group: PostGroup, filter: Filter): boolean {
-  if (filter === "all") return true;
-  if (filter === "asset") return group.assetDir !== null;
-  if (filter === "draft") return group.sources.some((source) => source.draft);
-  return group.sources.some((source) => source.type === filter);
-}
-
-function searchableText(group: PostGroup): string {
-  return (
-    group.postPath +
-    " " +
-    group.sources.map((source) => `${source.title} ${source.description ?? ""} ${source.lang}`).join(" ")
-  ).toLowerCase();
-}
 
 function SourceChips(props: { source: PostSourceSummary }) {
   return (
@@ -60,9 +54,7 @@ function SourceChips(props: { source: PostSourceSummary }) {
         <span class="chip warn">불 끄고</span>
       </Show>
       <Show when={props.source.type}>
-        <span class="chip">
-          {props.source.type === "daily" ? "일상" : "독후감"}
-        </span>
+        {(type) => <span class="chip">{POST_KIND_LABELS[type()]}</span>}
       </Show>
       <Show when={props.source.parseError}>
         <span class="chip bad" title={props.source.parseError}>
@@ -83,10 +75,10 @@ function SearchResults(props: {
         본문 검색
         <Show when={props.loading}> · 찾는 중…</Show>
         <Show when={props.results}>
-          {(r) => (
+          {(results) => (
             <>
-              {" "}· {r().hits.length}건
-              <Show when={r().truncated}> (일부만 표시)</Show>
+              {" "}· {results().hits.length}건
+              <Show when={results().truncated}> (일부만 표시)</Show>
             </>
           )}
         </Show>
@@ -106,7 +98,7 @@ function SearchResults(props: {
             {(hit) => (
               <a
                 class="hit"
-                href={`/admin/edit?file=${encodeURIComponent(hit.file)}`}
+                href={editorHref(hit.file)}
               >
                 <span class="hit-title">
                   {hit.title}
@@ -136,7 +128,7 @@ function PostGroupRow(props: { group: PostGroup }) {
                 <Show when={i() > 0}>
                   <span class="sep">·</span>
                 </Show>
-                <a href={`/admin/edit?file=${encodeURIComponent(source.file)}`}>
+                <a href={editorHref(source.file)}>
                   {source.title || source.slug}
                 </a>
               </>
@@ -153,21 +145,21 @@ function PostGroupRow(props: { group: PostGroup }) {
       </div>
       <div class="row-side">
         <span class="when">
-          {kstDateTime(props.group.sources[0]?.published ?? "")}
+          {kstDateTime(firstListedPublished(props.group))}
         </span>
         <div class="row-actions">
           <For each={props.group.missingLangs}>
             {(lang) => (
               <a
                 class="btn small"
-                href={`/admin/new?translationOf=${encodeURIComponent(props.group.postPath)}&lang=${lang}`}
+                href={newTranslationHref(props.group.postPath, lang)}
                 title={`${languageLabel(lang)} 번역 추가`}
               >
                 ＋{languageLabel(lang)}
               </a>
             )}
           </For>
-          <a class="btn small" href={`/${props.group.postPath}/`} target="_blank">
+          <a class="btn small" href={publishedPostHref(props.group.postPath)} target="_blank">
             보기
           </a>
         </div>
@@ -179,12 +171,12 @@ function PostGroupRow(props: { group: PostGroup }) {
 export default function PostList() {
   const [data, { refetch }] = createResource(() => api.posts());
   const [query, setQuery] = createSignal("");
-  const [filter, setFilter] = createSignal<Filter>("all");
+  const [filter, setFilter] = createSignal<PostFilter>("all");
   const [fullText, setFullText] = createSignal(false);
 
   const debouncedQuery = useDebounced(query, 220);
   const [hits] = createResource(
-    () => fullText() && debouncedQuery().trim().length >= 2
+    () => fullText() && isSearchableQuery(debouncedQuery())
       ? debouncedQuery().trim()
       : null,
     (needle) => api.search(needle),
@@ -192,24 +184,13 @@ export default function PostList() {
 
   const groups = createMemo(() => {
     const all = data()?.groups ?? [];
-    const needle = query().trim().toLowerCase();
+    const lowercaseQuery = query().trim().toLowerCase();
     return all.filter(
-      (group) =>
-        matchesFilter(group, filter()) &&
-        (needle === "" || searchableText(group).includes(needle)),
+      (group) => matchesFilter(group, filter()) && matchesQuery(group, lowercaseQuery),
     );
   });
 
-  const groupsByYear = createMemo(() => {
-    const years = new Map<string, PostGroup[]>();
-    for (const group of groups()) {
-      const year = kstYear(group.sources[0]?.published ?? "");
-      const list = years.get(year);
-      if (list === undefined) years.set(year, [group]);
-      else list.push(group);
-    }
-    return [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  });
+  const groupsByYear = createMemo(() => groupsByPublishedYear(groups()));
 
   return (
     <div class="lab">
@@ -218,10 +199,10 @@ export default function PostList() {
           <h1>글</h1>
           <p class="lab-sub">
             <Show when={data()} fallback="불러오는 중…">
-              {(d) => (
+              {(posts) => (
                 <>
-                  {d().groups.length}편 ·{" "}
-                  {d().groups.reduce((n, group) => n + group.sources.length, 0)}개 원고
+                  {posts().groups.length}편 ·{" "}
+                  {sourceCount(posts().groups)}개 원고
                 </>
               )}
             </Show>
@@ -253,19 +234,19 @@ export default function PostList() {
         </label>
         <div class="filters">
           <For each={FILTERS}>
-            {(f) => (
+            {(filterOption) => (
               <button
-                class={filter() === f.id ? "primary" : ""}
-                onClick={() => setFilter(f.id)}
+                class={filter() === filterOption.id ? "primary" : ""}
+                onClick={() => setFilter(filterOption.id)}
               >
-                {f.label}
+                {filterOption.label}
               </button>
             )}
           </For>
         </div>
       </div>
 
-      <Show when={fullText() && query().trim().length >= 2}>
+      <Show when={fullText() && isSearchableQuery(query())}>
         <SearchResults results={hits()} loading={hits.loading} />
       </Show>
 

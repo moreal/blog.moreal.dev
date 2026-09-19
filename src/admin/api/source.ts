@@ -1,8 +1,8 @@
 import { promises as fs } from "node:fs";
 import type { APIRoute } from "astro";
 import { readForm, splitSource } from "../lib/frontmatter.ts";
-import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
-import { PathError, resolvePostFile } from "../lib/paths.ts";
+import { badRequestOnPathError, checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
+import { resolvePostFile } from "../lib/paths.ts";
 import { listAssets } from "../lib/scan.ts";
 import type { SourceResponse } from "../lib/types.ts";
 
@@ -15,13 +15,8 @@ export const GET: APIRoute = async ({ request, url }) => {
   const file = url.searchParams.get("file");
   if (file === null) return fail("bad-request", "missing ?file=");
 
-  let ref;
-  try {
-    ref = resolvePostFile(file);
-  } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    throw e;
-  }
+  const ref = await badRequestOnPathError(() => resolvePostFile(file));
+  if (ref instanceof Response) return ref;
 
   let source: string;
   let mtimeMs: number;

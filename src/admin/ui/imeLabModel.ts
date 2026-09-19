@@ -33,6 +33,10 @@ export const SEED = "한자 대한민국 국한문";
 
 export const VERDICTS = ["후보창 뜸", "후보 선택됨", "텍스트 치환됨", "Esc로 복구"];
 
+export function verdictKey(pane: PaneId, verdictIndex: number): string {
+  return `${pane}:${verdictIndex}`;
+}
+
 export const EVENT_TYPES = [
   "keydown",
   "keyup",

@@ -1,11 +1,17 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { readForm, splitSource } from "./frontmatter.ts";
-import { calendarDateOf, kstIsoOn, nowKstIso } from "../shared/dates.ts";
-import { CREATE_SLUG, LANGS, postFileName } from "../shared/post-files.ts";
-import { isCalendarDate, resolvePostDir } from "./paths.ts";
-import { POST_KINDS, type PostKind, type ScaffoldInput } from "./scaffold.ts";
-import type { FrontMatterForm, Lang } from "./types.ts";
+import {
+  calendarDateOf,
+  isCalendarDate,
+  kstIsoOn,
+  nowKstIso,
+  yearAndMonthOf,
+} from "../shared/dates.ts";
+import { CREATE_SLUG, LANGS, POST_KINDS, postFileName, postFilePath } from "../shared/post-files.ts";
+import { resolvePostDir } from "./paths.ts";
+import type { ScaffoldInput } from "./scaffold.ts";
+import type { FrontMatterForm, Lang, PostKind } from "./types.ts";
 
 export interface CreateRequest {
   kind: PostKind;
@@ -75,8 +81,7 @@ export function planNewPost(req: CreateRequest, now: Date = new Date()): Creatio
   return {
     ok: true,
     plan: {
-      year: publicationDay.slice(0, 4),
-      month: publicationDay.slice(5, 7),
+      ...yearAndMonthOf(publicationDay),
       slug,
       input: { ...req, publishedAt },
     },
@@ -109,7 +114,7 @@ export async function planCreation(req: CreateRequest, now: Date = new Date()): 
 }
 
 export function postFileOf(plan: CreationPlan): string {
-  return `${plan.year}/${plan.month}/${postFileName(plan.slug, plan.input.lang)}`;
+  return postFilePath(plan, plan.slug, plan.input.lang);
 }
 
 function firstNonBlankLine(text: string): string {

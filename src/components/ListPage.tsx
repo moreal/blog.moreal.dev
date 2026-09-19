@@ -1,9 +1,15 @@
 import { NIGHT_INIT, NIGHT_TOGGLE } from "../lib/night";
-import type { Post, PostView } from "../lib/posts";
-import { kstDate, viewFilename } from "../lib/posts";
+import {
+  darkPostCount,
+  koreanPostCount,
+  listItems,
+  yearSections,
+  type ListTab,
+} from "../lib/post-list";
+import type { Post } from "../lib/posts";
+import { kstDate } from "../lib/posts";
 import { SITE } from "../lib/site";
-
-export type ListTab = "all" | "daily" | "reading";
+import AuthorMeta from "./AuthorMeta";
 
 interface Props {
   posts: Post[];
@@ -16,69 +22,12 @@ const TABS: { tab: ListTab; href: string; label: string }[] = [
   { tab: "reading", href: "/reading/", label: "독후감" },
 ];
 
-interface ListItem {
-  href: string;
-  view: PostView;
-}
-
-// The list shows the ko-Hang view of each post, excluding drafts.  Multiview
-// posts link straight to their ko-Hang view file instead of the language
-// negotiation page, matching the jikji build.
-function collectItems(posts: Post[], tab: ListTab): ListItem[] {
-  const items: ListItem[] = [];
-  for (const post of posts) {
-    const view = post.views.find((v) => v.lang === "ko-Hang");
-    if (view === undefined || view.draft) continue;
-    // The main list carries regular posts and reading notes; daily notes appear
-    // only under their own tab so they don't crowd it out.
-    const matches = tab === "all" ? view.type !== "daily" : view.type === tab;
-    if (!matches) continue;
-    items.push({
-      href: post.multiview
-        ? `/${post.path}/${viewFilename(view.lang)}`
-        : `/${post.path}/`,
-      view,
-    });
-  }
-  return items;
-}
-
-// Native Korean numerals read better than digits for the handful of dark
-// posts the night note counts.
-const KO_NUMERALS = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉"];
-
-function koCount(n: number): string {
-  return n < KO_NUMERALS.length ? `${KO_NUMERALS[n]} 편` : `${n}편`;
-}
-
-function groupByYear(items: ListItem[]): [number, ListItem[]][] {
-  const byYear = new Map<number, ListItem[]>();
-  for (const item of items) {
-    const { year } = kstDate(item.view.published);
-    byYear.set(year, [...(byYear.get(year) ?? []), item]);
-  }
-  const years = [...byYear.keys()].sort((a, b) => b - a);
-  return years.map((year) => {
-    const group = byYear.get(year)!;
-    group.sort((a, b) => {
-      const dateCompare = b.view.published.getTime() -
-        a.view.published.getTime();
-      if (dateCompare !== 0) return dateCompare;
-      return a.view.title.localeCompare(b.view.title);
-    });
-    return [year, group];
-  });
-}
-
 export default function ListPage(props: Props) {
   const tab = props.tab ?? "all";
-  const label = TABS.find((t) => t.tab === tab)!.label;
-  const items = collectItems(props.posts, tab);
-  const groups = groupByYear(items);
-  const darkCount = items.filter((item) => item.view.dark).length;
-  // Render-order index of each dark post, driving the staggered bloom when
-  // the lights go off; capped so a long tail still arrives together.
-  let darkIndex = 0;
+  const label = TABS.find((tabLink) => tabLink.tab === tab)!.label;
+  const items = listItems(props.posts, tab);
+  const sections = yearSections(items);
+  const darkCount = darkPostCount(items);
   return (
     <html lang="ko">
       <head>
@@ -89,22 +38,20 @@ export default function ListPage(props: Props) {
         <link rel="shortcut icon" href="/static/logo.svg" type="image/svg+xml" />
         <link rel="stylesheet" href="/static/style.css" />
         <meta name="description" content={SITE.description} />
-        <meta name="author" content={SITE.author} />
-        <meta name="fediverse:creator" content={SITE.fediverseCreator} />
-        {SITE.relMe.map((url) => <link rel="me" href={url} />)}
+        <AuthorMeta />
       </head>
       <body class="list">
         <header>
           <h1>{SITE.title}</h1>
           <nav class="tab-nav">
-            {TABS.map((t) =>
-              t.tab === tab
+            {TABS.map((tabLink) =>
+              tabLink.tab === tab
                 ? (
                   <span class="tab-current" aria-current="page">
-                    {t.label}
+                    {tabLink.label}
                   </span>
                 )
-                : <a href={t.href}>{t.label}</a>
+                : <a href={tabLink.href}>{tabLink.label}</a>
             )}
             {darkCount > 0 && (
               <button type="button" class="night-toggle">
@@ -115,31 +62,25 @@ export default function ListPage(props: Props) {
           </nav>
           {darkCount > 0 && (
             <p class="night-note">
-              어둠 속에서 글 {koCount(darkCount)}이 눈을 떴습니다.
+              어둠 속에서 글 {koreanPostCount(darkCount)}이 눈을 떴습니다.
             </p>
           )}
         </header>
         <main>
-          {groups.length === 0 && <p class="empty">아직 글이 없습니다.</p>}
-          {groups.map(([year, items]) => (
-            <section
-              class={items.every(({ view }) => view.dark)
-                // A year whose posts are all dark surfaces only at night;
-                // otherwise its bare heading would linger in the daylight.
-                ? "year-section night-only"
-                : "year-section"}
-            >
+          {sections.length === 0 && <p class="empty">아직 글이 없습니다.</p>}
+          {sections.map(({ year, nightOnly, entries }) => (
+            <section class={nightOnly ? "year-section night-only" : "year-section"}>
               <h2>
                 <time datetime={String(year)}>{year}</time>
               </h2>
               <ul>
-                {items.map(({ href, view }) => {
+                {entries.map(({ href, view, bloomStep }) => {
                   const { month, day } = kstDate(view.published);
                   return (
                     <li
                       class={view.dark ? "dark-post" : undefined}
-                      style={view.dark
-                        ? { "--i": String(Math.min(darkIndex++, 8)) }
+                      style={bloomStep !== undefined
+                        ? { "--i": String(bloomStep) }
                         : undefined}
                     >
                       <a href={href}>{view.title}</a>

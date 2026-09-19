@@ -3,12 +3,20 @@ import type { APIRoute } from "astro";
 import { parseFrontMatter } from "../../lib/posts.ts";
 import { ADMIN_CONFIG } from "../config.ts";
 import {
+  changedSinceLoaded,
   composeSavedSource,
   formatAndReadSavedPost,
   replacePostFileAtomically,
 } from "../lib/save.ts";
-import { checkRequest, errorMessageForClient, fail, json, readJsonBody } from "../lib/guard.ts";
-import { PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
+import {
+  badRequestOnPathError,
+  checkRequest,
+  errorMessageForClient,
+  fail,
+  json,
+  readJsonBody,
+} from "../lib/guard.ts";
+import { assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
 import type { FrontMatterForm } from "../lib/types.ts";
 
 export const prerender = false;
@@ -32,14 +40,12 @@ export const POST: APIRoute = async ({ request, url }) => {
     return fail("bad-request", "expected { file, frontmatter, body, ... }");
   }
 
-  let ref;
-  try {
-    ref = resolvePostFile(req.file);
-    await assertNoSymlink(ref.rel);
-  } catch (e) {
-    if (e instanceof PathError) return fail("bad-request", e.message);
-    throw e;
-  }
+  const ref = await badRequestOnPathError(async () => {
+    const resolved = resolvePostFile(req.file);
+    await assertNoSymlink(resolved.rel);
+    return resolved;
+  });
+  if (ref instanceof Response) return ref;
 
   let mtimeMs: number;
   try {
@@ -47,10 +53,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   } catch {
     return fail("not-found", `${ref.rel} does not exist`);
   }
-  if (
-    typeof req.expectedMtimeMs === "number" &&
-    Math.abs(mtimeMs - req.expectedMtimeMs) > 1
-  ) {
+  if (changedSinceLoaded(req.expectedMtimeMs, mtimeMs)) {
     return json(
       {
         ok: false,

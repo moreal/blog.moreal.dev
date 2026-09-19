@@ -324,13 +324,17 @@ async function renderFile(
   return views;
 }
 
+export function postPathOf({ year, month, slug }: { year: string; month: string; slug: string }): string {
+  return `${year}/${month}/${slug}`;
+}
+
 function findOrAddPost(
   postsByPath: Map<string, Post>,
   year: string,
   month: string,
   slug: string,
 ): Post {
-  const postPath = `${year}/${month}/${slug}`;
+  const postPath = postPathOf({ year, month, slug });
   let post = postsByPath.get(postPath);
   if (post === undefined) {
     post = { path: postPath, year, month, slug, views: [], multiview: false };
@@ -418,4 +422,8 @@ export function kstDate(date: Date): {
 
 export function viewFilename(lang: string): string {
   return `index.${lang.toLowerCase()}.html`;
+}
+
+export function viewUrl(postPath: string, lang: string): string {
+  return `/${postPath}/${viewFilename(lang)}`;
 }
