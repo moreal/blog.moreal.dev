@@ -9,10 +9,7 @@ import footnote from "markdown-it-footnote";
 import title from "markdown-it-title";
 import { promises as fs, type Dirent } from "node:fs";
 import path from "node:path";
-
-// `astro dev`/`astro build` are always run from the project root, where the
-// year directories (2020/, 2023/, ...) live.
-const CONTENT_ROOT = process.cwd();
+import { CONTENT_ROOT } from "./content-root.ts";
 
 export type PostType = "daily" | "reading";
 

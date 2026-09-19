@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
 import { checkRequest, json } from "../lib/guard.ts";
-import { LANGS } from "../lib/paths.ts";
+import { LANGS } from "../shared/post-files.ts";
 import type { ConfigResponse } from "../lib/types.ts";
 
 export const prerender = false;

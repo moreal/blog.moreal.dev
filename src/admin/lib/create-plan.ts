@@ -2,7 +2,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { readForm, splitSource } from "./frontmatter.ts";
 import { calendarDateOf, kstIsoOn, nowKstIso } from "../shared/dates.ts";
-import { CREATE_SLUG, LANGS, isCalendarDate, postFileName, resolvePostDir } from "./paths.ts";
+import { CREATE_SLUG, LANGS, postFileName } from "../shared/post-files.ts";
+import { isCalendarDate, resolvePostDir } from "./paths.ts";
 import type { PostKind, ScaffoldInput } from "./scaffold.ts";
 import type { FrontMatterForm, Lang } from "./types.ts";
 

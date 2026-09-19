@@ -8,15 +8,9 @@ import {
   readTranslationSource,
 } from "../lib/create-plan.ts";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
-import {
-  CONTENT_ROOT,
-  LANGS,
-  PathError,
-  assertNoSymlink,
-  postFileName,
-  resolvePostFile,
-} from "../lib/paths.ts";
+import { CONTENT_ROOT, PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
 import { scaffold } from "../lib/scaffold.ts";
+import { LANGS, postFileName } from "../shared/post-files.ts";
 
 export const prerender = false;
 

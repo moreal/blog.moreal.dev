@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { parse } from "smol-toml";
 import { ADMIN_CONFIG } from "../config.ts";
-import { CONTENT_ROOT } from "./paths.ts";
+import { contentPath } from "./paths.ts";
 
 /**
  * Per-site cleanup rules for fetched link titles -- "Foo - RosettaLens 번역"
@@ -31,7 +31,7 @@ export async function loadTitleRules(): Promise<TitleRule[]> {
   const rel = ADMIN_CONFIG.linkTitleRulesFile;
   let text: string;
   try {
-    text = await fs.readFile(path.join(CONTENT_ROOT, ...rel.split("/")), "utf-8");
+    text = await fs.readFile(contentPath(rel), "utf-8");
   } catch {
     return []; // No file, no rules.
   }

@@ -3,10 +3,9 @@ import path from "node:path";
 import MarkdownIt from "markdown-it";
 import title from "markdown-it-title";
 import { readForm, splitSource } from "./frontmatter.ts";
-import { CONTENT_ROOT, LANGS } from "./paths.ts";
+import { LANGS } from "../shared/post-files.ts";
+import { CONTENT_ROOT, contentPath, splitPostFileName } from "./paths.ts";
 import type { Lang, PostAssetInfo, PostGroup, PostSourceSummary } from "./types.ts";
-
-const NAME = /^(.+)\.(ko-Hang|ko-Kore|en)\.md$/;
 
 const sourceTitleParser = MarkdownIt("commonmark").use(title);
 
@@ -89,9 +88,9 @@ export async function scanPosts(): Promise<PostGroup[]> {
         }
         if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
 
-        const m = NAME.exec(entry.name);
-        if (m === null) continue;
-        const [, slug, lang] = m as unknown as [string, string, Lang];
+        const fileName = splitPostFileName(entry.name);
+        if (fileName === null) continue;
+        const { stem: slug, lang } = fileName;
         const rel = `${year}/${month}/${entry.name}`;
         const summary = await summarize(
           rel,
@@ -140,7 +139,7 @@ export async function scanPosts(): Promise<PostGroup[]> {
 }
 
 export async function listAssets(postPath: string): Promise<PostAssetInfo[]> {
-  const dir = path.join(CONTENT_ROOT, ...postPath.split("/"));
+  const dir = contentPath(postPath);
   try {
     return await readAssetDirectory(dir);
   } catch {

@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro";
 import { serializeFrontMatter } from "../lib/frontmatter.ts";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
-import { LANGS, PathError, resolvePostFile } from "../lib/paths.ts";
+import { PathError, resolvePostFile } from "../lib/paths.ts";
+import { LANGS } from "../shared/post-files.ts";
 import { renderPreviewDocument } from "../lib/preview-doc.ts";
 import type { Lang, PreviewRequest, PreviewResponse } from "../lib/types.ts";
 

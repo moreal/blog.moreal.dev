@@ -1,8 +1,7 @@
 import { promises as fs } from "node:fs";
-import path from "node:path";
 import type { APIRoute } from "astro";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
-import { CONTENT_ROOT } from "../lib/paths.ts";
+import { contentPath } from "../lib/paths.ts";
 import { scanPosts } from "../lib/scan.ts";
 import { findSourceMatches } from "../lib/search.ts";
 
@@ -35,7 +34,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     for (const g of groups) {
       for (const s of g.sources) {
-        const abs = path.join(CONTENT_ROOT, ...s.file.split("/"));
+        const abs = contentPath(s.file);
         let text: string;
         try {
           text = await fs.readFile(abs, "utf-8");

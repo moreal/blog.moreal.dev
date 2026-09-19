@@ -5,7 +5,8 @@ import path from "node:path";
 import PostViewPage from "../../components/PostViewPage.astro";
 import type { Post, PostView } from "../../lib/posts.ts";
 import { sortPostViews } from "../../lib/posts.ts";
-import { CONTENT_ROOT, LANGS, type PostFileRef } from "./paths.ts";
+import { LANGS } from "../shared/post-files.ts";
+import { CONTENT_ROOT, splitPostFileName, type PostFileRef } from "./paths.ts";
 import { renderBuffer } from "./render.ts";
 import type { Lang, RenderedView } from "./types.ts";
 
@@ -33,8 +34,6 @@ function getContainer(): Promise<AstroContainer> {
   return container;
 }
 
-const POST_FILE_NAME = /^(.+)\.(ko-Hang|ko-Kore|en)\.md$/;
-
 /**
  * Languages the post has *other* source files for.  A ko-Hang buffer whose post
  * also has an .en.md ships with a language nav, and the preview should show it;
@@ -53,9 +52,9 @@ async function siblingLangs(ref: PostFileRef): Promise<Lang[]> {
   }
   for (const entry of entries) {
     if (!entry.isFile() || entry.name === self) continue;
-    const m = POST_FILE_NAME.exec(entry.name);
-    if (m === null || m[1] !== ref.slug) continue;
-    const lang = m[2] as Lang;
+    const fileName = splitPostFileName(entry.name);
+    if (fileName === null || fileName.stem !== ref.slug) continue;
+    const { lang } = fileName;
     langs.push(lang);
     // A ko-Kore source contributes its derived ko-Hang view too.
     if (lang === "ko-Kore") langs.push("ko-Hang");

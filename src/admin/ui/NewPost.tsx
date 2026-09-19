@@ -3,6 +3,7 @@ import type { Lang } from "../lib/types.ts";
 import { languageLabel } from "../../lib/site.ts";
 import { api } from "./api.ts";
 import { kstDate } from "../shared/dates.ts";
+import { CREATE_SLUG, LANGS, postFileName } from "../shared/post-files.ts";
 
 type Kind = "daily" | "reading" | "regular";
 
@@ -12,11 +13,9 @@ const KINDS: { id: Kind; label: string; note: string }[] = [
   { id: "reading", label: "독후감", note: "책 정보 칸이 생기고 /reading/ 으로 갑니다" },
 ];
 
-const LANGS: Lang[] = ["ko-Hang", "ko-Kore", "en"];
-
-/** The file the server will write, named the way postFileName() names it. */
+/** The file the server will write. */
 function filePreview(day: string, name: string, lang: Lang): string {
-  return `${day.slice(0, 4)}/${day.slice(5, 7)}/${name}.${lang}.md`;
+  return `${day.slice(0, 4)}/${day.slice(5, 7)}/${postFileName(name, lang)}`;
 }
 
 export default function NewPost() {
@@ -44,7 +43,7 @@ export default function NewPost() {
     },
   );
 
-  const slugOk = () => kind() === "daily" || /^[a-z0-9][a-z0-9-]*$/.test(slug());
+  const slugOk = () => kind() === "daily" || CREATE_SLUG.test(slug());
   // An emptied or half-typed date input reads as "", so guard before sending.
   const dateOk = () => kind() !== "daily" || /^20\d\d-\d\d-\d\d$/.test(date());
 

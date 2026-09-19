@@ -3,12 +3,7 @@ import path from "node:path";
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
-import {
-  CONTENT_ROOT,
-  PathError,
-  assertNoSymlink,
-  resolvePostFile,
-} from "../lib/paths.ts";
+import { PathError, assertNoSymlink, contentPath, resolvePostFile } from "../lib/paths.ts";
 import { listAssets } from "../lib/scan.ts";
 
 export const prerender = false;
@@ -60,7 +55,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   const fileName = base.endsWith(ext) ? base : base + ext;
   const rel = `${ref.postPath}/${fileName}`;
-  const abs = path.join(CONTENT_ROOT, ...rel.split("/"));
+  const abs = contentPath(rel);
 
   try {
     await assertNoSymlink(rel);
