@@ -11,10 +11,14 @@ import type { FrontMatterForm } from "./types.ts";
 
 const MTIME_TOLERANCE_MS = 1;
 
-export function changedSinceLoaded(expectedMtimeMs: unknown, mtimeMs: number): boolean {
+export function isStaleSave(
+  save: { expectedMtimeMs?: unknown; force?: unknown },
+  mtimeMs: number,
+): boolean {
   return (
-    typeof expectedMtimeMs === "number" &&
-    Math.abs(mtimeMs - expectedMtimeMs) > MTIME_TOLERANCE_MS
+    save.force !== true &&
+    typeof save.expectedMtimeMs === "number" &&
+    Math.abs(mtimeMs - save.expectedMtimeMs) > MTIME_TOLERANCE_MS
   );
 }
 

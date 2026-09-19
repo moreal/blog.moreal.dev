@@ -97,7 +97,8 @@ export default function Editor() {
         frontmatter: fm(),
         body: body(),
         fenceRaw: fenceRaw(),
-        expectedMtimeMs: force ? -1 : mtimeMs(),
+        expectedMtimeMs: mtimeMs(),
+        force,
       }),
     });
     return (await res.json()) as SaveResponse;

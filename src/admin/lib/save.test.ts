@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
-  changedSinceLoaded,
   composeSavedSource,
   formatAndReadSavedPost,
+  isStaleSave,
   replacePostFileAtomically,
 } from "./save.ts";
 import { resolvePostFile } from "./paths.ts";
@@ -53,13 +53,18 @@ test("failed replacement removes the temporary file and preserves the destinatio
 });
 
 test("a file is unchanged since it was loaded while its mtime is within a millisecond of the one the editor holds", () => {
-  assert.equal(changedSinceLoaded(1000, 1000), false);
-  assert.equal(changedSinceLoaded(1000.4, 1001), false);
-  assert.equal(changedSinceLoaded(1000, 1002), true);
-  assert.equal(changedSinceLoaded(1002, 1000), true);
+  assert.equal(isStaleSave({ expectedMtimeMs: 1000 }, 1000), false);
+  assert.equal(isStaleSave({ expectedMtimeMs: 1000.4 }, 1001), false);
+  assert.equal(isStaleSave({ expectedMtimeMs: 1000 }, 1002), true);
+  assert.equal(isStaleSave({ expectedMtimeMs: 1002 }, 1000), true);
 });
 
 test("a save that names no mtime skips the check", () => {
-  assert.equal(changedSinceLoaded(undefined, 1000), false);
-  assert.equal(changedSinceLoaded("1000", 5), false);
+  assert.equal(isStaleSave({}, 1000), false);
+  assert.equal(isStaleSave({ expectedMtimeMs: "1000" }, 5), false);
+});
+
+test("an overwrite is never stale, so the writer who chose it replaces the file", () => {
+  assert.equal(isStaleSave({ expectedMtimeMs: 1000, force: true }, 5000), false);
+  assert.equal(isStaleSave({ expectedMtimeMs: 1000, force: false }, 5000), true);
 });

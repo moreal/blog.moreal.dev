@@ -3,9 +3,9 @@ import type { APIRoute } from "astro";
 import { parseFrontMatter } from "../../lib/posts.ts";
 import { ADMIN_CONFIG } from "../config.ts";
 import {
-  changedSinceLoaded,
   composeSavedSource,
   formatAndReadSavedPost,
+  isStaleSave,
   replacePostFileAtomically,
 } from "../lib/save.ts";
 import {
@@ -27,6 +27,7 @@ interface SaveRequest {
   body: string;
   fenceRaw: string;
   expectedMtimeMs: number;
+  force?: boolean;
   format?: boolean;
 }
 
@@ -53,7 +54,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   } catch {
     return fail("not-found", `${ref.rel} does not exist`);
   }
-  if (changedSinceLoaded(req.expectedMtimeMs, mtimeMs)) {
+  if (isStaleSave(req, mtimeMs)) {
     return json(
       {
         ok: false,
