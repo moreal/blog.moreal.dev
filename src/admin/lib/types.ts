@@ -159,9 +159,6 @@ export type SearchResponse =
   | { ok: true; query: string; hits: SearchHit[]; truncated: boolean }
   | ApiFailure;
 
-export type ClientConfig = Pick<
-  AdminConfig,
-  "imageNamePattern" | "imageTypes" | "maxImageBytes" | "formatOnSave" | "editorEngine"
-> & { langs: Lang[] };
+export type ClientConfig = Pick<AdminConfig, "editorEngine">;
 
 export type ConfigResponse = ({ ok: true } & ClientConfig) | ApiFailure;
