@@ -9,7 +9,7 @@ import {
 } from "../lib/create-plan.ts";
 import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { CONTENT_ROOT, PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
-import { scaffold } from "../lib/scaffold.ts";
+import { scaffoldSource } from "../lib/scaffold.ts";
 import { LANGS, postFileName } from "../shared/post-files.ts";
 
 export const prerender = false;
@@ -50,10 +50,10 @@ export const POST: APIRoute = async ({ request, url }) => {
       // Does not exist; good.
     }
 
-    const built = scaffold(input);
+    const source = scaffoldSource(input);
     await fs.mkdir(path.join(CONTENT_ROOT, year, month), { recursive: true });
     // Exclusive create, so a race cannot clobber an existing post.
-    await fs.writeFile(ref.abs, built.source, { encoding: "utf-8", flag: "wx" });
+    await fs.writeFile(ref.abs, source, { encoding: "utf-8", flag: "wx" });
 
     return json({
       ok: true,

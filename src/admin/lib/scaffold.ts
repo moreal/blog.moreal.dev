@@ -1,20 +1,8 @@
 import { serializeFrontMatter } from "./frontmatter.ts";
 import { calendarDateOf, nowKstIso } from "../shared/dates.ts";
-import type { FrontMatterForm, Lang } from "./types.ts";
+import type { BookInfo, FrontMatterForm, Lang } from "./types.ts";
 
 export type PostKind = "daily" | "reading" | "regular";
-
-/**
- * Titles for daily notes, matching scripts/new-daily.sh -- month and day
- * unpadded, and the script's per-language wording.
- */
-export function dailyTitle(iso: string, lang: Lang): string {
-  const date = calendarDateOf(iso);
-  const [y, m, d] = date.split("-").map((n) => Number.parseInt(n, 10));
-  if (lang === "en") return date;
-  const unit = lang === "ko-Kore" ? ["年", "月", "日"] : ["년", "월", "일"];
-  return `${y}${unit[0]} ${m}${unit[1]} ${d}${unit[2]}`;
-}
 
 export interface ScaffoldInput {
   kind: PostKind;
@@ -24,16 +12,32 @@ export interface ScaffoldInput {
   description?: string;
   draft?: boolean;
   dark?: boolean;
-  book?: FrontMatterForm["book"];
+  book?: BookInfo;
 }
 
-export interface Scaffold {
-  /** Full file text, front matter included. */
-  source: string;
-  /** Slug for a daily note is the ISO date; otherwise the caller's. */
-  dateSlug: string;
-  published: string;
-  frontmatter: FrontMatterForm;
+const UNTITLED_HEADING = "TODO";
+
+const DATE_UNITS: Record<Exclude<Lang, "en">, readonly [year: string, month: string, day: string]> = {
+  "ko-Hang": ["년", "월", "일"],
+  "ko-Kore": ["年", "月", "日"],
+};
+
+function unpadded(digits: string): number {
+  return Number.parseInt(digits, 10);
+}
+
+function dailyTitle(iso: string, lang: Lang): string {
+  const calendarDate = calendarDateOf(iso);
+  if (lang === "en") return calendarDate;
+  const [year, month, day] = calendarDate.split("-").map(unpadded);
+  const [yearUnit, monthUnit, dayUnit] = DATE_UNITS[lang];
+  return `${year}${yearUnit} ${month}${monthUnit} ${day}${dayUnit}`;
+}
+
+function headingFor(input: ScaffoldInput, published: string): string {
+  return input.kind === "daily"
+    ? dailyTitle(published, input.lang)
+    : (input.title ?? UNTITLED_HEADING);
 }
 
 function isAscii(character: string): boolean {
@@ -47,42 +51,38 @@ function displayColumns(text: string): number {
   );
 }
 
-function setextUnderline(title: string): string {
-  return "=".repeat(displayColumns(title));
+function setextHeading(title: string): string {
+  return `${title}\n${"=".repeat(displayColumns(title))}\n`;
 }
 
-export function scaffold(input: ScaffoldInput): Scaffold {
-  const published = input.publishedAt ?? nowKstIso();
-  const dateSlug = calendarDateOf(published);
-
-  const fm: FrontMatterForm = { published };
-  if (input.description !== undefined && input.description !== "") {
-    fm.description = input.description;
+function frontMatterForKind(kind: PostKind, book: BookInfo | undefined): Partial<FrontMatterForm> {
+  switch (kind) {
+    case "daily":
+      return { type: "daily" };
+    case "reading":
+      return book === undefined
+        ? { type: "reading", bookScaffold: true }
+        : { type: "reading", book };
+    case "regular":
+      return {};
   }
-  if (input.draft === true) fm.draft = true;
-  if (input.dark === true) fm.dark = true;
-  if (input.kind === "daily") fm.type = "daily";
-  if (input.kind === "reading") {
-    fm.type = "reading";
-    if (input.book !== undefined) fm.book = input.book;
-    // No book details yet: emit the same empty title:/author: pair
-    // scripts/new-reading.sh writes.
-    else fm.bookScaffold = true;
-  }
+}
 
-  const title =
-    input.kind === "daily"
-      ? dailyTitle(published, input.lang)
-      : (input.title ?? "TODO");
-
-  // Setext directly rather than ATX: hongdown would convert an ATX heading to
-  // exactly this, and writing it here keeps the file well-formed even when the
-  // formatter is missing.
-  const body = `${title}\n${setextUnderline(title)}\n`;
+function frontMatterFor(input: ScaffoldInput, published: string): FrontMatterForm {
   return {
-    source: serializeFrontMatter(fm) + "\n" + body,
-    dateSlug,
     published,
-    frontmatter: fm,
+    description: input.description,
+    draft: input.draft === true,
+    dark: input.dark === true,
+    ...frontMatterForKind(input.kind, input.book),
   };
+}
+
+export function scaffoldSource(input: ScaffoldInput): string {
+  const published = input.publishedAt ?? nowKstIso();
+  return (
+    serializeFrontMatter(frontMatterFor(input, published)) +
+    "\n" +
+    setextHeading(headingFor(input, published))
+  );
 }
