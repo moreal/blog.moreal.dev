@@ -143,14 +143,9 @@ export type LinkTitleResponse =
     }
   | ApiFailure;
 
-export type ConfigResponse =
-  | {
-      ok: true;
-      imageNamePattern: string;
-      imageTypes: Record<string, string>;
-      maxImageBytes: number;
-      formatOnSave: boolean;
-      editorEngine: AdminConfig["editorEngine"];
-      langs: Lang[];
-    }
-  | ApiFailure;
+export type ClientConfig = Pick<
+  AdminConfig,
+  "imageNamePattern" | "imageTypes" | "maxImageBytes" | "formatOnSave" | "editorEngine"
+> & { langs: Lang[] };
+
+export type ConfigResponse = ({ ok: true } & ClientConfig) | ApiFailure;
