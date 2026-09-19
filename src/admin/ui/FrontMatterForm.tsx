@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
 import type { BookInfo, FrontMatterForm as Form } from "../lib/types.ts";
+import { KST_OFFSET } from "../shared/dates.ts";
 
 /**
  * The form owns the front matter and the editor buffer owns only the body, so
@@ -15,7 +16,7 @@ function toLocalInput(iso: string): string {
 function fromLocalInput(value: string, previous: string): string {
   if (value === "") return previous;
   const secs = /T\d{2}:\d{2}(:\d{2})/.exec(previous)?.[1] ?? ":00";
-  return `${value}${secs}+09:00`;
+  return `${value}${secs}${KST_OFFSET}`;
 }
 
 export default function FrontMatterForm(props: {
