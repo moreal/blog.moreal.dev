@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test, { type TestContext } from "node:test";
-import { listAssets, scanPosts } from "./scan.ts";
+import { listAssetNames, listAssets, scanPosts } from "./scan.ts";
 
 async function contentRoot(t: TestContext, entries: Record<string, string | null>): Promise<string> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "blog-scan-test-"));
@@ -191,4 +191,14 @@ test("the assets of a post are its visible files with their sizes", async (t) =>
 test("a post without an asset directory has no assets", async (t) => {
   const root = await contentRoot(t, { "2026/03/post.ko-Hang.md": post("2026-03-01T10:00:00+09:00") });
   assert.deepEqual(await listAssets("2026/03/post", root), []);
+});
+
+test("asset names are the file names of the post's assets, or none without an asset directory", async (t) => {
+  const root = await contentRoot(t, {
+    "2026/03/post/a.png": "a",
+    "2026/03/post/.DS_Store": "",
+    "2026/03/other.ko-Hang.md": post("2026-03-01T10:00:00+09:00"),
+  });
+  assert.deepEqual(await listAssetNames("2026/03/post", root), ["a.png"]);
+  assert.deepEqual(await listAssetNames("2026/03/other", root), []);
 });

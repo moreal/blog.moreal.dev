@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ImageNameContext } from "../config.ts";
-import { suggestImageName } from "./image-name.ts";
+import { imageNameContext, suggestImageName } from "./image-name.ts";
 
 const context: ImageNameContext = {
   year: "2026",
@@ -89,4 +89,27 @@ test("a configured override wins, is slugified, and is ignored when it returns a
   });
   assert.equal(suggestImageName({ ...context, existing: ["my-name.png"] }, override("My Name!")), "my-name");
   assert.equal(suggestImageName({ ...context, originalName: "diagram.png" }, override("")), "diagram");
+});
+
+const post = { year: "2026", month: "08", slug: "a-post", lang: "ko-Hang", postPath: "2026/08/a-post" } as const;
+
+test("the naming context takes the post's location and the incoming image as they are", () => {
+  const image = { originalName: "diagram.png", ext: ".png", existing: ["a-post-1.png"] };
+  assert.deepEqual(imageNameContext(post, image, new Date("2026-08-07T12:00:00Z")), {
+    year: "2026",
+    month: "08",
+    day: "07",
+    slug: "a-post",
+    lang: "ko-Hang",
+    postPath: "2026/08/a-post",
+    originalName: "diagram.png",
+    ext: ".png",
+    existing: ["a-post-1.png"],
+  });
+});
+
+test("{day} is today's day of the month in UTC, not in Korea", () => {
+  const image = { originalName: null, ext: ".png", existing: [] };
+  const earlyMorningInKorea = new Date("2026-08-08T08:30:00+09:00");
+  assert.equal(imageNameContext(post, image, earlyMorningInKorea).day, "07");
 });

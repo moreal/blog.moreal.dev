@@ -183,3 +183,10 @@ export async function listAssets(
     return [];
   }
 }
+
+export async function listAssetNames(
+  postPath: string,
+  root: string = CONTENT_ROOT,
+): Promise<string[]> {
+  return (await listAssets(postPath, root)).map((asset) => asset.file);
+}

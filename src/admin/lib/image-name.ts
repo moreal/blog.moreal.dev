@@ -1,6 +1,9 @@
 import { ADMIN_CONFIG, type AdminConfig, type ImageNameContext } from "../config.ts";
+import type { PostFileRef } from "./paths.ts";
 
 type ImageNamingConfig = Pick<AdminConfig, "imageNamePattern" | "suggestImageName">;
+type PostOfImage = Pick<PostFileRef, "year" | "month" | "slug" | "lang" | "postPath">;
+type IncomingImage = Pick<ImageNameContext, "originalName" | "ext" | "existing">;
 
 const NAMES_THAT_SAY_NOTHING = new Set([
   "image",
@@ -81,6 +84,28 @@ function hoursMinutesSeconds(time: Date): string {
   return [time.getHours(), time.getMinutes(), time.getSeconds()]
     .map((part) => String(part).padStart(2, "0"))
     .join("");
+}
+
+export function imageNameContext(
+  post: PostOfImage,
+  image: IncomingImage,
+  now: Date = new Date(),
+): ImageNameContext {
+  return {
+    year: post.year,
+    month: post.month,
+    day: utcDayOfMonth(now),
+    slug: post.slug,
+    lang: post.lang,
+    postPath: post.postPath,
+    originalName: image.originalName,
+    ext: image.ext,
+    existing: image.existing,
+  };
+}
+
+function utcDayOfMonth(time: Date): string {
+  return time.toISOString().slice(8, 10);
 }
 
 export function suggestImageName(

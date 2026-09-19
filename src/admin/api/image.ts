@@ -4,8 +4,9 @@ import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
 import { fileExists, writeWithoutClobbering } from "../lib/files.ts";
 import { checkRequest, errorMessageForClient, fail, failForThrown, json } from "../lib/guard.ts";
+import { extensionFromMimeType } from "../lib/image-type.ts";
 import { PathError, assertNoSymlink, contentPath, resolvePostFile } from "../lib/paths.ts";
-import { listAssets } from "../lib/scan.ts";
+import { listAssetNames } from "../lib/scan.ts";
 
 export const prerender = false;
 
@@ -30,11 +31,9 @@ export const POST: APIRoute = async ({ request, url }) => {
     return fail("bad-request", "expected file, mdFile and name");
   }
 
-  // The extension comes from the MIME type, never from the client's file name.
-  const ext = ADMIN_CONFIG.imageTypes[blob.type];
-  if (ext === undefined) {
-    return fail("unsupported-type", `${blob.type || "알 수 없는 형식"}은 받지 않습니다.`);
-  }
+  const imageType = extensionFromMimeType(blob.type);
+  if (!imageType.ok) return fail("unsupported-type", imageType.message);
+  const { ext } = imageType;
   if (blob.size > ADMIN_CONFIG.maxImageBytes) {
     return fail(
       "too-large",
@@ -69,7 +68,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           ok: false,
           error: "exists",
           message: `${fileName} 이(가) 이미 있습니다.`,
-          existing: (await listAssets(ref.postPath)).map((a) => a.file),
+          existing: await listAssetNames(ref.postPath),
         },
         409,
       );
