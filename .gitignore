@@ -11,6 +11,3 @@ node_modules
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
-
-# refactor loop state
-.claude/refactor-ledger.md
