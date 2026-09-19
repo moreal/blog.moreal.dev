@@ -3,7 +3,7 @@ import path from "node:path";
 import MarkdownIt from "markdown-it";
 import title from "markdown-it-title";
 import { readForm, splitSource } from "./frontmatter.ts";
-import { LANGS } from "../shared/post-files.ts";
+import { LANGS, derivedLangsOf } from "../shared/post-files.ts";
 import { CONTENT_ROOT, contentPath, splitPostFileName } from "./paths.ts";
 import type { Lang, PostAssetInfo, PostGroup, PostSourceSummary } from "./types.ts";
 
@@ -36,7 +36,7 @@ async function summarize(
     publishedMs: 0,
     draft: false,
     dark: false,
-    derivedLangs: lang === "ko-Kore" ? ["ko-Hang"] : [],
+    derivedLangs: derivedLangsOf(lang),
     bytes: st.size,
     mtimeMs: st.mtimeMs,
   };
