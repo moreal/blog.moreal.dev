@@ -1,12 +1,8 @@
-import { ADMIN_CONFIG, type ImageNameContext } from "../config.ts";
+import { ADMIN_CONFIG, type AdminConfig, type ImageNameContext } from "../config.ts";
 
-/**
- * Names that carry no information -- a macOS screenshot pasted from the
- * clipboard arrives as "image.png", so falling back to the pattern is right.
- * A file dragged in as "container-insight-network-rx.png" keeps its name, which
- * is the convention every existing image in this repo follows.
- */
-const MEANINGLESS = new Set([
+type ImageNamingConfig = Pick<AdminConfig, "imageNamePattern" | "suggestImageName">;
+
+const NAMES_THAT_SAY_NOTHING = new Set([
   "image",
   "images",
   "screenshot",
@@ -21,32 +17,43 @@ const MEANINGLESS = new Set([
   "download",
   "photo",
 ]);
+const DIGITS_AND_SEPARATORS_ONLY = /^[\d\s.:_-]+$/;
+const CAMERA_OR_SCREENSHOT_PREFIX = /^(img|dsc|pxl|screenshot|스크린샷)[\s_-]/i;
+const MAX_SLUG_LENGTH = 60;
+const CANDIDATE_LIMIT = 1000;
 
-export function slugifyName(stem: string): string {
+function slugifyName(stem: string): string {
   return stem
     .normalize("NFKD")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+    .slice(0, MAX_SLUG_LENGTH);
 }
 
-function meaningful(originalName: string | null): string | null {
+function withoutExtension(fileName: string): string {
+  return fileName.replace(/\.[^.]+$/, "");
+}
+
+function slugOfDescriptiveName(originalName: string | null): string | null {
   if (originalName === null || originalName === "") return null;
-  const stem = originalName.replace(/\.[^.]+$/, "").trim();
-  const lower = stem.toLowerCase();
-  if (MEANINGLESS.has(lower)) return null;
-  // "Screenshot 2026-08-07 at 23.05.11", "IMG_1234", "2026-08-07" and friends.
-  if (/^[\d\s.:_-]+$/.test(stem)) return null;
-  if (/^(img|dsc|pxl|screenshot|스크린샷)[\s_-]/i.test(stem)) return null;
+  const stem = withoutExtension(originalName).trim();
+  if (isGenericName(stem)) return null;
   const slug = slugifyName(stem);
   return slug === "" ? null : slug;
 }
 
-function expand(pattern: string, ctx: ImageNameContext, index: number): string {
-  const hh = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return pattern.replace(/\{(\w+)\}/g, (all, token: string) => {
+function isGenericName(stem: string): boolean {
+  return (
+    NAMES_THAT_SAY_NOTHING.has(stem.toLowerCase()) ||
+    DIGITS_AND_SEPARATORS_ONLY.test(stem) ||
+    CAMERA_OR_SCREENSHOT_PREFIX.test(stem)
+  );
+}
+
+function expandPattern(pattern: string, ctx: ImageNameContext, index: number): string {
+  const now = new Date();
+  return pattern.replace(/\{(\w+)\}/g, (placeholder, token: string) => {
     switch (token) {
       case "slug":
         return ctx.slug;
@@ -61,41 +68,50 @@ function expand(pattern: string, ctx: ImageNameContext, index: number): string {
       case "index":
         return String(index);
       case "hhmmss":
-        return `${pad(hh.getHours())}${pad(hh.getMinutes())}${pad(hh.getSeconds())}`;
+        return hoursMinutesSeconds(now);
       case "original":
-        return meaningful(ctx.originalName) ?? "image";
+        return slugOfDescriptiveName(ctx.originalName) ?? "image";
       default:
-        return all;
+        return placeholder;
     }
   });
 }
 
-/**
- * Suggest a base name (no extension).  Computed on the server because the
- * `{index}` token depends on what is already sitting in the asset directory.
- */
-export function suggestImageName(ctx: ImageNameContext): string {
-  const override = ADMIN_CONFIG.suggestImageName?.(ctx);
+function hoursMinutesSeconds(time: Date): string {
+  return [time.getHours(), time.getMinutes(), time.getSeconds()]
+    .map((part) => String(part).padStart(2, "0"))
+    .join("");
+}
+
+export function suggestImageName(
+  ctx: ImageNameContext,
+  config: ImageNamingConfig = ADMIN_CONFIG,
+): string {
+  const override = config.suggestImageName?.(ctx);
   if (override !== undefined && override !== "") return slugifyName(override);
 
-  const taken = new Set(
-    ctx.existing.map((f) => f.replace(/\.[^.]+$/, "").toLowerCase()),
-  );
+  const taken = new Set(ctx.existing.map((file) => withoutExtension(file).toLowerCase()));
+  const descriptive = slugOfDescriptiveName(ctx.originalName);
+  if (descriptive === null) return firstFreePatternName(config.imageNamePattern, ctx, taken);
+  return taken.has(descriptive) ? firstFreeNumberedName(descriptive, taken) : descriptive;
+}
 
-  const kept = meaningful(ctx.originalName);
-  if (kept !== null && !taken.has(kept)) return kept;
-
-  let base = kept;
-  if (base === null) {
-    let index = 1;
-    for (; index < 1000; index++) {
-      const candidate = slugifyName(expand(ADMIN_CONFIG.imageNamePattern, ctx, index));
-      if (!taken.has(candidate)) return candidate;
-    }
-    base = slugifyName(expand(ADMIN_CONFIG.imageNamePattern, ctx, index));
+function firstFreePatternName(
+  pattern: string,
+  ctx: ImageNameContext,
+  taken: Set<string>,
+): string {
+  for (let index = 1; index < CANDIDATE_LIMIT; index++) {
+    const candidate = slugifyName(expandPattern(pattern, ctx, index));
+    if (!taken.has(candidate)) return candidate;
   }
-  for (let n = 2; n < 1000; n++) {
-    const candidate = `${base}-${n}`;
+  const lastResort = slugifyName(expandPattern(pattern, ctx, CANDIDATE_LIMIT));
+  return firstFreeNumberedName(lastResort, taken);
+}
+
+function firstFreeNumberedName(base: string, taken: Set<string>): string {
+  for (let suffix = 2; suffix < CANDIDATE_LIMIT; suffix++) {
+    const candidate = `${base}-${suffix}`;
     if (!taken.has(candidate)) return candidate;
   }
   return base;
