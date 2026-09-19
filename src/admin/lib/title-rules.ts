@@ -2,154 +2,176 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { parse } from "smol-toml";
 import { ADMIN_CONFIG } from "../config.ts";
-import { contentPath } from "./paths.ts";
-
-/**
- * Per-site cleanup rules for fetched link titles -- "Foo - RosettaLens 번역"
- * becoming just "Foo".  The rules live in a TOML file (ADMIN_CONFIG.
- * linkTitleRulesFile) so they are data under version control, and the file is
- * re-read on every request so edits apply immediately.
- *
- * A broken rules file throws TitleRuleError instead of being skipped: the
- * author just edited it and a silently-ignored typo would look like the rule
- * simply "not working".
- */
+import { CONTENT_ROOT, contentPath } from "./paths.ts";
 
 export class TitleRuleError extends Error {}
 
+interface TitleReplacement {
+  pattern: RegExp;
+  replacement: string;
+}
+
 export interface TitleRule {
-  /** Lowercased host patterns: exact, "*.host" (subdomains + bare), or "*". */
-  hosts: string[];
-  stripPrefix: string[];
-  stripSuffix: string[];
-  replace: { re: RegExp; to: string }[];
+  lowercaseHostPatterns: string[];
+  stripPrefixes: string[];
+  stripSuffixes: string[];
+  replacements: TitleReplacement[];
 }
 
-const KNOWN_KEYS = ["host", "strip-prefix", "strip-suffix", "replace"];
+const RULE_KEYS = ["host", "strip-prefix", "strip-suffix", "replace"];
 
-export async function loadTitleRules(): Promise<TitleRule[]> {
-  const rel = ADMIN_CONFIG.linkTitleRulesFile;
-  let text: string;
+const ANY_HOST = "*";
+
+const DOMAIN_AND_SUBDOMAINS = "*.";
+
+export async function loadTitleRules(root: string = CONTENT_ROOT): Promise<TitleRule[]> {
+  const rulesFile = ADMIN_CONFIG.linkTitleRulesFile;
+  const rulesToml = await readTextOrNull(contentPath(rulesFile, root));
+  if (rulesToml === null) return [];
+  return parseTitleRules(rulesToml, path.basename(rulesFile));
+}
+
+async function readTextOrNull(abs: string): Promise<string | null> {
   try {
-    text = await fs.readFile(contentPath(rel), "utf-8");
+    return await fs.readFile(abs, "utf-8");
   } catch {
-    return []; // No file, no rules.
+    return null;
   }
-  return parseTitleRules(text, path.basename(rel));
 }
 
-export function parseTitleRules(text: string, file: string): TitleRule[] {
-  let doc: unknown;
+export function parseTitleRules(rulesToml: string, fileName: string): TitleRule[] {
+  const ruleEntries = ruleEntriesOf(parseToml(rulesToml, fileName), fileName);
+  return ruleEntries.map((entry, index) => parseRule(entry, `${fileName} [[rule]] ${index + 1}`));
+}
+
+function parseToml(rulesToml: string, fileName: string): Record<string, unknown> {
   try {
-    doc = parse(text);
-  } catch (e) {
-    throw new TitleRuleError(
-      `${file}: ${e instanceof Error ? e.message : String(e)}`,
-    );
+    return parse(rulesToml);
+  } catch (error) {
+    throw ruleErrorCausedBy(error, fileName);
   }
-  const raw = (doc as Record<string, unknown>)["rule"];
-  if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new TitleRuleError(`${file}: rule은 [[rule]] 배열이어야 합니다`);
-  }
-  return raw.map((entry, i) => {
-    const where = `${file} [[rule]] ${i + 1}`;
-    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
-      throw new TitleRuleError(`${where}: 테이블이 아닙니다`);
-    }
-    const t = entry as Record<string, unknown>;
-    for (const key of Object.keys(t)) {
-      if (!KNOWN_KEYS.includes(key)) {
-        throw new TitleRuleError(
-          `${where}: 모르는 키 "${key}" (가능: ${KNOWN_KEYS.join(", ")})`,
-        );
-      }
-    }
-    if (t["host"] === undefined) {
-      throw new TitleRuleError(`${where}: host가 없습니다`);
-    }
-    return {
-      hosts: asStrings(t["host"], `${where} host`).map((h) => h.toLowerCase()),
-      stripPrefix:
-        t["strip-prefix"] === undefined
-          ? []
-          : asStrings(t["strip-prefix"], `${where} strip-prefix`),
-      stripSuffix:
-        t["strip-suffix"] === undefined
-          ? []
-          : asStrings(t["strip-suffix"], `${where} strip-suffix`),
-      replace:
-        t["replace"] === undefined ? [] : asReplaces(t["replace"], where),
-    };
-  });
 }
 
-function asStrings(v: unknown, where: string): string[] {
-  if (typeof v === "string") return [v];
-  if (Array.isArray(v) && v.every((x) => typeof x === "string")) {
-    return v as string[];
+function ruleEntriesOf(document: Record<string, unknown>, fileName: string): unknown[] {
+  const ruleEntries = document["rule"];
+  if (ruleEntries === undefined) return [];
+  if (!Array.isArray(ruleEntries)) {
+    throw new TitleRuleError(`${fileName}: rule은 [[rule]] 배열이어야 합니다`);
   }
-  throw new TitleRuleError(`${where}: 문자열이나 문자열 배열이어야 합니다`);
+  return ruleEntries;
 }
 
-function asReplaces(v: unknown, where: string): { re: RegExp; to: string }[] {
-  if (!Array.isArray(v)) {
-    throw new TitleRuleError(`${where} replace: 배열이어야 합니다`);
+function parseRule(entry: unknown, location: string): TitleRule {
+  const table = asTable(entry, location);
+  assertOnlyRuleKeys(table, location);
+  if (table["host"] === undefined) {
+    throw new TitleRuleError(`${location}: host가 없습니다`);
   }
-  if (v.length === 0) return [];
-  // A single [pattern, to(, flags)] or an array of them.
-  const list = Array.isArray(v[0]) ? v : [v];
-  return list.map((pair, j) => {
-    const at = `${where} replace ${j + 1}`;
-    if (
-      !Array.isArray(pair) ||
-      pair.length < 2 ||
-      pair.length > 3 ||
-      !pair.every((x) => typeof x === "string")
-    ) {
-      throw new TitleRuleError(
-        `${at}: [정규식, 치환] 또는 [정규식, 치환, 플래그] 여야 합니다`,
-      );
-    }
-    const [pattern, to, flags] = pair as [string, string, string?];
-    try {
-      return { re: new RegExp(pattern, flags ?? ""), to };
-    } catch (e) {
-      throw new TitleRuleError(
-        `${at}: ${e instanceof Error ? e.message : String(e)}`,
-      );
-    }
-  });
+  return {
+    lowercaseHostPatterns: asStrings(table["host"], `${location} host`).map((host) => host.toLowerCase()),
+    stripPrefixes: asOptionalStrings(table["strip-prefix"], `${location} strip-prefix`),
+    stripSuffixes: asOptionalStrings(table["strip-suffix"], `${location} strip-suffix`),
+    replacements: asOptionalReplacements(table["replace"], `${location} replace`),
+  };
 }
 
-export function hostMatches(pattern: string, hostname: string): boolean {
-  if (pattern === "*") return true;
-  if (pattern.startsWith("*.")) {
-    const base = pattern.slice(2);
-    return hostname === base || hostname.endsWith("." + base);
+function asTable(entry: unknown, location: string): Record<string, unknown> {
+  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+    throw new TitleRuleError(`${location}: 테이블이 아닙니다`);
   }
-  return hostname === pattern;
+  return entry as Record<string, unknown>;
 }
 
-/** Every matching rule applies, in file order: strip-prefix → strip-suffix → replace. */
-export function applyTitleRules(
-  title: string,
-  hostname: string,
-  rules: readonly TitleRule[],
-): string {
-  const host = hostname.toLowerCase();
-  let out = title;
-  for (const rule of rules) {
-    if (!rule.hosts.some((p) => hostMatches(p, host))) continue;
-    for (const p of rule.stripPrefix) {
-      if (out.startsWith(p)) out = out.slice(p.length);
-    }
-    for (const s of rule.stripSuffix) {
-      if (out.endsWith(s)) out = out.slice(0, out.length - s.length);
-    }
-    for (const { re, to } of rule.replace) out = out.replace(re, to);
+function assertOnlyRuleKeys(table: Record<string, unknown>, location: string): void {
+  const unknownKey = Object.keys(table).find((key) => !RULE_KEYS.includes(key));
+  if (unknownKey !== undefined) {
+    throw new TitleRuleError(`${location}: 모르는 키 "${unknownKey}" (가능: ${RULE_KEYS.join(", ")})`);
   }
-  out = out.replace(/\s+/g, " ").trim();
-  // Rules that eat the whole title were surely not meant to.
-  return out === "" ? title : out;
+}
+
+function asOptionalStrings(value: unknown, location: string): string[] {
+  return value === undefined ? [] : asStrings(value, location);
+}
+
+function asStrings(value: unknown, location: string): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    return value as string[];
+  }
+  throw new TitleRuleError(`${location}: 문자열이나 문자열 배열이어야 합니다`);
+}
+
+function asOptionalReplacements(value: unknown, location: string): TitleReplacement[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new TitleRuleError(`${location}: 배열이어야 합니다`);
+  }
+  return replacementEntriesOf(value).map((entry, index) => asReplacement(entry, `${location} ${index + 1}`));
+}
+
+function replacementEntriesOf(replace: unknown[]): unknown[] {
+  if (replace.length === 0) return [];
+  const isSingleReplacement = !Array.isArray(replace[0]);
+  return isSingleReplacement ? [replace] : replace;
+}
+
+function asReplacement(entry: unknown, location: string): TitleReplacement {
+  if (!isReplacementTuple(entry)) {
+    throw new TitleRuleError(`${location}: [정규식, 치환] 또는 [정규식, 치환, 플래그] 여야 합니다`);
+  }
+  const [source, replacement, flags] = entry;
+  try {
+    return { pattern: new RegExp(source, flags ?? ""), replacement };
+  } catch (error) {
+    throw ruleErrorCausedBy(error, location);
+  }
+}
+
+function isReplacementTuple(entry: unknown): entry is [string, string, string?] {
+  return (
+    Array.isArray(entry) &&
+    entry.length >= 2 &&
+    entry.length <= 3 &&
+    entry.every((part) => typeof part === "string")
+  );
+}
+
+function ruleErrorCausedBy(error: unknown, location: string): TitleRuleError {
+  return new TitleRuleError(`${location}: ${error instanceof Error ? error.message : String(error)}`);
+}
+
+export function applyTitleRules(title: string, hostname: string, rules: readonly TitleRule[]): string {
+  const lowercaseHost = hostname.toLowerCase();
+  const cleaned = rules.filter((rule) => ruleAppliesTo(rule, lowercaseHost)).reduce(applyRule, title);
+  const collapsed = cleaned.replace(/\s+/g, " ").trim();
+  return collapsed === "" ? title : collapsed;
+}
+
+function ruleAppliesTo(rule: TitleRule, lowercaseHost: string): boolean {
+  return rule.lowercaseHostPatterns.some((pattern) => hostMatches(pattern, lowercaseHost));
+}
+
+function hostMatches(pattern: string, host: string): boolean {
+  if (pattern === ANY_HOST) return true;
+  if (pattern.startsWith(DOMAIN_AND_SUBDOMAINS)) {
+    const domain = pattern.slice(DOMAIN_AND_SUBDOMAINS.length);
+    return host === domain || host.endsWith("." + domain);
+  }
+  return host === pattern;
+}
+
+function applyRule(title: string, rule: TitleRule): string {
+  let cleaned = title;
+  for (const prefix of rule.stripPrefixes) cleaned = withoutPrefix(cleaned, prefix);
+  for (const suffix of rule.stripSuffixes) cleaned = withoutSuffix(cleaned, suffix);
+  for (const { pattern, replacement } of rule.replacements) cleaned = cleaned.replace(pattern, replacement);
+  return cleaned;
+}
+
+function withoutPrefix(text: string, prefix: string): string {
+  return text.startsWith(prefix) ? text.slice(prefix.length) : text;
+}
+
+function withoutSuffix(text: string, suffix: string): string {
+  return text.endsWith(suffix) ? text.slice(0, text.length - suffix.length) : text;
 }
