@@ -171,7 +171,7 @@ test("a view file name lowercases the language tag", () => {
   assert.equal(viewFilename("ko-Hang"), "index.ko-hang.html");
 });
 
-test("content is read from year/month directories, with files beside a post as its assets", async (t) => {
+test("content is read from year/month directories, with a directory beside a post holding its assets", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "blog-posts-test-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const files = [
@@ -197,9 +197,27 @@ test("content is read from year/month directories, with files beside a post as i
   assert.deepEqual(content.files, [
     { year: "2026", month: "03", name: "post.ko-Hang.md", sourcePath: path.join(root, "2026/03/post.ko-Hang.md") },
   ]);
-  assert.deepEqual(content.assets, [
-    { year: "2026", month: "03", slug: "post", file: "image.png", sourcePath: path.join(root, "2026/03/post/image.png") },
+  assert.deepEqual(content.assetDirectories, [
+    {
+      year: "2026",
+      month: "03",
+      slug: "post",
+      assets: [
+        { year: "2026", month: "03", slug: "post", file: "image.png", sourcePath: path.join(root, "2026/03/post/image.png") },
+      ],
+    },
   ]);
+});
+
+test("a directory beside a post is an asset directory even when it holds no visible file", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "blog-posts-test-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, "2026/03/emptied"), { recursive: true });
+  await fs.writeFile(path.join(root, "2026/03/emptied/.DS_Store"), "");
+
+  const content = await walkContent(root);
+
+  assert.deepEqual(content.assetDirectories, [{ year: "2026", month: "03", slug: "emptied", assets: [] }]);
 });
 
 test("a source file name carries the post slug and a language tag", () => {

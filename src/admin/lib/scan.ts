@@ -2,157 +2,184 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import title from "markdown-it-title";
+import {
+  fileNames,
+  walkContent,
+  type AssetDirectory,
+  type SourceFile,
+} from "../../lib/posts.ts";
 import { readForm, splitSource } from "./frontmatter.ts";
 import { LANGS, derivedLangsOf } from "../shared/post-files.ts";
 import { CONTENT_ROOT, contentPath, splitPostFileName } from "./paths.ts";
 import type { Lang, PostAssetInfo, PostGroup, PostSourceSummary } from "./types.ts";
 
+interface PostSource {
+  file: string;
+  sourcePath: string;
+  year: string;
+  month: string;
+  slug: string;
+  lang: Lang;
+}
+
+type FrontMatterSummary = Pick<
+  PostSourceSummary,
+  "title" | "published" | "publishedMs" | "description" | "draft" | "dark" | "type" | "book"
+>;
+
 const sourceTitleParser = MarkdownIt("commonmark").use(title);
 
-function headingOf(body: string): string {
+function firstHeading(body: string): string {
   const env: { title?: string } = {};
   sourceTitleParser.render(body, env);
   return env.title ?? "";
 }
 
-async function summarize(
-  rel: string,
-  abs: string,
-  year: string,
-  month: string,
-  slug: string,
-  lang: Lang,
-): Promise<PostSourceSummary> {
-  const st = await fs.stat(abs);
-  const base: PostSourceSummary = {
-    file: rel,
-    postPath: `${year}/${month}/${slug}`,
+function postPathOf({ year, month, slug }: { year: string; month: string; slug: string }): string {
+  return `${year}/${month}/${slug}`;
+}
+
+function postSourceOf(sourceFile: SourceFile): PostSource | null {
+  const fileName = splitPostFileName(sourceFile.name);
+  if (fileName === null) return null;
+  const { year, month, name, sourcePath } = sourceFile;
+  return {
+    file: `${year}/${month}/${name}`,
+    sourcePath,
     year,
     month,
-    slug,
-    lang,
+    slug: fileName.stem,
+    lang: fileName.lang,
+  };
+}
+
+function frontMatterSummary(text: string, file: string): FrontMatterSummary {
+  const form = readForm(text, file);
+  const { body } = splitSource(text, file);
+  return {
+    title: firstHeading(body),
+    published: form.published,
+    publishedMs: new Date(form.published).getTime(),
+    ...(form.description !== undefined ? { description: form.description } : {}),
+    draft: form.draft === true,
+    dark: form.dark === true,
+    ...(form.type !== undefined ? { type: form.type } : {}),
+    ...(form.book !== undefined ? { book: form.book } : {}),
+  };
+}
+
+async function summarize(source: PostSource): Promise<PostSourceSummary> {
+  const stat = await fs.stat(source.sourcePath);
+  const summaryWithoutFrontMatter: PostSourceSummary = {
+    file: source.file,
+    postPath: postPathOf(source),
+    year: source.year,
+    month: source.month,
+    slug: source.slug,
+    lang: source.lang,
     title: "",
     published: "",
     publishedMs: 0,
     draft: false,
     dark: false,
-    derivedLangs: derivedLangsOf(lang),
-    bytes: st.size,
-    mtimeMs: st.mtimeMs,
+    derivedLangs: derivedLangsOf(source.lang),
+    bytes: stat.size,
+    mtimeMs: stat.mtimeMs,
   };
-  const source = await fs.readFile(abs, "utf-8");
+  const text = await fs.readFile(source.sourcePath, "utf-8");
   try {
-    const form = readForm(source, rel);
-    const { body } = splitSource(source, rel);
-    return {
-      ...base,
-      title: headingOf(body),
-      published: form.published,
-      publishedMs: new Date(form.published).getTime(),
-      ...(form.description !== undefined
-        ? { description: form.description }
-        : {}),
-      draft: form.draft === true,
-      dark: form.dark === true,
-      ...(form.type !== undefined ? { type: form.type } : {}),
-      ...(form.book !== undefined ? { book: form.book } : {}),
+    return { ...summaryWithoutFrontMatter, ...frontMatterSummary(text, source.file) };
+  } catch (error) {
+    const parseError = error instanceof Error ? error.message : String(error);
+    return { ...summaryWithoutFrontMatter, parseError };
+  }
+}
+
+function findOrAddGroup(groupsByPostPath: Map<string, PostGroup>, source: PostSource): PostGroup {
+  const postPath = postPathOf(source);
+  let group = groupsByPostPath.get(postPath);
+  if (group === undefined) {
+    group = {
+      postPath,
+      year: source.year,
+      month: source.month,
+      slug: source.slug,
+      sources: [],
+      missingLangs: [],
+      assetDir: null,
+      assetCount: 0,
     };
-  } catch (e) {
-    return { ...base, parseError: e instanceof Error ? e.message : String(e) };
+    groupsByPostPath.set(postPath, group);
   }
+  return group;
 }
 
-export async function scanPosts(): Promise<PostGroup[]> {
-  const groups = new Map<string, PostGroup>();
-  const assets = new Map<string, PostAssetInfo[]>();
-
-  for (const yearEntry of await fs.readdir(CONTENT_ROOT, {
-    withFileTypes: true,
-  })) {
-    if (!yearEntry.isDirectory() || !/^20\d\d$/.test(yearEntry.name)) continue;
-    const year = yearEntry.name;
-    const yearDir = path.join(CONTENT_ROOT, year);
-    for (const monthEntry of await fs.readdir(yearDir, {
-      withFileTypes: true,
-    })) {
-      if (!monthEntry.isDirectory() || monthEntry.name.startsWith(".")) continue;
-      const month = monthEntry.name;
-      const monthDir = path.join(yearDir, month);
-      for (const entry of await fs.readdir(monthDir, { withFileTypes: true })) {
-        if (entry.name.startsWith(".")) continue;
-
-        if (entry.isDirectory()) {
-          const postPath = `${year}/${month}/${entry.name}`;
-          assets.set(postPath, await readAssetDirectory(path.join(monthDir, entry.name)));
-          continue;
-        }
-        if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-
-        const fileName = splitPostFileName(entry.name);
-        if (fileName === null) continue;
-        const { stem: slug, lang } = fileName;
-        const rel = `${year}/${month}/${entry.name}`;
-        const summary = await summarize(
-          rel,
-          path.join(monthDir, entry.name),
-          year,
-          month,
-          slug,
-          lang,
-        );
-        const postPath = `${year}/${month}/${slug}`;
-        let group = groups.get(postPath);
-        if (group === undefined) {
-          group = {
-            postPath,
-            year,
-            month,
-            slug,
-            sources: [],
-            missingLangs: [],
-            assetDir: null,
-            assetCount: 0,
-          };
-          groups.set(postPath, group);
-        }
-        group.sources.push(summary);
-      }
-    }
+async function groupSourcesByPost(sourceFiles: SourceFile[]): Promise<PostGroup[]> {
+  const groupsByPostPath = new Map<string, PostGroup>();
+  for (const sourceFile of sourceFiles) {
+    const source = postSourceOf(sourceFile);
+    if (source === null) continue;
+    const summary = await summarize(source);
+    findOrAddGroup(groupsByPostPath, source).sources.push(summary);
   }
+  return [...groupsByPostPath.values()];
+}
 
-  const out = [...groups.values()];
-  for (const g of out) {
-    g.sources.sort((a, b) => a.lang.localeCompare(b.lang, "en"));
-    const have = new Set(g.sources.map((s) => s.lang));
-    g.missingLangs = LANGS.filter((l) => !have.has(l));
-    const bundle = assets.get(g.postPath);
-    if (bundle !== undefined) {
-      g.assetDir = g.postPath;
-      g.assetCount = bundle.length;
-    }
-  }
-  out.sort(
-    (a, b) =>
-      (b.sources[0]?.publishedMs ?? 0) - (a.sources[0]?.publishedMs ?? 0),
+function byLanguageTag(a: PostSourceSummary, b: PostSourceSummary): number {
+  return a.lang.localeCompare(b.lang, "en");
+}
+
+function missingLangsOf(sources: PostSourceSummary[]): Lang[] {
+  const present = new Set(sources.map((source) => source.lang));
+  return LANGS.filter((lang) => !present.has(lang));
+}
+
+function assetCountsByPostPath(assetDirectories: AssetDirectory[]): Map<string, number> {
+  return new Map(
+    assetDirectories.map((directory) => [postPathOf(directory), directory.assets.length]),
   );
-  return out;
 }
 
-export async function listAssets(postPath: string): Promise<PostAssetInfo[]> {
-  const dir = contentPath(postPath);
+function withLanguagesAndAssets(group: PostGroup, assetCount: number | undefined): PostGroup {
+  const sources = [...group.sources].sort(byLanguageTag);
+  return {
+    ...group,
+    sources,
+    missingLangs: missingLangsOf(sources),
+    assetDir: assetCount === undefined ? null : group.postPath,
+    assetCount: assetCount ?? 0,
+  };
+}
+
+function firstListedPublishedMs(group: PostGroup): number {
+  return group.sources[0]?.publishedMs ?? 0;
+}
+
+export async function scanPosts(root: string = CONTENT_ROOT): Promise<PostGroup[]> {
+  const { files, assetDirectories } = await walkContent(root);
+  const assetCounts = assetCountsByPostPath(assetDirectories);
+  const groups = (await groupSourcesByPost(files)).map((group) =>
+    withLanguagesAndAssets(group, assetCounts.get(group.postPath)),
+  );
+  return groups.sort((a, b) => firstListedPublishedMs(b) - firstListedPublishedMs(a));
+}
+
+async function assetsWithSizes(directory: string): Promise<PostAssetInfo[]> {
+  const assets: PostAssetInfo[] = [];
+  for (const file of await fileNames(directory)) {
+    const { size } = await fs.stat(path.join(directory, file));
+    assets.push({ file, bytes: size });
+  }
+  return assets;
+}
+
+export async function listAssets(
+  postPath: string,
+  root: string = CONTENT_ROOT,
+): Promise<PostAssetInfo[]> {
   try {
-    return await readAssetDirectory(dir);
+    return await assetsWithSizes(contentPath(postPath, root));
   } catch {
     return [];
   }
-}
-
-async function readAssetDirectory(directory: string): Promise<PostAssetInfo[]> {
-  const assets: PostAssetInfo[] = [];
-  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
-    if (!entry.isFile() || entry.name.startsWith(".")) continue;
-    const stat = await fs.stat(path.join(directory, entry.name));
-    assets.push({ file: entry.name, bytes: stat.size });
-  }
-  return assets;
 }

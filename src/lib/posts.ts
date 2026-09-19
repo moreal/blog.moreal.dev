@@ -65,16 +65,23 @@ export interface PostAsset {
   sourcePath: string;
 }
 
-interface SourceFile {
+export interface SourceFile {
   year: string;
   month: string;
   name: string;
   sourcePath: string;
 }
 
+export interface AssetDirectory {
+  year: string;
+  month: string;
+  slug: string;
+  assets: PostAsset[];
+}
+
 interface ContentFiles {
   files: SourceFile[];
-  assets: PostAsset[];
+  assetDirectories: AssetDirectory[];
 }
 
 interface Content {
@@ -240,7 +247,7 @@ async function directoryNames(directory: string): Promise<string[]> {
     .map((entry) => entry.name);
 }
 
-async function fileNames(directory: string): Promise<string[]> {
+export async function fileNames(directory: string): Promise<string[]> {
   return (await visibleEntries(directory))
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name);
@@ -249,13 +256,13 @@ async function fileNames(directory: string): Promise<string[]> {
 const YEAR_DIRECTORY = /^20\d\d$/;
 
 export async function walkContent(root: string): Promise<ContentFiles> {
-  const found: ContentFiles = { files: [], assets: [] };
+  const found: ContentFiles = { files: [], assetDirectories: [] };
   for (const year of await directoryNames(root)) {
     if (!YEAR_DIRECTORY.test(year)) continue;
     for (const month of await directoryNames(path.join(root, year))) {
       const inMonth = await walkMonth(path.join(root, year, month), year, month);
       found.files.push(...inMonth.files);
-      found.assets.push(...inMonth.assets);
+      found.assetDirectories.push(...inMonth.assetDirectories);
     }
   }
   return found;
@@ -266,21 +273,21 @@ async function walkMonth(
   year: string,
   month: string,
 ): Promise<ContentFiles> {
-  const found: ContentFiles = { files: [], assets: [] };
+  const found: ContentFiles = { files: [], assetDirectories: [] };
   for (const entry of await visibleEntries(directory)) {
     const entryPath = path.join(directory, entry.name);
     if (entry.isFile() && entry.name.endsWith(".md")) {
       found.files.push({ year, month, name: entry.name, sourcePath: entryPath });
     } else if (entry.isDirectory()) {
-      for (const file of await fileNames(entryPath)) {
-        found.assets.push({
-          year,
-          month,
-          slug: entry.name,
-          file,
-          sourcePath: path.join(entryPath, file),
-        });
-      }
+      const slug = entry.name;
+      const assets = (await fileNames(entryPath)).map((file) => ({
+        year,
+        month,
+        slug,
+        file,
+        sourcePath: path.join(entryPath, file),
+      }));
+      found.assetDirectories.push({ year, month, slug, assets });
     }
   }
   return found;
@@ -333,7 +340,7 @@ function findOrAddPost(
 }
 
 async function loadContent(): Promise<Content> {
-  const { files, assets } = await walkContent(CONTENT_ROOT);
+  const { files, assetDirectories } = await walkContent(CONTENT_ROOT);
   const postsByPath = new Map<string, Post>();
   for (const file of files) {
     const name = parseSourceFileName(file.name);
@@ -350,6 +357,7 @@ async function loadContent(): Promise<Content> {
     sortPostViews(post.views);
     post.multiview = post.views.length > 1;
   }
+  const assets = assetDirectories.flatMap((directory) => directory.assets);
   return { posts, assets };
 }
 
