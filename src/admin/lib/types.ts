@@ -1,14 +1,9 @@
+import type { AdminConfig } from "../config.ts";
+import type { BookInfo, PostType } from "../../lib/posts.ts";
+
+export type { BookInfo, PostType };
+
 export type Lang = "ko-Hang" | "ko-Kore" | "en";
-
-export type PostType = "daily" | "reading";
-
-export interface BookInfo {
-  title?: string;
-  author?: string;
-  translator?: string;
-  publisher?: string;
-  year?: number;
-}
 
 /**
  * Front matter in the shape the editor form edits.  `published` stays a raw
@@ -27,15 +22,21 @@ export interface FrontMatterForm {
   bookScaffold?: boolean;
 }
 
-export interface PostSourceSummary {
-  /** Repo-relative, e.g. "2026/02/career.ko-Hang.md". */
-  file: string;
+export interface PostLocation {
   /** URL path without extension, e.g. "2026/02/career". */
   postPath: string;
   year: string;
   month: string;
   slug: string;
+}
+
+export interface SourceLocation extends PostLocation {
+  /** Repo-relative, e.g. "2026/02/career.ko-Hang.md". */
+  file: string;
   lang: Lang;
+}
+
+export interface PostSourceSummary extends SourceLocation {
   /** First heading, via markdown-it-title on the raw body. */
   title: string;
   /** Verbatim front matter text, not a re-serialised timestamp. */
@@ -47,18 +48,14 @@ export interface PostSourceSummary {
   type?: PostType;
   book?: BookInfo;
   /** ["ko-Hang"] for a ko-Kore source, which seonbi derives at build time. */
-  derivedLangs: string[];
+  derivedLangs: Lang[];
   bytes: number;
   mtimeMs: number;
   /** Set instead of throwing, so one bad file cannot blank the whole list. */
   parseError?: string;
 }
 
-export interface PostGroup {
-  postPath: string;
-  year: string;
-  month: string;
-  slug: string;
+export interface PostGroup extends PostLocation {
   sources: PostSourceSummary[];
   /** Languages this post has no source file for; drives "add translation". */
   missingLangs: Lang[];
@@ -79,7 +76,7 @@ export interface RenderedView {
   document: string;
 }
 
-export type ApiError =
+export type ApiErrorCode =
   | "bad-request"
   | "not-found"
   | "invalid"
@@ -91,21 +88,15 @@ export type ApiError =
   | "bad-name"
   | "forbidden";
 
-export type ApiFailure = { ok: false; error: ApiError; message: string };
+export type ApiFailure = { ok: false; error: ApiErrorCode; message: string };
 
 export type PostsResponse =
   | { ok: true; groups: PostGroup[]; scannedAt: number }
   | ApiFailure;
 
 export type SourceResponse =
-  | {
+  | (SourceLocation & {
       ok: true;
-      file: string;
-      postPath: string;
-      year: string;
-      month: string;
-      slug: string;
-      lang: Lang;
       /** Original front matter block including both `---` fences. */
       fenceRaw: string;
       body: string;
@@ -113,7 +104,7 @@ export type SourceResponse =
       /** Optimistic-concurrency token. */
       mtimeMs: number;
       assets: PostAssetInfo[];
-    }
+    })
   | ApiFailure;
 
 export type PreviewResponse =
@@ -159,7 +150,7 @@ export type ConfigResponse =
       imageTypes: Record<string, string>;
       maxImageBytes: number;
       formatOnSave: boolean;
-      editorEngine: "codemirror" | "textarea";
+      editorEngine: AdminConfig["editorEngine"];
       langs: Lang[];
     }
   | ApiFailure;

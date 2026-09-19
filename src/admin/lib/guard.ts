@@ -1,7 +1,7 @@
 import { PathError } from "./paths.ts";
-import type { ApiError, ApiFailure } from "./types.ts";
+import type { ApiErrorCode, ApiFailure } from "./types.ts";
 
-const HTTP_STATUS_BY_ERROR: Record<ApiError, number> = {
+const HTTP_STATUS_BY_ERROR: Record<ApiErrorCode, number> = {
   "bad-request": 400,
   "not-found": 404,
   "invalid": 422,
@@ -26,7 +26,7 @@ export function json(data: unknown, status = 200): Response {
   });
 }
 
-export function fail(error: ApiError, message: string): Response {
+export function fail(error: ApiErrorCode, message: string): Response {
   return json({ ok: false, error, message } satisfies ApiFailure, HTTP_STATUS_BY_ERROR[error]);
 }
 

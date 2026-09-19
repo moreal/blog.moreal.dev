@@ -1,10 +1,10 @@
 import type {
   ApiFailure,
   ConfigResponse,
-  Lang,
   LinkTitleResponse,
   PostGroup,
   PostsResponse,
+  PreviewRequest,
   PreviewResponse,
   RenderedView,
   SourceResponse,
@@ -51,12 +51,7 @@ export const api = {
   source: (file: string) =>
     call<SourceResponse>(`source?file=${encodeURIComponent(file)}`),
 
-  preview: (body: {
-    file: string;
-    frontmatter: unknown;
-    body: string;
-    lang: Lang;
-  }): Promise<{ views: RenderedView[]; ms: number }> =>
+  preview: (body: PreviewRequest): Promise<{ views: RenderedView[]; ms: number }> =>
     call<PreviewResponse>("preview", asJson(body)),
 
   linkTitle: (url: string) =>
