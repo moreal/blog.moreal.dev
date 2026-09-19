@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import {
   TitleRuleError,
   applyTitleRules,
@@ -80,6 +80,6 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
     const cause =
       e instanceof Error && e.cause instanceof Error ? `: ${e.cause.message}` : "";
-    return fail("io", describe(e) + cause);
+    return fail("io", errorMessageForClient(e) + cause);
   }
 };

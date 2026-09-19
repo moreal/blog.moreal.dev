@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { APIRoute } from "astro";
 import { ADMIN_CONFIG } from "../config.ts";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import {
   CONTENT_ROOT,
   PathError,
@@ -16,18 +16,14 @@ export const prerender = false;
 const BASE_NAME = /^[a-z0-9][a-z0-9._-]*$/;
 
 export const POST: APIRoute = async ({ request, url }) => {
-  const bad = checkRequest(request, url);
+  const bad = checkRequest(request, url, { contentType: "multipart/form-data" });
   if (bad !== null) return bad;
-  const ct = request.headers.get("content-type") ?? "";
-  if (!ct.includes("multipart/form-data")) {
-    return fail("bad-request", "expected multipart/form-data");
-  }
 
   let form: FormData;
   try {
     form = await request.formData();
   } catch (e) {
-    return fail("bad-request", describe(e));
+    return fail("bad-request", errorMessageForClient(e));
   }
 
   const blob = form.get("file");
@@ -101,6 +97,6 @@ export const POST: APIRoute = async ({ request, url }) => {
     });
   } catch (e) {
     if (e instanceof PathError) return fail("bad-request", e.message);
-    return fail("io", describe(e));
+    return fail("io", errorMessageForClient(e));
   }
 };

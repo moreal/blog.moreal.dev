@@ -7,7 +7,7 @@ import {
   planTranslation,
   readTranslationSource,
 } from "../lib/create-plan.ts";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import {
   CONTENT_ROOT,
   LANGS,
@@ -21,7 +21,7 @@ import { scaffold } from "../lib/scaffold.ts";
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, url }) => {
-  const bad = checkRequest(request, url, { json: true });
+  const bad = checkRequest(request, url, { contentType: "application/json" });
   if (bad !== null) return bad;
 
   let req: CreateRequest;
@@ -70,6 +70,6 @@ export const POST: APIRoute = async ({ request, url }) => {
     });
   } catch (e) {
     if (e instanceof PathError) return fail("bad-request", e.message);
-    return fail("io", describe(e));
+    return fail("io", errorMessageForClient(e));
   }
 };

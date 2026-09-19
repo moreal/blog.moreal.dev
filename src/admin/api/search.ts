@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { APIRoute } from "astro";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { CONTENT_ROOT } from "../lib/paths.ts";
 import { scanPosts } from "../lib/scan.ts";
 import { findSourceMatches } from "../lib/search.ts";
@@ -62,6 +62,6 @@ export const GET: APIRoute = async ({ request, url }) => {
     hits.sort((a, b) => b.count - a.count);
     return json({ ok: true, query: q, hits, truncated });
   } catch (e) {
-    return fail("io", describe(e));
+    return fail("io", errorMessageForClient(e));
   }
 };

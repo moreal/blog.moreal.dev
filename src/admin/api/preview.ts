@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { serializeFrontMatter } from "../lib/frontmatter.ts";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { LANGS, PathError, resolvePostFile } from "../lib/paths.ts";
 import { renderPreviewDocument } from "../lib/preview-doc.ts";
 import type { Lang, PreviewRequest, PreviewResponse } from "../lib/types.ts";
@@ -8,7 +8,7 @@ import type { Lang, PreviewRequest, PreviewResponse } from "../lib/types.ts";
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, url }) => {
-  const bad = checkRequest(request, url, { json: true });
+  const bad = checkRequest(request, url, { contentType: "application/json" });
   if (bad !== null) return bad;
 
   let body: PreviewRequest;
@@ -51,6 +51,6 @@ export const POST: APIRoute = async ({ request, url }) => {
       ms: Math.round(performance.now() - started),
     } satisfies PreviewResponse);
   } catch (e) {
-    return fail("invalid", describe(e));
+    return fail("invalid", errorMessageForClient(e));
   }
 };

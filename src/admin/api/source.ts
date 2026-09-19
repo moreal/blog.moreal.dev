@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import type { APIRoute } from "astro";
 import { readForm, splitSource } from "../lib/frontmatter.ts";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { PathError, resolvePostFile } from "../lib/paths.ts";
 import { listAssets } from "../lib/scan.ts";
 import type { SourceResponse } from "../lib/types.ts";
@@ -49,6 +49,6 @@ export const GET: APIRoute = async ({ request, url }) => {
       assets: await listAssets(ref.postPath),
     } satisfies SourceResponse);
   } catch (e) {
-    return fail("invalid", describe(e));
+    return fail("invalid", errorMessageForClient(e));
   }
 };

@@ -7,7 +7,7 @@ import {
   formatAndReadSavedPost,
   replacePostFileAtomically,
 } from "../lib/save.ts";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
 import type { FrontMatterForm } from "../lib/types.ts";
 
@@ -23,7 +23,7 @@ interface SaveRequest {
 }
 
 export const POST: APIRoute = async ({ request, url }) => {
-  const bad = checkRequest(request, url, { json: true });
+  const bad = checkRequest(request, url, { contentType: "application/json" });
   if (bad !== null) return bad;
 
   let req: SaveRequest;
@@ -70,13 +70,13 @@ export const POST: APIRoute = async ({ request, url }) => {
   try {
     parseFrontMatter(source, ref.rel);
   } catch (e) {
-    return fail("invalid", describe(e));
+    return fail("invalid", errorMessageForClient(e));
   }
 
   try {
     await replacePostFileAtomically(ref.abs, source);
   } catch (e) {
-    return fail("io", describe(e));
+    return fail("io", errorMessageForClient(e));
   }
 
   const shouldFormat = req.format !== false && ADMIN_CONFIG.formatOnSave;

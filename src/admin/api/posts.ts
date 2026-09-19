@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { checkRequest, describe, fail, json } from "../lib/guard.ts";
+import { checkRequest, errorMessageForClient, fail, json } from "../lib/guard.ts";
 import { scanPosts } from "../lib/scan.ts";
 import type { PostsResponse } from "../lib/types.ts";
 
@@ -16,6 +16,6 @@ export const GET: APIRoute = async ({ request, url }) => {
       scannedAt: Date.now(),
     } satisfies PostsResponse);
   } catch (e) {
-    return fail("io", describe(e));
+    return fail("io", errorMessageForClient(e));
   }
 };
