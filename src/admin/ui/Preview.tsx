@@ -1,6 +1,6 @@
 import { For, Show, createEffect, createSignal } from "solid-js";
 import type { RenderedView } from "../lib/types.ts";
-import { LANG_LABEL } from "./api.ts";
+import { languageLabel } from "../../lib/site.ts";
 
 /**
  * The published page itself, not a lookalike: the server renders PostView.tsx
@@ -59,7 +59,7 @@ export default function Preview(props: {
               class={i() === active() ? "primary small" : "small"}
               onClick={() => setActive(i())}
             >
-              {LANG_LABEL[v.lang] ?? v.lang}
+              {languageLabel(v.lang)}
             </button>
           )}
         </For>

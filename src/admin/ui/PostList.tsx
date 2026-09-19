@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createResource, createSignal } from "solid-js";
 import type { PostGroup, PostSourceSummary } from "../lib/types.ts";
-import { LANG_LABEL, api } from "./api.ts";
+import { languageLabel } from "../../lib/site.ts";
+import { api } from "./api.ts";
 import { kstDateTime, kstYear } from "../shared/dates.ts";
 
 /** Debounced so typing does not read every post on every keystroke. */
@@ -43,12 +44,12 @@ function searchableText(group: PostGroup): string {
 function SourceChips(props: { source: PostSourceSummary }) {
   return (
     <>
-      <span class="chip">{LANG_LABEL[props.source.lang] ?? props.source.lang}</span>
+      <span class="chip">{languageLabel(props.source.lang)}</span>
       <Show when={props.source.derivedLangs.length > 0}>
         {/* The derived view has no file of its own, so it never gets an edit
             affordance -- seonbi generates it at build time. */}
         <span class="chip derived" title="seonbi가 빌드 시점에 생성합니다">
-          → {props.source.derivedLangs.map((l) => LANG_LABEL[l] ?? l).join(", ")}{" "}
+          → {props.source.derivedLangs.map(languageLabel).join(", ")}{" "}
           (파생)
         </span>
       </Show>
@@ -109,7 +110,7 @@ function SearchResults(props: {
               >
                 <span class="hit-title">
                   {hit.title}
-                  <span class="chip">{LANG_LABEL[hit.lang] ?? hit.lang}</span>
+                  <span class="chip">{languageLabel(hit.lang)}</span>
                   <span class="when">
                     {hit.line}번째 줄 · {hit.count}회
                   </span>
@@ -160,9 +161,9 @@ function PostGroupRow(props: { group: PostGroup }) {
               <a
                 class="btn small"
                 href={`/admin/new?translationOf=${encodeURIComponent(props.group.postPath)}&lang=${lang}`}
-                title={`${LANG_LABEL[lang]} 번역 추가`}
+                title={`${languageLabel(lang)} 번역 추가`}
               >
-                ＋{LANG_LABEL[lang]}
+                ＋{languageLabel(lang)}
               </a>
             )}
           </For>

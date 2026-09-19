@@ -86,9 +86,3 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
-
-export const LANG_LABEL: Record<string, string> = {
-  "ko-Hang": "한국어",
-  "ko-Kore": "國漢文",
-  "en": "English",
-};

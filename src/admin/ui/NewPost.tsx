@@ -1,6 +1,7 @@
 import { Show, createResource, createSignal } from "solid-js";
 import type { Lang } from "../lib/types.ts";
-import { LANG_LABEL, api } from "./api.ts";
+import { languageLabel } from "../../lib/site.ts";
+import { api } from "./api.ts";
 import { kstDate } from "../shared/dates.ts";
 
 type Kind = "daily" | "reading" | "regular";
@@ -125,7 +126,7 @@ export default function NewPost() {
               disabled={isTranslation && existing()?.missingLangs.includes(l) === false}
               onClick={() => setLang(l)}
             >
-              <b>{LANG_LABEL[l]}</b>
+              <b>{languageLabel(l)}</b>
               <em>
                 {l === "ko-Kore"
                   ? "漢字로 쓰면 한글 뷰가 자동 생성됩니다"

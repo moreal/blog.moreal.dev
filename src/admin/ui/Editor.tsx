@@ -10,7 +10,8 @@ import ImageNameDialog from "./ImageNameDialog.tsx";
 import { createImagePaste } from "./imagePaste.ts";
 import { createPublishedPreview } from "./publishedPreview.ts";
 import Preview from "./Preview.tsx";
-import { LANG_LABEL, api } from "./api.ts";
+import { languageLabel } from "../../lib/site.ts";
+import { api } from "./api.ts";
 import { nowKstIso } from "../shared/dates.ts";
 import type { EditorHandle } from "./engine.ts";
 
@@ -162,7 +163,7 @@ export default function Editor() {
                     ← 목록
                   </a>
                   <code>{src.file}</code>
-                  <span class="chip">{LANG_LABEL[src.lang] ?? src.lang}</span>
+                  <span class="chip">{languageLabel(src.lang)}</span>
                   <Show when={src.lang === "ko-Kore"}>
                     <span class="chip derived">→ 한국어 (파생)</span>
                   </Show>

@@ -6,8 +6,12 @@ export const SITE = {
   relMe: ["https://social.silicon.moe/@moreal", "https://hackers.pub/@moreal"],
 } as const;
 
-export const LANG_LABELS: Record<string, string> = {
+const LANG_LABELS: Record<string, string> = {
   "ko-Hang": "한국어",
   "ko-Kore": "國漢文",
   en: "English",
 };
+
+export function languageLabel(lang: string): string {
+  return LANG_LABELS[lang] ?? lang;
+}

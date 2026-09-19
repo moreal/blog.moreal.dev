@@ -1,6 +1,6 @@
 import type { Post } from "../lib/posts";
 import { viewFilename } from "../lib/posts";
-import { LANG_LABELS } from "../lib/site";
+import { languageLabel } from "../lib/site";
 
 interface Props {
   post: Post;
@@ -84,7 +84,7 @@ export default function Redirector(props: Props) {
           {post.views.map((v) => (
             <li>
               <a rel="alternate" href={multiViews[v.lang]} hreflang={v.lang}>
-                {LANG_LABELS[v.lang] ?? v.lang}
+                {languageLabel(v.lang)}
               </a>
             </li>
           ))}

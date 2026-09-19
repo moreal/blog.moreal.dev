@@ -1,7 +1,7 @@
 import { NIGHT_INIT, NIGHT_VEIL } from "../lib/night";
 import type { BookInfo, Post, PostView as PostViewData } from "../lib/posts";
 import { kstDate, viewFilename } from "../lib/posts";
-import { LANG_LABELS, SITE } from "../lib/site";
+import { SITE, languageLabel } from "../lib/site";
 
 interface Props {
   post: Post;
@@ -52,12 +52,12 @@ export default function PostView(props: Props) {
                 v.lang === view.lang
                   ? (
                     <span class="lang-current">
-                      {LANG_LABELS[v.lang] ?? v.lang}
+                      {languageLabel(v.lang)}
                     </span>
                   )
                   : (
                     <a href={`/${post.path}/${viewFilename(v.lang)}`}>
-                      {LANG_LABELS[v.lang] ?? v.lang}
+                      {languageLabel(v.lang)}
                     </a>
                   )
               )}
