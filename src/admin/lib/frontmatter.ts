@@ -1,15 +1,12 @@
-import { parseFrontMatter } from "../../lib/posts.ts";
+import { parseFrontMatter, splitFrontMatter } from "../../lib/posts.ts";
 import type { BookInfo, FrontMatterForm, PostType } from "./types.ts";
-
-const FENCE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
 export function splitSource(
   source: string,
   file: string,
 ): { fenceRaw: string; body: string } {
-  const m = source.match(FENCE);
-  if (m === null) throw new Error(`${file}: missing front matter.`);
-  return { fenceRaw: m[0], body: source.slice(m[0].length) };
+  const { fence, body } = splitFrontMatter(source, file);
+  return { fenceRaw: fence, body };
 }
 
 /**

@@ -7,7 +7,7 @@ import { load as loadYaml } from "js-yaml";
 import MarkdownIt from "markdown-it";
 import footnote from "markdown-it-footnote";
 import title from "markdown-it-title";
-import { promises as fs } from "node:fs";
+import { promises as fs, type Dirent } from "node:fs";
 import path from "node:path";
 
 // `astro dev`/`astro build` are always run from the project root, where the
@@ -26,13 +26,7 @@ export interface BookInfo {
   year?: number;
 }
 
-export interface PostView {
-  /** Language tag, e.g. "ko-Hang", "ko-Kore", "en". */
-  lang: string;
-  /** Rendered HTML body. */
-  html: string;
-  /** Title extracted from the first heading of the document. */
-  title: string;
+export interface FrontMatter {
   published: Date;
   description?: string;
   draft: boolean;
@@ -43,6 +37,15 @@ export interface PostView {
   type?: PostType;
   /** Book metadata; only meaningful for "reading" posts. */
   book?: BookInfo;
+}
+
+export interface PostView extends FrontMatter {
+  /** Language tag, e.g. "ko-Hang", "ko-Kore", "en". */
+  lang: string;
+  /** Rendered HTML body. */
+  html: string;
+  /** Title extracted from the first heading of the document. */
+  title: string;
 }
 
 export interface Post {
@@ -63,6 +66,100 @@ export interface PostAsset {
   file: string;
   /** Absolute path of the source file. */
   sourcePath: string;
+}
+
+interface SourceFile {
+  year: string;
+  month: string;
+  name: string;
+  sourcePath: string;
+}
+
+interface ContentFiles {
+  files: SourceFile[];
+  assets: PostAsset[];
+}
+
+interface Content {
+  posts: Post[];
+  assets: PostAsset[];
+}
+
+const FRONT_MATTER_FENCE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+
+export function splitFrontMatter(
+  source: string,
+  file: string,
+): { fence: string; yaml: string; body: string } {
+  const match = FRONT_MATTER_FENCE.exec(source);
+  if (match === null) throw new Error(`${file}: missing front matter.`);
+  return {
+    fence: match[0],
+    yaml: match[1]!,
+    body: source.slice(match[0].length),
+  };
+}
+
+function stringField(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function parsePublished(value: unknown, file: string): Date {
+  const published = value instanceof Date
+    ? value
+    : typeof value === "string"
+    ? new Date(value)
+    : undefined;
+  if (published === undefined || Number.isNaN(published.getTime())) {
+    throw new Error(`${file}: front matter lacks a "published" timestamp.`);
+  }
+  return published;
+}
+
+function parsePostType(value: unknown, file: string): PostType | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (value === "daily" || value === "reading") return value;
+  throw new Error(
+    `${file}: unknown post type ${JSON.stringify(value)}; ` +
+      `expected "daily" or "reading".`,
+  );
+}
+
+function parseBook(value: unknown): BookInfo | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  const book: BookInfo = {
+    title: stringField(record, "title"),
+    author: stringField(record, "author"),
+    translator: stringField(record, "translator"),
+    publisher: stringField(record, "publisher"),
+    year: typeof record["year"] === "number" ? record["year"] : undefined,
+  };
+  const hasAnyField = Object.values(book).some((field) => field !== undefined);
+  return hasAnyField ? book : undefined;
+}
+
+export function parseFrontMatter(
+  source: string,
+  file: string,
+): { meta: FrontMatter; body: string } {
+  const { yaml, body } = splitFrontMatter(source, file);
+  const data = (loadYaml(yaml) ?? {}) as Record<string, unknown>;
+  return {
+    meta: {
+      published: parsePublished(data["published"], file),
+      description: stringField(data, "description"),
+      draft: Boolean(data["draft"]),
+      dark: Boolean(data["dark"]),
+      type: parsePostType(data["type"], file),
+      book: parseBook(data["book"]),
+    },
+    body,
+  };
 }
 
 function seonbiConfiguration(
@@ -102,220 +199,156 @@ function renderMarkdown(markdown: string): { html: string; title: string } {
   return { html, title: env.title ?? "" };
 }
 
-export interface FrontMatter {
-  published: Date;
-  description?: string;
-  draft: boolean;
-  dark: boolean;
-  type?: PostType;
-  book?: BookInfo;
-}
+const VIEWS_OF_KORE_SOURCE: {
+  lang: string;
+  hanjaRendering: HanjaRenderingOption;
+}[] = [
+  { lang: "ko-Kore", hanjaRendering: "HanjaInRuby" },
+  { lang: "ko-Hang", hanjaRendering: "HangulOnly" },
+];
 
-function parseBook(data: unknown): BookInfo | undefined {
-  if (typeof data !== "object" || data === null) return undefined;
-  const record = data as Record<string, unknown>;
-  const str = (key: string): string | undefined =>
-    typeof record[key] === "string" ? (record[key] as string) : undefined;
-  const book: BookInfo = {
-    title: str("title"),
-    author: str("author"),
-    translator: str("translator"),
-    publisher: str("publisher"),
-    year: typeof record["year"] === "number" ? record["year"] : undefined,
-  };
-  // A scaffolded "book:" block whose values are still blank parses to all
-  // nulls; treat it as absent so no empty metadata line gets rendered.
-  return Object.values(book).some((v) => v !== undefined) ? book : undefined;
-}
-
-export function parseFrontMatter(
-  source: string,
-  file: string,
-): { meta: FrontMatter; body: string } {
-  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (match === null) throw new Error(`${file}: missing front matter.`);
-  const data = (loadYaml(match[1]!) ?? {}) as Record<string, unknown>;
-  const rawPublished = data["published"];
-  const published = rawPublished instanceof Date
-    ? rawPublished
-    : typeof rawPublished === "string"
-    ? new Date(rawPublished)
-    : undefined;
-  if (published === undefined || Number.isNaN(published.getTime())) {
-    throw new Error(`${file}: front matter lacks a "published" timestamp.`);
-  }
-  const rawType = data["type"];
-  let type: PostType | undefined;
-  if (rawType !== undefined && rawType !== null) {
-    if (rawType === "daily" || rawType === "reading") type = rawType;
-    else {
-      // A typo like "dialy" would otherwise silently demote the post to a
-      // regular article and surface it on the main list; fail fast instead.
-      throw new Error(
-        `${file}: unknown post type ${JSON.stringify(rawType)}; ` +
-          `expected "daily" or "reading".`,
-      );
-    }
-  }
-  return {
-    meta: {
-      published,
-      description:
-        typeof data["description"] === "string" ? data["description"] : undefined,
-      // jikji treated any non-empty "draft" string as a draft; keep that.
-      draft: Boolean(data["draft"]),
-      dark: Boolean(data["dark"]),
-      type,
-      book: parseBook(data["book"]),
-    },
-    body: source.slice(match[0].length),
-  };
-}
-
-async function walkContent(): Promise<{
-  files: { year: string; month: string; name: string; sourcePath: string }[];
-  assets: PostAsset[];
-}> {
-  const files = [];
-  const assets: PostAsset[] = [];
-  for (const yearEntry of await fs.readdir(CONTENT_ROOT, {
-    withFileTypes: true,
-  })) {
-    if (!yearEntry.isDirectory() || !/^20\d\d$/.test(yearEntry.name)) continue;
-    const year = yearEntry.name;
-    const yearDir = path.join(CONTENT_ROOT, year);
-    for (const monthEntry of await fs.readdir(yearDir, {
-      withFileTypes: true,
-    })) {
-      if (!monthEntry.isDirectory() || monthEntry.name.startsWith(".")) {
-        continue;
-      }
-      const month = monthEntry.name;
-      const monthDir = path.join(yearDir, month);
-      for (const entry of await fs.readdir(monthDir, { withFileTypes: true })) {
-        if (entry.name.startsWith(".")) continue;
-        if (entry.isFile() && entry.name.endsWith(".md")) {
-          files.push({
-            year,
-            month,
-            name: entry.name,
-            sourcePath: path.join(monthDir, entry.name),
-          });
-        } else if (entry.isDirectory()) {
-          // Files sitting next to a post (images etc.), served under the
-          // same URL path, like jikji's scanFiles over the year dirs did.
-          const slugDir = path.join(monthDir, entry.name);
-          for (const fileEntry of await fs.readdir(slugDir, {
-            withFileTypes: true,
-          })) {
-            if (!fileEntry.isFile() || fileEntry.name.startsWith(".")) {
-              continue;
-            }
-            assets.push({
-              year,
-              month,
-              slug: entry.name,
-              file: fileEntry.name,
-              sourcePath: path.join(slugDir, fileEntry.name),
-            });
-          }
-        }
-      }
-    }
-  }
-  return { files, assets };
-}
-
-// Rendering a ko-Kore file runs seonbi twice, and each seonbi call loads the
-// kr-stdict dictionary (~130ms).  Cache rendered views per source file, keyed
-// by mtime, so a request only re-renders the files that actually changed.
-const viewCache = new Map<string, { mtimeMs: number; views: PostView[] }>();
-
-/** Renders one source file's text into its language views.  Exported so the
- * local CMS can preview an unsaved buffer through exactly the pipeline the
- * published pages use, bypassing the mtime cache below. */
 export function renderViews(
   source: string,
   lang: string,
   file = "(buffer)",
 ): PostView[] {
   const { meta, body } = parseFrontMatter(source, file);
-  const views: PostView[] = [];
-  if (lang === "ko-Kore") {
-    // A ko-Kore source yields two views: the original text with Hanja
-    // rendered in ruby, and a derived Hangul-only ko-Hang view.
-    views.push({
-      lang: "ko-Kore",
-      ...renderMarkdown(transform(seonbiConfiguration("HanjaInRuby"), body)),
-      ...meta,
-    });
-    views.push({
-      lang: "ko-Hang",
-      ...renderMarkdown(transform(seonbiConfiguration("HangulOnly"), body)),
-      ...meta,
-    });
-  } else {
-    views.push({ lang, ...renderMarkdown(body), ...meta });
-  }
-  return views;
+  if (lang !== "ko-Kore") return [{ lang, ...renderMarkdown(body), ...meta }];
+  return VIEWS_OF_KORE_SOURCE.map((view) => ({
+    lang: view.lang,
+    ...renderMarkdown(transform(seonbiConfiguration(view.hanjaRendering), body)),
+    ...meta,
+  }));
 }
 
-/** Orders a post's views for the language nav.  Exported alongside
- * renderViews() so the local CMS's preview can order an unsaved buffer's views
- * exactly the way the published page will. */
 export function sortPostViews(views: PostView[]): void {
-  // Like jikji, a ko-Kore source lists its original view before the derived
-  // ko-Hang one; views from separate files are ordered alphabetically.
-  const hasKore = views.some((v) => v.lang === "ko-Kore");
-  const rank = (v: PostView): number =>
-    hasKore ? (v.lang === "ko-Kore" ? 0 : v.lang === "ko-Hang" ? 1 : 2) : 0;
+  const hasKoreSource = views.some((view) => view.lang === "ko-Kore");
+  const rank = (view: PostView): number => {
+    if (!hasKoreSource) return 0;
+    if (view.lang === "ko-Kore") return 0;
+    if (view.lang === "ko-Hang") return 1;
+    return 2;
+  };
   views.sort((a, b) => rank(a) - rank(b) || a.lang.localeCompare(b.lang, "en"));
 }
+
+async function visibleEntries(directory: string): Promise<Dirent[]> {
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  return entries.filter((entry) => !entry.name.startsWith("."));
+}
+
+async function directoryNames(directory: string): Promise<string[]> {
+  return (await visibleEntries(directory))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+}
+
+async function fileNames(directory: string): Promise<string[]> {
+  return (await visibleEntries(directory))
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name);
+}
+
+const YEAR_DIRECTORY = /^20\d\d$/;
+
+export async function walkContent(root: string): Promise<ContentFiles> {
+  const found: ContentFiles = { files: [], assets: [] };
+  for (const year of await directoryNames(root)) {
+    if (!YEAR_DIRECTORY.test(year)) continue;
+    for (const month of await directoryNames(path.join(root, year))) {
+      const inMonth = await walkMonth(path.join(root, year, month), year, month);
+      found.files.push(...inMonth.files);
+      found.assets.push(...inMonth.assets);
+    }
+  }
+  return found;
+}
+
+async function walkMonth(
+  directory: string,
+  year: string,
+  month: string,
+): Promise<ContentFiles> {
+  const found: ContentFiles = { files: [], assets: [] };
+  for (const entry of await visibleEntries(directory)) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isFile() && entry.name.endsWith(".md")) {
+      found.files.push({ year, month, name: entry.name, sourcePath: entryPath });
+    } else if (entry.isDirectory()) {
+      for (const file of await fileNames(entryPath)) {
+        found.assets.push({
+          year,
+          month,
+          slug: entry.name,
+          file,
+          sourcePath: path.join(entryPath, file),
+        });
+      }
+    }
+  }
+  return found;
+}
+
+const SOURCE_FILE_NAME = /^(.+)\.([a-z]{2}(?:-[A-Za-z]{4})?)\.md$/;
+
+export function parseSourceFileName(
+  name: string,
+): { slug: string; lang: string } | undefined {
+  const match = SOURCE_FILE_NAME.exec(name);
+  if (match === null) return undefined;
+  return { slug: match[1]!, lang: match[2]! };
+}
+
+// Each seonbi call reloads the kr-stdict dictionary (~130ms) and a ko-Kore
+// source needs two, so a file is rendered again only when its mtime changes.
+const renderedViewsBySource = new Map<
+  string,
+  { mtimeMs: number; views: PostView[] }
+>();
 
 async function renderFile(
   sourcePath: string,
   lang: string,
 ): Promise<PostView[]> {
   const { mtimeMs } = await fs.stat(sourcePath);
-  const cached = viewCache.get(sourcePath);
+  const cached = renderedViewsBySource.get(sourcePath);
   if (cached !== undefined && cached.mtimeMs === mtimeMs) return cached.views;
 
   const source = await fs.readFile(sourcePath, "utf-8");
   const views = renderViews(source, lang, sourcePath);
-  viewCache.set(sourcePath, { mtimeMs, views });
+  renderedViewsBySource.set(sourcePath, { mtimeMs, views });
   return views;
 }
 
-async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
-  const { files, assets } = await walkContent();
-  const byPath = new Map<string, Post>();
+function findOrAddPost(
+  postsByPath: Map<string, Post>,
+  year: string,
+  month: string,
+  slug: string,
+): Post {
+  const postPath = `${year}/${month}/${slug}`;
+  let post = postsByPath.get(postPath);
+  if (post === undefined) {
+    post = { path: postPath, year, month, slug, views: [], multiview: false };
+    postsByPath.set(postPath, post);
+  }
+  return post;
+}
+
+async function loadContent(): Promise<Content> {
+  const { files, assets } = await walkContent(CONTENT_ROOT);
+  const postsByPath = new Map<string, Post>();
   for (const file of files) {
-    const match = file.name.match(
-      /^(.+)\.([a-z]{2}(?:-[A-Za-z]{4})?)\.md$/,
-    );
-    if (match === null) {
+    const name = parseSourceFileName(file.name);
+    if (name === undefined) {
       console.warn(`Skipping ${file.sourcePath}: no language suffix.`);
       continue;
     }
-    const [, slug, lang] = match as unknown as [string, string, string];
-
-    const postPath = `${file.year}/${file.month}/${slug}`;
-    let post = byPath.get(postPath);
-    if (post === undefined) {
-      post = {
-        path: postPath,
-        year: file.year,
-        month: file.month,
-        slug,
-        views: [],
-        multiview: false,
-      };
-      byPath.set(postPath, post);
-    }
-    post.views.push(...(await renderFile(file.sourcePath, lang)));
+    const post = findOrAddPost(postsByPath, file.year, file.month, name.slug);
+    post.views.push(...(await renderFile(file.sourcePath, name.lang)));
   }
 
-  const posts = [...byPath.values()];
+  const posts = [...postsByPath.values()];
   for (const post of posts) {
     sortPostViews(post.views);
     post.multiview = post.views.length > 1;
@@ -323,21 +356,15 @@ async function load(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
   return { posts, assets };
 }
 
-let cache: Promise<{ posts: Post[]; assets: PostAsset[] }> | undefined;
+let contentCache: Promise<Content> | undefined;
 
-function loadCached(): Promise<{ posts: Post[]; assets: PostAsset[] }> {
-  // In dev, reload on every request so content edits show up on refresh.
-  if (import.meta.env.DEV) return load();
-  cache ??= load();
-  return cache;
+function cachedContent(): Promise<Content> {
+  if (import.meta.env.DEV) return loadContent();
+  contentCache ??= loadContent();
+  return contentCache;
 }
 
-export async function getPosts(): Promise<Post[]> {
-  const { posts } = await loadCached();
-  // Draft views are built in dev so they can be previewed at their URL, but
-  // are excluded from the production build entirely (jikji only hid them
-  // from the list page; its list.ejs carried a FIXME to exclude them fully).
-  if (import.meta.env.DEV) return posts;
+export function withoutDrafts(posts: Post[]): Post[] {
   return posts
     .map((post) => {
       const views = post.views.filter((view) => !view.draft);
@@ -346,14 +373,20 @@ export async function getPosts(): Promise<Post[]> {
     .filter((post) => post.views.length > 0);
 }
 
+export async function getPosts(): Promise<Post[]> {
+  const { posts } = await cachedContent();
+  const previewingDrafts = import.meta.env.DEV;
+  return previewingDrafts ? posts : withoutDrafts(posts);
+}
+
 export async function getPost(postPath: string): Promise<Post> {
-  const post = (await getPosts()).find((p) => p.path === postPath);
+  const post = (await getPosts()).find((candidate) => candidate.path === postPath);
   if (post === undefined) throw new Error(`No such post: ${postPath}`);
   return post;
 }
 
 export async function getAssets(): Promise<PostAsset[]> {
-  return (await loadCached()).assets;
+  return (await cachedContent()).assets;
 }
 
 const KST_FORMAT = new Intl.DateTimeFormat("en-CA", {
@@ -363,19 +396,21 @@ const KST_FORMAT = new Intl.DateTimeFormat("en-CA", {
   day: "numeric",
 });
 
-/** Year/month/day of a date in Asia/Seoul, where the posts are authored. */
 export function kstDate(date: Date): {
   year: number;
   month: number;
   day: number;
 } {
   const parts = KST_FORMAT.formatToParts(date);
-  const get = (type: string): number =>
-    Number(parts.find((p) => p.type === type)?.value);
-  return { year: get("year"), month: get("month"), day: get("day") };
+  const numericPart = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return {
+    year: numericPart("year"),
+    month: numericPart("month"),
+    day: numericPart("day"),
+  };
 }
 
-/** The URL path of a language-specific view file, e.g. "index.ko-hang.html". */
 export function viewFilename(lang: string): string {
   return `index.${lang.toLowerCase()}.html`;
 }
