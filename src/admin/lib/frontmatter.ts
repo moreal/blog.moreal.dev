@@ -1,5 +1,9 @@
-import { parseFrontMatter, splitFrontMatter } from "../../lib/posts.ts";
-import type { BookInfo, FrontMatterForm, PostType } from "./types.ts";
+import {
+  parseFrontMatter,
+  splitFrontMatter,
+  type FrontMatter,
+} from "../../lib/posts.ts";
+import type { BookInfo, FrontMatterForm } from "./types.ts";
 
 export function splitSource(
   source: string,
@@ -9,19 +13,19 @@ export function splitSource(
   return { fenceRaw: fence, body };
 }
 
-/**
- * Read front matter into the form's shape.  Goes through posts.ts's own parser
- * so the CMS can never disagree with the site about what a file means, but then
- * takes `published` verbatim from the text: posts.ts hands back a Date, and
- * re-formatting that would lose the exact `+09:00` spelling.
- */
+const PUBLISHED_LINE = /^published:[ \t]*(.+?)[ \t]*$/m;
+const SURROUNDING_QUOTES = /^["']|["']$/g;
+
+function publishedAsWritten(fence: string): string | undefined {
+  return PUBLISHED_LINE.exec(fence)?.[1]?.replace(SURROUNDING_QUOTES, "");
+}
+
 export function readForm(source: string, file: string): FrontMatterForm {
   const { meta } = parseFrontMatter(source, file);
-  const { fenceRaw } = splitSource(source, file);
-  const raw = /^published:[ \t]*(.+?)[ \t]*$/m.exec(fenceRaw);
-  const published = raw?.[1]?.replace(/^["']|["']$/g, "") ??
-    meta.published.toISOString();
-  const form: FrontMatterForm = { published };
+  const { fence } = splitFrontMatter(source, file);
+  const form: FrontMatterForm = {
+    published: publishedAsWritten(fence) ?? meta.published.toISOString(),
+  };
   if (meta.description !== undefined) form.description = meta.description;
   if (meta.draft) form.draft = true;
   if (meta.dark) form.dark = true;
@@ -30,99 +34,92 @@ export function readForm(source: string, file: string): FrontMatterForm {
   return form;
 }
 
-/**
- * A scalar is emitted bare when YAML would read it back unchanged; anything
- * else gets double quotes.  JSON.stringify happens to produce a valid YAML
- * double-quoted scalar for this content.
- */
-function scalar(value: string): string {
-  const plain =
+const LINE_BREAK = /[\n\r]/;
+const YAML_INDICATOR_AT_START = /^[-?:,[\]{}#&*!|>'"%@`]/;
+const YAML_MAPPING_SEPARATOR = ": ";
+const YAML_COMMENT_START = " #";
+const YAML_BOOLEAN_OR_NULL = /^(true|false|null|yes|no|on|off|~)$/i;
+const YAML_NUMBER_LIKE = /^[-+]?[0-9.]+$/;
+
+function readsBackUnchangedAsPlainYaml(value: string): boolean {
+  return (
     value.length > 0 &&
     value === value.trim() &&
-    !/[\n\r]/.test(value) &&
-    !/^[-?:,[\]{}#&*!|>'"%@`]/.test(value) &&
-    !value.includes(": ") &&
-    !value.includes(" #") &&
-    !/^(true|false|null|yes|no|on|off|~)$/i.test(value) &&
-    !/^[-+]?[0-9.]+$/.test(value);
-  return plain ? value : JSON.stringify(value);
+    !LINE_BREAK.test(value) &&
+    !YAML_INDICATOR_AT_START.test(value) &&
+    !value.includes(YAML_MAPPING_SEPARATOR) &&
+    !value.includes(YAML_COMMENT_START) &&
+    !YAML_BOOLEAN_OR_NULL.test(value) &&
+    !YAML_NUMBER_LIKE.test(value)
+  );
 }
 
-function bookLines(book: BookInfo, scaffold: boolean): string[] {
-  const out = ["book:"];
-  const put = (key: string, v: string | number | undefined) => {
-    if (v === undefined || v === "") return;
-    out.push(`  ${key}: ${typeof v === "number" ? v : scalar(v)}`);
-  };
-  if (scaffold) {
-    // Matches scripts/new-reading.sh byte for byte.  parseBook() in posts.ts
-    // returns undefined when every value is nullish, so this stays inert.
-    out.push("  title:", "  author:");
-    return out;
-  }
-  put("title", book.title);
-  put("author", book.author);
-  put("translator", book.translator);
-  put("publisher", book.publisher);
-  put("year", book.year);
-  return out.length === 1 ? [] : out;
+function yamlDoubleQuoted(value: string): string {
+  return JSON.stringify(value);
 }
 
-/**
- * Serialise front matter including both fences.  Key order is fixed to the one
- * every existing post and both scaffold scripts already use, and false flags
- * are omitted entirely because no file in the corpus writes `draft: false`.
- */
-export function serializeFrontMatter(fm: FrontMatterForm): string {
-  const lines = [`published: ${fm.published}`];
-  if (fm.description !== undefined && fm.description !== "") {
-    lines.push(`description: ${scalar(fm.description)}`);
+function yamlScalar(value: string): string {
+  return readsBackUnchangedAsPlainYaml(value) ? value : yamlDoubleQuoted(value);
+}
+
+const BOOK_FIELDS = ["title", "author", "translator", "publisher", "year"] as const;
+
+const NEW_READING_SCRIPT_BOOK_LINES = ["book:", "  title:", "  author:"];
+
+function bookFieldValue(value: string | number): string {
+  return typeof value === "number" ? String(value) : yamlScalar(value);
+}
+
+function bookLines(book: BookInfo): string[] {
+  const fieldLines = BOOK_FIELDS.flatMap((field) => {
+    const value = book[field];
+    return value === undefined || value === ""
+      ? []
+      : [`  ${field}: ${bookFieldValue(value)}`];
+  });
+  return fieldLines.length === 0 ? [] : ["book:", ...fieldLines];
+}
+
+export function serializeFrontMatter(form: FrontMatterForm): string {
+  const lines = [`published: ${form.published}`];
+  if (form.description !== undefined && form.description !== "") {
+    lines.push(`description: ${yamlScalar(form.description)}`);
   }
-  if (fm.draft) lines.push("draft: true");
-  if (fm.dark) lines.push("dark: true");
-  if (fm.type !== undefined) lines.push(`type: ${fm.type}`);
-  if (fm.type === "reading") {
-    const book = fm.book ?? {};
-    lines.push(...bookLines(book, fm.bookScaffold === true));
+  if (form.draft) lines.push("draft: true");
+  if (form.dark) lines.push("dark: true");
+  if (form.type !== undefined) lines.push(`type: ${form.type}`);
+  if (form.type === "reading") {
+    lines.push(
+      ...(form.bookScaffold === true
+        ? NEW_READING_SCRIPT_BOOK_LINES
+        : bookLines(form.book ?? {})),
+    );
   }
   return `---\n${lines.join("\n")}\n---\n`;
 }
 
-function bookEquals(a: BookInfo | undefined, b: BookInfo | undefined): boolean {
-  const keys = ["title", "author", "translator", "publisher", "year"] as const;
-  return keys.every((k) => (a?.[k] ?? undefined) === (b?.[k] ?? undefined));
+function sameBook(a: BookInfo | undefined, b: BookInfo | undefined): boolean {
+  return BOOK_FIELDS.every((field) => a?.[field] === b?.[field]);
 }
 
-/**
- * Compare two front matter blocks by what posts.ts would make of them, not by
- * their bytes.  This is what lets a file keep its original spelling -- the
- * legacy `draft: "true"` strings, a quoted description, the exact timestamp
- * text -- when the form round-trips without being edited.
- */
-export function frontMatterEquals(a: string, b: string): boolean {
+function sameMeaning(a: FrontMatter, b: FrontMatter): boolean {
+  return (
+    a.published.getTime() === b.published.getTime() &&
+    a.description === b.description &&
+    a.draft === b.draft &&
+    a.dark === b.dark &&
+    a.type === b.type &&
+    sameBook(a.book, b.book)
+  );
+}
+
+export function parsesToSameFrontMatter(a: string, b: string): boolean {
   try {
-    const pa = parseFrontMatter(a + "\n", "(a)").meta;
-    const pb = parseFrontMatter(b + "\n", "(b)").meta;
-    return (
-      pa.published.getTime() === pb.published.getTime() &&
-      pa.description === pb.description &&
-      pa.draft === pb.draft &&
-      pa.dark === pb.dark &&
-      pa.type === pb.type &&
-      bookEquals(pa.book, pb.book)
+    return sameMeaning(
+      parseFrontMatter(a, "(a)").meta,
+      parseFrontMatter(b, "(b)").meta,
     );
   } catch {
     return false;
   }
 }
-
-export function setextUnderline(title: string, char = "="): string {
-  let width = 0;
-  for (const ch of title) {
-    const cp = ch.codePointAt(0) ?? 0;
-    width += cp < 0x80 ? 1 : 2;
-  }
-  return char.repeat(width);
-}
-
-export type { PostType };

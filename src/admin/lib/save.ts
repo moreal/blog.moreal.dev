@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { formatMarkdown } from "./format.ts";
 import {
-  frontMatterEquals,
+  parsesToSameFrontMatter,
   serializeFrontMatter,
   splitSource,
 } from "./frontmatter.ts";
@@ -20,7 +20,7 @@ function preserveUnchangedFrontMatter(
   original?: string,
 ): string {
   const serialized = serializeFrontMatter(form);
-  return typeof original === "string" && frontMatterEquals(serialized, original)
+  return typeof original === "string" && parsesToSameFrontMatter(serialized, original)
     ? original
     : serialized;
 }

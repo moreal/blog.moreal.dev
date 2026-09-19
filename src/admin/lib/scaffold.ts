@@ -1,4 +1,4 @@
-import { serializeFrontMatter, setextUnderline } from "./frontmatter.ts";
+import { serializeFrontMatter } from "./frontmatter.ts";
 import { calendarDateOf, nowKstIso } from "../shared/dates.ts";
 import type { FrontMatterForm, Lang } from "./types.ts";
 
@@ -34,6 +34,21 @@ export interface Scaffold {
   dateSlug: string;
   published: string;
   frontmatter: FrontMatterForm;
+}
+
+function isAscii(character: string): boolean {
+  return (character.codePointAt(0) ?? 0) < 0x80;
+}
+
+function displayColumns(text: string): number {
+  return [...text].reduce(
+    (columns, character) => columns + (isAscii(character) ? 1 : 2),
+    0,
+  );
+}
+
+function setextUnderline(title: string): string {
+  return "=".repeat(displayColumns(title));
 }
 
 export function scaffold(input: ScaffoldInput): Scaffold {
