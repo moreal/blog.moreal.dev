@@ -1,33 +1,57 @@
 import { createHash } from "node:crypto";
 import { renderViews, type PostView } from "../../lib/posts.ts";
 
-/**
- * Preview for an unsaved buffer, through exactly the pipeline the published
- * pages use -- including its quirks, so what the preview shows is what will
- * ship.  posts.ts's own cache is keyed by file mtime and so cannot serve a
- * buffer; this one is keyed by content instead.
- *
- * Worth caching because every ko-Kore render reloads seonbi's kr-stdict
- * dictionary (~130ms per call, and a ko-Kore source needs two calls).
- */
-const MAX = 32;
-const cache = new Map<string, PostView[]>();
+export const RECENT_BUFFERS_KEPT = 32;
+
+// Each seonbi call reloads the kr-stdict dictionary (~130ms) and a ko-Kore
+// buffer needs two, so the preview keeps what it rendered recently.
+const renderedViewsByContent = recentlyUsedCache<PostView[]>(RECENT_BUFFERS_KEPT);
 
 export function renderBuffer(source: string, lang: string): PostView[] {
-  const key =
-    createHash("sha256").update(source).digest("hex").slice(0, 32) + ":" + lang;
-  const hit = cache.get(key);
-  if (hit !== undefined) {
-    // Refresh recency.
-    cache.delete(key);
-    cache.set(key, hit);
-    return hit;
-  }
+  const key = contentKey(source, lang);
+  const kept = renderedViewsByContent.get(key);
+  if (kept !== undefined) return kept;
+
   const views = renderViews(source, lang);
-  cache.set(key, views);
-  if (cache.size > MAX) {
-    const oldest = cache.keys().next();
-    if (!oldest.done) cache.delete(oldest.value);
-  }
+  renderedViewsByContent.set(key, views);
   return views;
+}
+
+function contentKey(source: string, lang: string): string {
+  const sourceHash = createHash("sha256").update(source).digest("hex").slice(0, 32);
+  return `${sourceHash}:${lang}`;
+}
+
+export interface RecentlyUsedCache<Value> {
+  get(key: string): Value | undefined;
+  set(key: string, value: Value): void;
+}
+
+export function recentlyUsedCache<Value>(capacity: number): RecentlyUsedCache<Value> {
+  const valuesFromLeastRecent = new Map<string, Value>();
+  return {
+    get(key) {
+      const value = valuesFromLeastRecent.get(key);
+      if (value !== undefined) moveToMostRecent(valuesFromLeastRecent, key, value);
+      return value;
+    },
+    set(key, value) {
+      moveToMostRecent(valuesFromLeastRecent, key, value);
+      if (valuesFromLeastRecent.size > capacity) dropLeastRecent(valuesFromLeastRecent);
+    },
+  };
+}
+
+function moveToMostRecent<Value>(
+  valuesFromLeastRecent: Map<string, Value>,
+  key: string,
+  value: Value,
+): void {
+  valuesFromLeastRecent.delete(key);
+  valuesFromLeastRecent.set(key, value);
+}
+
+function dropLeastRecent<Value>(valuesFromLeastRecent: Map<string, Value>): void {
+  const leastRecent = valuesFromLeastRecent.keys().next();
+  if (!leastRecent.done) valuesFromLeastRecent.delete(leastRecent.value);
 }
