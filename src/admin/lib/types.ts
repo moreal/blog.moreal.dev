@@ -1,10 +1,3 @@
-/**
- * Shapes shared by the API endpoints and the browser client.
- *
- * Types only -- this module is imported from `ui/`, so a runtime value here
- * would drag Node-only code into the browser bundle.
- */
-
 export type Lang = "ko-Hang" | "ko-Kore" | "en";
 
 export type PostType = "daily" | "reading";

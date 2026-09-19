@@ -1,18 +1,17 @@
 import { Show, createResource, createSignal, onCleanup, onMount } from "solid-js";
 import type {
   FrontMatterForm as Form,
-  RenderedView,
   SaveResponse,
 } from "../lib/types.ts";
 import EditorCodeMirror from "./EditorCodeMirror.tsx";
 import EditorTextarea from "./EditorTextarea.tsx";
 import FrontMatterForm from "./FrontMatterForm.tsx";
-import ImageNameDialog, {
-  type ImageNameRequest,
-  type ImageNameResult,
-} from "./ImageNameDialog.tsx";
+import ImageNameDialog from "./ImageNameDialog.tsx";
+import { createImagePaste } from "./imagePaste.ts";
+import { createPublishedPreview } from "./publishedPreview.ts";
 import Preview from "./Preview.tsx";
-import { LANG_LABEL, api, nowKstIso } from "./api.ts";
+import { LANG_LABEL, api } from "./api.ts";
+import { nowKstIso } from "../shared/dates.ts";
 import type { EditorHandle } from "./engine.ts";
 
 const DRAFT_PREFIX = "cms-draft:";
@@ -32,91 +31,23 @@ export default function Editor() {
   const [saving, setSaving] = createSignal(false);
   const [recovered, setRecovered] = createSignal<string | null>(null);
 
-  const [showPreview, setShowPreview] = createSignal(false);
-  const [views, setViews] = createSignal<RenderedView[]>([]);
-  const [previewMs, setPreviewMs] = createSignal(0);
-  const [previewErr, setPreviewErr] = createSignal("");
-  const [previewing, setPreviewing] = createSignal(false);
   const [scroll, setScroll] = createSignal(0);
 
   let handle: EditorHandle | undefined;
 
-  const [dialog, setDialog] = createSignal<ImageNameRequest | null>(null);
-  let resolveDialog: ((r: ImageNameResult | null) => void) | undefined;
+  const images = createImagePaste(loaded, setWarning);
+  const publishedPreview = createPublishedPreview(loaded, fm, body);
 
-  /**
-   * Ask the server for a name, let the user adjust it, then write the file.
-   * The Blob was already grabbed synchronously by the engine -- the
-   * DataTransfer is dead by now.
-   */
-  async function onImagePaste(files: File[]): Promise<string | null> {
-    const src = loaded();
-    if (src === undefined || src === null) return null;
-    const inserted: string[] = [];
-    for (const file of files) {
-      const params = new URLSearchParams({
-        mdFile: src.file,
-        mime: file.type,
-        ...(file.name !== "" ? { originalName: file.name } : {}),
-      });
-      const res = await fetch(`/admin/api/image-name?${params}`);
-      const info = (await res.json()) as
-        | { ok: true; suggestion: string; ext: string; existing: string[]; dir: string }
-        | { ok: false; message: string };
-      if (!info.ok) {
-        setWarning(info.message);
-        continue;
-      }
-
-      const objectUrl = URL.createObjectURL(file);
-      const choice = await new Promise<ImageNameResult | null>((resolve) => {
-        resolveDialog = resolve;
-        setDialog({
-          suggestion: info.suggestion,
-          ext: info.ext,
-          dir: info.dir,
-          existing: info.existing,
-          preview: objectUrl,
-        });
-      });
-      setDialog(null);
-      URL.revokeObjectURL(objectUrl);
-      if (choice === null) continue;
-
-      const body = new FormData();
-      body.set("file", file);
-      body.set("mdFile", src.file);
-      body.set("name", choice.name);
-      body.set("overwrite", String(choice.overwrite));
-      const up = await fetch("/admin/api/image", { method: "POST", body });
-      const saved = (await up.json()) as
-        | { ok: true; markdown: string }
-        | { ok: false; message: string };
-      if (!saved.ok) {
-        setWarning(saved.message);
-        continue;
-      }
-      inserted.push(saved.markdown);
-    }
-    return inserted.length === 0 ? null : inserted.join("\n\n");
-  }
-
-  // The post's own published URL directory, which is what `./foo.png` in the
-  // markdown is relative to.  The inline live preview draws inside the admin
-  // page, which lives elsewhere, so it needs this spelled out absolutely.  (The
-  // publish preview is its own document and carries a <base> instead.)
-  const assetBase = () => {
+  const publishedAssetBase = () => {
     const src = loaded();
     return src ? `/${src.postPath}/` : "";
   };
 
-  // Seed from the server once, then never re-render the surface from a signal:
-  // the engine owns its own state.
-  let seeded = false;
-  const seed = () => {
+  let sourceSeeded = false;
+  const seedEditorStateOnce = () => {
     const src = loaded();
-    if (src === undefined || src === null || seeded) return;
-    seeded = true;
+    if (src === undefined || src === null || sourceSeeded) return;
+    sourceSeeded = true;
     setBody(src.body);
     setFm(src.frontmatter);
     setFenceRaw(src.fenceRaw);
@@ -130,18 +61,16 @@ export default function Editor() {
       if (dirty()) e.preventDefault();
     };
     window.addEventListener("beforeunload", beforeUnload);
-    // The engine binds Cmd-S too, but only fires while it has focus; after a
-    // dialog closes or the front matter form is in use it does not.
-    const onKey = (e: KeyboardEvent) => {
+    const saveFromAnyFocusedControl = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void save();
       }
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", saveFromAnyFocusedControl);
     onCleanup(() => {
       window.removeEventListener("beforeunload", beforeUnload);
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", saveFromAnyFocusedControl);
     });
   });
 
@@ -149,8 +78,6 @@ export default function Editor() {
     setBody(next);
     setDirty(true);
     setStatus("");
-    // Survives a dev-server restart, which happens often enough while the CMS
-    // itself is being worked on.
     if (file !== "") localStorage.setItem(DRAFT_PREFIX + file, next);
   }
 
@@ -192,9 +119,6 @@ export default function Editor() {
       }
       setFenceRaw(data.fenceRaw);
       setMtimeMs(data.mtimeMs);
-      // hongdown reflows paragraphs and can move footnote definitions, so the
-      // document is replaced wholesale from disk; the caret is re-found by
-      // matching the line it was on.
       handle?.replaceAll(data.body);
       setBody(data.body);
       setDirty(false);
@@ -204,40 +128,13 @@ export default function Editor() {
       else if (data.formatterNotices !== undefined) {
         setWarning(`hongdown: ${data.formatterNotices}`);
       }
-      if (showPreview()) void refreshPreview();
+      if (publishedPreview.visible()) void publishedPreview.refresh();
     } catch (e) {
       setStatus("");
       setWarning(`저장 실패: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setSaving(false);
     }
-  }
-
-  async function refreshPreview() {
-    const src = loaded();
-    if (src === undefined || src === null) return;
-    setPreviewing(true);
-    setPreviewErr("");
-    try {
-      const res = await api.preview({
-        file: src.file,
-        frontmatter: fm(),
-        body: body(),
-        lang: src.lang,
-      });
-      setViews(res.views);
-      setPreviewMs(res.ms);
-    } catch (e) {
-      setPreviewErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPreviewing(false);
-    }
-  }
-
-  function togglePreview() {
-    const next = !showPreview();
-    setShowPreview(next);
-    if (next) void refreshPreview();
   }
 
   const Engine = () =>
@@ -255,7 +152,7 @@ export default function Editor() {
 
       <Show when={loaded()} keyed>
         {(src) => {
-          seed();
+          seedEditorStateOnce();
           const Surface = Engine();
           return (
             <>
@@ -275,7 +172,7 @@ export default function Editor() {
                 </div>
                 <div class="toolbar" style={{ margin: 0 }}>
                   <span class="when">{status()}</span>
-                  <button class={showPreview() ? "primary" : ""} onClick={togglePreview}>
+                  <button class={publishedPreview.visible() ? "primary" : ""} onClick={publishedPreview.toggle}>
                     발행 미리보기
                   </button>
                   <button class="primary" onClick={() => save()} disabled={saving()}>
@@ -325,26 +222,26 @@ export default function Editor() {
                 nowIso={() => nowKstIso()}
               />
 
-              <div class="editor-main" classList={{ split: showPreview() }}>
+              <div class="editor-main" classList={{ split: publishedPreview.visible() }}>
                 <Surface
                   value={src.body}
                   onChange={onChange}
                   onSaveRequest={() => void save()}
-                  onImagePaste={onImagePaste}
-                  assetBase={assetBase}
+                  onImagePaste={images.paste}
+                  assetBase={publishedAssetBase}
                   onScroll={setScroll}
                   ref={(h) => (handle = h)}
                 />
-                <Show when={showPreview()}>
+                <Show when={publishedPreview.visible()}>
                   <Preview
-                    views={views()}
-                    ms={previewMs()}
-                    loading={previewing()}
-                    error={previewErr()}
+                    views={publishedPreview.views()}
+                    ms={publishedPreview.elapsedMs()}
+                    loading={publishedPreview.loading()}
+                    error={publishedPreview.error()}
                     realUrl={`/${src.postPath}/`}
                     scroll={scroll()}
-                    onClose={() => setShowPreview(false)}
-                    onRefresh={() => void refreshPreview()}
+                    onClose={publishedPreview.close}
+                    onRefresh={() => void publishedPreview.refresh()}
                   />
                 </Show>
               </div>
@@ -353,12 +250,12 @@ export default function Editor() {
         }}
       </Show>
 
-      <Show when={dialog()}>
+      <Show when={images.dialog()}>
         {(req) => (
           <ImageNameDialog
             request={req()}
-            onConfirm={(r) => resolveDialog?.(r)}
-            onCancel={() => resolveDialog?.(null)}
+            onConfirm={images.confirmName}
+            onCancel={images.cancelName}
           />
         )}
       </Show>

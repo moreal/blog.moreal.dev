@@ -1,14 +1,12 @@
 import { promises as fs } from "node:fs";
-import path from "node:path";
 import type { APIRoute } from "astro";
 import { parseFrontMatter } from "../../lib/posts.ts";
 import { ADMIN_CONFIG } from "../config.ts";
-import { formatMarkdown } from "../lib/format.ts";
 import {
-  frontMatterEquals,
-  serializeFrontMatter,
-  splitSource,
-} from "../lib/frontmatter.ts";
+  composeSavedSource,
+  formatAndReadSavedPost,
+  replacePostFileAtomically,
+} from "../lib/save.ts";
 import { checkRequest, describe, fail, json } from "../lib/guard.ts";
 import { PathError, assertNoSymlink, resolvePostFile } from "../lib/paths.ts";
 import type { FrontMatterForm } from "../lib/types.ts";
@@ -19,14 +17,9 @@ interface SaveRequest {
   file: string;
   frontmatter: FrontMatterForm;
   body: string;
-  /** The front matter block as loaded, so an untouched form writes back bytes. */
   fenceRaw: string;
   expectedMtimeMs: number;
   format?: boolean;
-}
-
-function normalizeBody(body: string): string {
-  return body.replace(/\r\n?/g, "\n").replace(/\n*$/, "\n");
 }
 
 export const POST: APIRoute = async ({ request, url }) => {
@@ -73,57 +66,20 @@ export const POST: APIRoute = async ({ request, url }) => {
     );
   }
 
-  // Reuse the loaded block when the form still means the same thing, so quoting
-  // style and the legacy `draft: "true"` strings survive an untouched save.
-  const next = serializeFrontMatter(req.frontmatter);
-  const fence =
-    typeof req.fenceRaw === "string" && frontMatterEquals(next, req.fenceRaw)
-      ? req.fenceRaw
-      : next;
-  const source = fence + "\n" + normalizeBody(req.body);
-
-  // Refuse to write anything the site could not load; this makes it impossible
-  // for the CMS to produce a file that breaks `astro build`.
+  const source = composeSavedSource(req);
   try {
     parseFrontMatter(source, ref.rel);
   } catch (e) {
     return fail("invalid", describe(e));
   }
 
-  // Write to a dot-prefixed temp file and rename: walkContent(), the asset
-  // route and hongdown's glob all skip dotfiles, so a crashed write cannot
-  // corrupt a build.
-  const tmp = path.join(
-    path.dirname(ref.abs),
-    `.${path.basename(ref.abs)}.tmp`,
-  );
   try {
-    await fs.writeFile(tmp, source, "utf-8");
-    await fs.rename(tmp, ref.abs);
+    await replacePostFileAtomically(ref.abs, source);
   } catch (e) {
-    await fs.rm(tmp, { force: true }).catch(() => {});
     return fail("io", describe(e));
   }
 
   const shouldFormat = req.format !== false && ADMIN_CONFIG.formatOnSave;
-  const result = shouldFormat
-    ? await formatMarkdown(ref.abs)
-    : { formatted: false };
-
-  // hongdown rewraps paragraphs and can move footnote definitions between
-  // sections, so the buffer must come back from disk, never from memory.
-  const saved = await fs.readFile(ref.abs, "utf-8");
-  const { fenceRaw, body } = splitSource(saved, ref.rel);
-  return json({
-    ok: true,
-    file: ref.rel,
-    fenceRaw,
-    body,
-    mtimeMs: (await fs.stat(ref.abs)).mtimeMs,
-    formatted: result.formatted,
-    ...(result.warning !== undefined
-      ? { formatterWarning: result.warning }
-      : {}),
-    ...(result.notices !== undefined ? { formatterNotices: result.notices } : {}),
-  });
+  const saved = await formatAndReadSavedPost(ref, shouldFormat);
+  return json({ ok: true, file: ref.rel, ...saved });
 };

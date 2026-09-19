@@ -1,3 +1,4 @@
+import { captureImageFiles } from "./imageFiles.ts";
 import { onCleanup } from "solid-js";
 import {
   type CaretMark,
@@ -33,12 +34,7 @@ export default function EditorTextarea(props: EditorEngineProps) {
 
   function onPaste(event: ClipboardEvent) {
     if (props.onImagePaste === undefined || event.clipboardData === null) return;
-    const files: File[] = [];
-    for (const item of event.clipboardData.items) {
-      if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
-      const file = item.getAsFile();
-      if (file !== null) files.push(file);
-    }
+    const files = captureImageFiles(event.clipboardData);
     if (files.length === 0) return;
     event.preventDefault();
     void props.onImagePaste(files).then((text) => {

@@ -1,4 +1,5 @@
-import { nowKstIso, serializeFrontMatter, setextUnderline } from "./frontmatter.ts";
+import { serializeFrontMatter, setextUnderline } from "./frontmatter.ts";
+import { nowKstIso } from "../shared/dates.ts";
 import type { FrontMatterForm, Lang } from "./types.ts";
 
 export type PostKind = "daily" | "reading" | "regular";

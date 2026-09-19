@@ -1,6 +1,7 @@
 import { Show, createResource, createSignal } from "solid-js";
 import type { Lang } from "../lib/types.ts";
-import { LANG_LABEL, api, kstDate } from "./api.ts";
+import { LANG_LABEL, api } from "./api.ts";
+import { kstDate } from "../shared/dates.ts";
 
 type Kind = "daily" | "reading" | "regular";
 

@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createResource, createSignal } from "solid-js";
 import type { PostGroup, PostSourceSummary } from "../lib/types.ts";
-import { LANG_LABEL, api, kstDateTime, kstYear } from "./api.ts";
+import { LANG_LABEL, api } from "./api.ts";
+import { kstDateTime, kstYear } from "../shared/dates.ts";
 
 /** Debounced so typing does not read every post on every keystroke. */
 function useDebounced<T>(source: () => T, ms: number): () => T {
@@ -24,22 +25,22 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "asset", label: "이미지 있음" },
 ];
 
-function matches(g: PostGroup, f: Filter): boolean {
-  if (f === "all") return true;
-  if (f === "asset") return g.assetDir !== null;
-  if (f === "draft") return g.sources.some((s) => s.draft);
-  return g.sources.some((s) => s.type === f);
+function matchesFilter(group: PostGroup, filter: Filter): boolean {
+  if (filter === "all") return true;
+  if (filter === "asset") return group.assetDir !== null;
+  if (filter === "draft") return group.sources.some((source) => source.draft);
+  return group.sources.some((source) => source.type === filter);
 }
 
-function haystack(g: PostGroup): string {
+function searchableText(group: PostGroup): string {
   return (
-    g.postPath +
+    group.postPath +
     " " +
-    g.sources.map((s) => `${s.title} ${s.description ?? ""} ${s.lang}`).join(" ")
+    group.sources.map((source) => `${source.title} ${source.description ?? ""} ${source.lang}`).join(" ")
   ).toLowerCase();
 }
 
-function Chips(props: { source: PostSourceSummary }) {
+function SourceChips(props: { source: PostSourceSummary }) {
   return (
     <>
       <span class="chip">{LANG_LABEL[props.source.lang] ?? props.source.lang}</span>
@@ -71,36 +72,142 @@ function Chips(props: { source: PostSourceSummary }) {
   );
 }
 
+function SearchResults(props: {
+  results: Awaited<ReturnType<typeof api.search>> | undefined;
+  loading: boolean;
+}) {
+  return (
+    <div class="card">
+      <h2>
+        본문 검색
+        <Show when={props.loading}> · 찾는 중…</Show>
+        <Show when={props.results}>
+          {(r) => (
+            <>
+              {" "}· {r().hits.length}건
+              <Show when={r().truncated}> (일부만 표시)</Show>
+            </>
+          )}
+        </Show>
+      </h2>
+      <Show
+        when={props.results?.hits.length}
+        fallback={
+          <Show when={!props.loading}>
+            <p class="lab-sub" style={{ margin: 0 }}>
+              본문에서 찾지 못했습니다.
+            </p>
+          </Show>
+        }
+      >
+        <div class="rows">
+          <For each={props.results?.hits}>
+            {(hit) => (
+              <a
+                class="hit"
+                href={`/admin/edit?file=${encodeURIComponent(hit.file)}`}
+              >
+                <span class="hit-title">
+                  {hit.title}
+                  <span class="chip">{LANG_LABEL[hit.lang] ?? hit.lang}</span>
+                  <span class="when">
+                    {hit.line}번째 줄 · {hit.count}회
+                  </span>
+                </span>
+                <span class="hit-excerpt">{hit.excerpt}</span>
+              </a>
+            )}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
+function PostGroupRow(props: { group: PostGroup }) {
+  return (
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">
+          <For each={props.group.sources}>
+            {(source, i) => (
+              <>
+                <Show when={i() > 0}>
+                  <span class="sep">·</span>
+                </Show>
+                <a href={`/admin/edit?file=${encodeURIComponent(source.file)}`}>
+                  {source.title || source.slug}
+                </a>
+              </>
+            )}
+          </For>
+        </div>
+        <div class="row-meta">
+          <code>{props.group.postPath}</code>
+          <For each={props.group.sources}>{(source) => <SourceChips source={source} />}</For>
+          <Show when={props.group.assetDir}>
+            <span class="chip">이미지 {props.group.assetCount}</span>
+          </Show>
+        </div>
+      </div>
+      <div class="row-side">
+        <span class="when">
+          {kstDateTime(props.group.sources[0]?.published ?? "")}
+        </span>
+        <div class="row-actions">
+          <For each={props.group.missingLangs}>
+            {(lang) => (
+              <a
+                class="btn small"
+                href={`/admin/new?translationOf=${encodeURIComponent(props.group.postPath)}&lang=${lang}`}
+                title={`${LANG_LABEL[lang]} 번역 추가`}
+              >
+                ＋{LANG_LABEL[lang]}
+              </a>
+            )}
+          </For>
+          <a class="btn small" href={`/${props.group.postPath}/`} target="_blank">
+            보기
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PostList() {
   const [data, { refetch }] = createResource(() => api.posts());
-  const [q, setQ] = createSignal("");
+  const [query, setQuery] = createSignal("");
   const [filter, setFilter] = createSignal<Filter>("all");
   const [fullText, setFullText] = createSignal(false);
 
-  const debouncedQ = useDebounced(q, 220);
+  const debouncedQuery = useDebounced(query, 220);
   const [hits] = createResource(
-    () => (fullText() && debouncedQ().trim().length >= 2 ? debouncedQ().trim() : null),
+    () => fullText() && debouncedQuery().trim().length >= 2
+      ? debouncedQuery().trim()
+      : null,
     (needle) => api.search(needle),
   );
 
   const groups = createMemo(() => {
     const all = data()?.groups ?? [];
-    const needle = q().trim().toLowerCase();
+    const needle = query().trim().toLowerCase();
     return all.filter(
-      (g) =>
-        matches(g, filter()) && (needle === "" || haystack(g).includes(needle)),
+      (group) =>
+        matchesFilter(group, filter()) &&
+        (needle === "" || searchableText(group).includes(needle)),
     );
   });
 
-  const byYear = createMemo(() => {
-    const out = new Map<string, PostGroup[]>();
-    for (const g of groups()) {
-      const y = kstYear(g.sources[0]?.published ?? "");
-      const list = out.get(y);
-      if (list === undefined) out.set(y, [g]);
-      else list.push(g);
+  const groupsByYear = createMemo(() => {
+    const years = new Map<string, PostGroup[]>();
+    for (const group of groups()) {
+      const year = kstYear(group.sources[0]?.published ?? "");
+      const list = years.get(year);
+      if (list === undefined) years.set(year, [group]);
+      else list.push(group);
     }
-    return [...out.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    return [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   });
 
   return (
@@ -113,7 +220,7 @@ export default function PostList() {
               {(d) => (
                 <>
                   {d().groups.length}편 ·{" "}
-                  {d().groups.reduce((n, g) => n + g.sources.length, 0)}개 원고
+                  {d().groups.reduce((n, group) => n + group.sources.length, 0)}개 원고
                 </>
               )}
             </Show>
@@ -132,8 +239,8 @@ export default function PostList() {
           class="search"
           type="search"
           placeholder="제목·경로·설명 검색"
-          value={q()}
-          onInput={(e) => setQ(e.currentTarget.value)}
+          value={query()}
+          onInput={(e) => setQuery(e.currentTarget.value)}
         />
         <label class="fm-check">
           <input
@@ -157,51 +264,8 @@ export default function PostList() {
         </div>
       </div>
 
-      <Show when={fullText() && q().trim().length >= 2}>
-        <div class="card">
-          <h2>
-            본문 검색
-            <Show when={hits.loading}> · 찾는 중…</Show>
-            <Show when={hits()}>
-              {(r) => (
-                <>
-                  {" "}· {r().hits.length}건
-                  <Show when={r().truncated}> (일부만 표시)</Show>
-                </>
-              )}
-            </Show>
-          </h2>
-          <Show
-            when={hits()?.hits.length}
-            fallback={
-              <Show when={!hits.loading}>
-                <p class="lab-sub" style={{ margin: 0 }}>
-                  본문에서 찾지 못했습니다.
-                </p>
-              </Show>
-            }
-          >
-            <div class="rows">
-              <For each={hits()?.hits}>
-                {(h) => (
-                  <a
-                    class="hit"
-                    href={`/admin/edit?file=${encodeURIComponent(h.file)}`}
-                  >
-                    <span class="hit-title">
-                      {h.title}
-                      <span class="chip">{LANG_LABEL[h.lang] ?? h.lang}</span>
-                      <span class="when">
-                        {h.line}번째 줄 · {h.count}회
-                      </span>
-                    </span>
-                    <span class="hit-excerpt">{h.excerpt}</span>
-                  </a>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
+      <Show when={fullText() && query().trim().length >= 2}>
+        <SearchResults results={hits()} loading={hits.loading} />
       </Show>
 
       <Show when={data.error}>
@@ -216,59 +280,14 @@ export default function PostList() {
           </Show>
         }
       >
-        <For each={byYear()}>
+        <For each={groupsByYear()}>
           {([year, list]) => (
             <>
               <h2 class="year">{year}</h2>
               <div class="rows">
                 <For each={list}>
-                  {(g) => (
-                    <div class="row">
-                      <div class="row-main">
-                        <div class="row-title">
-                          <For each={g.sources}>
-                            {(s, i) => (
-                              <>
-                                <Show when={i() > 0}>
-                                  <span class="sep">·</span>
-                                </Show>
-                                <a href={`/admin/edit?file=${encodeURIComponent(s.file)}`}>
-                                  {s.title || s.slug}
-                                </a>
-                              </>
-                            )}
-                          </For>
-                        </div>
-                        <div class="row-meta">
-                          <code>{g.postPath}</code>
-                          <For each={g.sources}>{(s) => <Chips source={s} />}</For>
-                          <Show when={g.assetDir}>
-                            <span class="chip">이미지 {g.assetCount}</span>
-                          </Show>
-                        </div>
-                      </div>
-                      <div class="row-side">
-                        <span class="when">
-                          {kstDateTime(g.sources[0]?.published ?? "")}
-                        </span>
-                        <div class="row-actions">
-                          <For each={g.missingLangs}>
-                            {(lang) => (
-                              <a
-                                class="btn small"
-                                href={`/admin/new?translationOf=${encodeURIComponent(g.postPath)}&lang=${lang}`}
-                                title={`${LANG_LABEL[lang]} 번역 추가`}
-                              >
-                                ＋{LANG_LABEL[lang]}
-                              </a>
-                            )}
-                          </For>
-                          <a class="btn small" href={`/${g.postPath}/`} target="_blank">
-                            보기
-                          </a>
-                        </div>
-                      </div>
-                    </div>
+                  {(group) => (
+                    <PostGroupRow group={group} />
                   )}
                 </For>
               </div>

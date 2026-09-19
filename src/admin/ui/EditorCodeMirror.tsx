@@ -1,3 +1,4 @@
+import { captureImageFiles } from "./imageFiles.ts";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
@@ -75,19 +76,9 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
     onCleanup(() => view?.destroy());
   }
 
-  /**
-   * Grab the Blob synchronously -- the DataTransfer is neutered as soon as the
-   * handler returns -- then do the async work.  Anything that is not an image
-   * falls through to the native paste; the composition path is never touched.
-   */
   function handleFiles(event: Event, dt: DataTransfer | null): boolean {
     if (props.onImagePaste === undefined || dt === null) return false;
-    const files: File[] = [];
-    for (const item of dt.items) {
-      if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
-      const file = item.getAsFile();
-      if (file !== null) files.push(file);
-    }
+    const files = captureImageFiles(dt);
     if (files.length === 0) return false;
     event.preventDefault();
     void props.onImagePaste(files).then((markdownText) => {

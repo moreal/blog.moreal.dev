@@ -2,25 +2,17 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import title from "markdown-it-title";
-import { readForm } from "./frontmatter.ts";
+import { readForm, splitSource } from "./frontmatter.ts";
 import { CONTENT_ROOT, LANGS } from "./paths.ts";
 import type { Lang, PostAssetInfo, PostGroup, PostSourceSummary } from "./types.ts";
 
-/**
- * Walks the content tree the way src/lib/posts.ts does, but stops at the source
- * text.  getPosts() is deliberately not reused here: it runs seonbi twice per
- * ko-Kore file just to build a list, and it throws on a malformed file, which
- * would blank the whole listing instead of flagging one row.
- */
-
 const NAME = /^(.+)\.(ko-Hang|ko-Kore|en)\.md$/;
 
-/** Titles only; no seonbi, so a ko-Kore row shows its Hanja as written. */
-const md = MarkdownIt("commonmark").use(title);
+const sourceTitleParser = MarkdownIt("commonmark").use(title);
 
 function headingOf(body: string): string {
   const env: { title?: string } = {};
-  md.render(body, env);
+  sourceTitleParser.render(body, env);
   return env.title ?? "";
 }
 
@@ -52,7 +44,7 @@ async function summarize(
   const source = await fs.readFile(abs, "utf-8");
   try {
     const form = readForm(source, rel);
-    const body = source.slice(source.indexOf("\n---", 3) + 4);
+    const { body } = splitSource(source, rel);
     return {
       ...base,
       title: headingOf(body),
@@ -91,17 +83,8 @@ export async function scanPosts(): Promise<PostGroup[]> {
         if (entry.name.startsWith(".")) continue;
 
         if (entry.isDirectory()) {
-          // Sibling directory named after the bare slug; one bundle serves
-          // every language variant of the post.
-          const files: PostAssetInfo[] = [];
-          for (const f of await fs.readdir(path.join(monthDir, entry.name), {
-            withFileTypes: true,
-          })) {
-            if (!f.isFile() || f.name.startsWith(".")) continue;
-            const st = await fs.stat(path.join(monthDir, entry.name, f.name));
-            files.push({ file: f.name, bytes: st.size });
-          }
-          assets.set(`${year}/${month}/${entry.name}`, files);
+          const postPath = `${year}/${month}/${entry.name}`;
+          assets.set(postPath, await readAssetDirectory(path.join(monthDir, entry.name)));
           continue;
         }
         if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
@@ -159,14 +142,18 @@ export async function scanPosts(): Promise<PostGroup[]> {
 export async function listAssets(postPath: string): Promise<PostAssetInfo[]> {
   const dir = path.join(CONTENT_ROOT, ...postPath.split("/"));
   try {
-    const out: PostAssetInfo[] = [];
-    for (const f of await fs.readdir(dir, { withFileTypes: true })) {
-      if (!f.isFile() || f.name.startsWith(".")) continue;
-      const st = await fs.stat(path.join(dir, f.name));
-      out.push({ file: f.name, bytes: st.size });
-    }
-    return out;
+    return await readAssetDirectory(dir);
   } catch {
     return [];
   }
+}
+
+async function readAssetDirectory(directory: string): Promise<PostAssetInfo[]> {
+  const assets: PostAssetInfo[] = [];
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (!entry.isFile() || entry.name.startsWith(".")) continue;
+    const stat = await fs.stat(path.join(directory, entry.name));
+    assets.push({ file: entry.name, bytes: stat.size });
+  }
+  return assets;
 }

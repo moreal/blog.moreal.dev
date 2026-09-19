@@ -4,20 +4,12 @@ import type { APIRoute } from "astro";
 import { checkRequest, describe, fail, json } from "../lib/guard.ts";
 import { CONTENT_ROOT } from "../lib/paths.ts";
 import { scanPosts } from "../lib/scan.ts";
+import { findSourceMatches } from "../lib/search.ts";
 
 export const prerender = false;
 
 const MAX_HITS = 60;
-const CONTEXT = 48;
 
-/**
- * Full-text search over post bodies.  The list page filters titles and paths
- * client-side; this exists for the rest -- finding the post that mentioned a
- * command, a name, a Hanja spelling.
- *
- * Reads every file on each query.  At this corpus size that is a few
- * milliseconds, and an index would need invalidating on every save.
- */
 export const GET: APIRoute = async ({ request, url }) => {
   const bad = checkRequest(request, url);
   if (bad !== null) return bad;
@@ -50,26 +42,8 @@ export const GET: APIRoute = async ({ request, url }) => {
         } catch {
           continue;
         }
-        const lines = text.split("\n");
-        let count = 0;
-        let first: { line: number; excerpt: string } | null = null;
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i]!;
-          const at = line.toLowerCase().indexOf(needle);
-          if (at === -1) continue;
-          count++;
-          if (first === null) {
-            const start = Math.max(0, at - CONTEXT);
-            first = {
-              line: i + 1,
-              excerpt:
-                (start > 0 ? "…" : "") +
-                line.slice(start, at + needle.length + CONTEXT).trim() +
-                (at + needle.length + CONTEXT < line.length ? "…" : ""),
-            };
-          }
-        }
-        if (first === null) continue;
+        const matches = findSourceMatches(text, needle);
+        if (matches === null) continue;
         if (hits.length >= MAX_HITS) {
           truncated = true;
           break;
@@ -79,9 +53,7 @@ export const GET: APIRoute = async ({ request, url }) => {
           postPath: s.postPath,
           lang: s.lang,
           title: s.title || s.slug,
-          line: first.line,
-          excerpt: first.excerpt,
-          count,
+          ...matches,
         });
       }
       if (truncated) break;

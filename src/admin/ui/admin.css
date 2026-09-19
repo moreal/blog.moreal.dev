@@ -797,33 +797,6 @@ kbd {
   height: 108px;
 }
 
-/* The WYSIWYG panes own their inner editable node, so the metrics have to be
-   set on that rather than on the wrapper. */
-.wysiwyg {
-  min-height: 108px;
-}
-
-.wysiwyg .tiptap,
-.wysiwyg .ProseMirror,
-.wysiwyg .milkdown .editor {
-  min-height: 108px;
-  padding: 10px 12px;
-  outline: 0;
-  font-family: var(--mono);
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.wysiwyg .ProseMirror:focus,
-.wysiwyg .ProseMirror-focused {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.wysiwyg p {
-  margin: 0 0 0.6em;
-}
-
 .pane .cm-scroller {
   font-family: var(--mono);
   line-height: 1.7;

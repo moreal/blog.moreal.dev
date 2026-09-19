@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "test": "node --test src/admin/ui/mobile.test.ts",
+    "test": "node --experimental-transform-types --test src/admin/**/*.test.ts",
     "build": "astro build",
     "check": "astro check",
     "preview": "astro preview",

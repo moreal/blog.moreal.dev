@@ -4,26 +4,16 @@ import {
   type Extension,
   type Range,
   StateField,
+  type Transaction,
 } from "@codemirror/state";
-import { Decoration, type DecorationSet, EditorView, WidgetType } from "@codemirror/view";
-
-/**
- * Obsidian-style live preview: markup is hidden until the cursor enters the
- * element it belongs to, so the writing surface reads as formatted text while
- * the document underneath stays plain markdown.
- *
- * Scope is deliberately narrow -- only the constructs this blog actually uses,
- * which is also why hongdown's output (setext headings, reference-style links,
- * ~~~~ fences) is handled properly here where general-purpose tools tend not to.
- *
- * Two rules learned the hard way and encoded below:
- *   - a StateField, never a ViewPlugin: decorations that change vertical layout
- *     have to be provided directly, not through a plugin field;
- *   - no atomicRanges: it makes Backspace swallow a whole hidden span.
- */
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  WidgetType,
+} from "@codemirror/view";
 
 export interface LivePreviewOptions {
-  /** Prefix that makes `./foo.png` resolvable, e.g. "/__admin/asset/2026/02/x/". */
   assetBase?: () => string;
 }
 
@@ -58,194 +48,222 @@ class ImageWidget extends WidgetType {
   }
 }
 
-function touches(state: EditorState, from: number, to: number): boolean {
-  for (const r of state.selection.ranges) {
-    if (r.from <= to && r.to >= from) return true;
-  }
-  return false;
+type MarkdownNode = ReturnType<typeof syntaxTree>["topNode"];
+
+const FOOTNOTE_REFERENCE = /\[\^[^\]\s]+\](?!:)/g;
+const FOOTNOTE_DEFINITION = /^\[\^[^\]\s]+\]:/;
+interface InlineStyle {
+  className: string;
+  marks: string[];
 }
 
-/** Footnotes are not in the markdown grammar, so they are matched textually. */
-const FOOTNOTE = /\[\^[^\]\s]+\](?!:)/g;
+const INLINE_STYLES: Partial<Record<string, InlineStyle>> = {
+  StrongEmphasis: {
+    className: "cm-md-strong",
+    marks: ["EmphasisMark", "StrikethroughMark"],
+  },
+  Emphasis: {
+    className: "cm-md-em",
+    marks: ["EmphasisMark", "StrikethroughMark"],
+  },
+  Strikethrough: {
+    className: "cm-md-strike",
+    marks: ["EmphasisMark", "StrikethroughMark"],
+  },
+  InlineCode: { className: "cm-md-code", marks: ["CodeMark"] },
+};
 
-function buildDecorations(
-  state: EditorState,
-  opts: LivePreviewOptions,
-): DecorationSet {
-  const ranges: Range<Decoration>[] = [];
-  const doc = state.doc;
-  const add = (from: number, to: number, deco: Decoration) => {
-    if (from <= to) ranges.push(deco.range(from, to));
-  };
-  const hide = (from: number, to: number) => {
-    if (from < to) ranges.push(hidden.range(from, to));
-  };
+function resolveImageUrl(url: string, assetBase: string): string {
+  return /^(https?:|data:|\/)/.test(url)
+    ? url
+    : assetBase + url.replace(/^\.\//, "");
+}
 
-  syntaxTree(state).iterate({
-    enter(node) {
-      const { name, from, to } = node;
+class MarkdownDecorations {
+  private readonly ranges: Range<Decoration>[] = [];
 
-      // ---- headings ----
-      const atx = /^ATXHeading(\d)$/.exec(name);
-      if (atx !== null) {
-        const level = atx[1]!;
-        add(doc.lineAt(from).from, doc.lineAt(from).from, Decoration.line({ class: `cm-md-h${level}` }));
-        if (!touches(state, from, to)) {
-          const mark = node.node.getChild("HeaderMark");
-          // Swallow the single space after the hashes too, so the text lines up
-          // with surrounding paragraphs instead of sitting one column in.
-          if (mark) hide(mark.from, Math.min(mark.to + 1, to));
-        }
-        return;
-      }
+  constructor(
+    private readonly state: EditorState,
+    private readonly options: LivePreviewOptions,
+  ) {}
 
-      const setext = /^SetextHeading(\d)$/.exec(name);
-      if (setext !== null) {
-        const level = setext[1]!;
-        const first = doc.lineAt(from);
-        add(first.from, first.from, Decoration.line({ class: `cm-md-h${level}` }));
-        if (!touches(state, from, to)) {
-          const mark = node.node.getChild("HeaderMark");
-          // Replacing the newline as well collapses the underline's whole line
-          // rather than leaving a blank one behind.
-          if (mark) hide(mark.from - 1, mark.to);
-        }
-        return;
-      }
+  build(): DecorationSet {
+    syntaxTree(this.state).iterate({
+      enter: ({ node }) => {
+        this.decorateNode(node);
+      },
+    });
+    this.decorateFootnotes();
+    return Decoration.set(this.ranges, true);
+  }
 
-      // ---- inline emphasis ----
-      if (name === "StrongEmphasis" || name === "Emphasis" || name === "Strikethrough") {
-        const cls =
-          name === "StrongEmphasis"
-            ? "cm-md-strong"
-            : name === "Emphasis"
-            ? "cm-md-em"
-            : "cm-md-strike";
-        add(from, to, Decoration.mark({ class: cls }));
-        if (!touches(state, from, to)) {
-          for (const child of node.node.getChildren("EmphasisMark")) {
-            hide(child.from, child.to);
-          }
-          for (const child of node.node.getChildren("StrikethroughMark")) {
-            hide(child.from, child.to);
-          }
-        }
-        return;
-      }
+  private selectionTouches({ from, to }: MarkdownNode): boolean {
+    return this.state.selection.ranges.some(
+      (selection) => selection.from <= to && selection.to >= from,
+    );
+  }
 
-      if (name === "InlineCode") {
-        add(from, to, Decoration.mark({ class: "cm-md-code" }));
-        if (!touches(state, from, to)) {
-          for (const child of node.node.getChildren("CodeMark")) {
-            hide(child.from, child.to);
-          }
-        }
-        return;
-      }
+  private add(from: number, to: number, decoration: Decoration): void {
+    if (from <= to) this.ranges.push(decoration.range(from, to));
+  }
 
-      // ---- links and images ----
-      if (name === "Image") {
-        const text = doc.sliceString(from, to);
-        const m = /^!\[([^\]]*)\]\(\s*<?([^)>\s]+)/.exec(text);
-        if (m !== null && !touches(state, from, to)) {
-          const raw = m[2]!;
-          const base = opts.assetBase?.() ?? "";
-          // Links are written URL-relative (./foo.png next to the post's own
-          // index.html), which is not where the file sits on disk, so the
-          // preview has to route them through the asset base.
-          const url = /^(https?:|data:|\/)/.test(raw)
-            ? raw
-            : base + raw.replace(/^\.\//, "");
-          add(
-            from,
-            to,
-            Decoration.replace({ widget: new ImageWidget(url, m[1] ?? "") }),
-          );
-        }
-        return;
-      }
+  private hide(from: number, to: number): void {
+    if (from < to) this.ranges.push(hidden.range(from, to));
+  }
 
-      if (name === "Link") {
-        add(from, to, Decoration.mark({ class: "cm-md-link" }));
-        if (!touches(state, from, to)) {
-          const marks = node.node.getChildren("LinkMark");
-          // [text](url) and [text][label] both open with one mark and close
-          // with the rest; hiding everything from the second mark on leaves
-          // just the visible text.
-          if (marks.length >= 2) {
-            hide(marks[0]!.from, marks[0]!.to);
-            hide(marks[1]!.from, to);
-          }
-        }
-        return;
-      }
+  private styleLine(position: number, className: string): void {
+    const { from } = this.state.doc.lineAt(position);
+    this.add(from, from, Decoration.line({ class: className }));
+  }
 
-      if (name === "Autolink") {
-        add(from, to, Decoration.mark({ class: "cm-md-link" }));
-        if (!touches(state, from, to)) {
-          hide(from, from + 1);
-          hide(to - 1, to);
-        }
-        return;
-      }
-
-      // Reference definitions are structural bookkeeping hongdown maintains at
-      // section ends; dim them rather than hide, so they stay editable.
-      if (name === "LinkReference") {
-        add(
-          doc.lineAt(from).from,
-          doc.lineAt(from).from,
-          Decoration.line({ class: "cm-md-ref" }),
-        );
-        return;
-      }
-
-      if (name === "FencedCode") {
-        for (let n = doc.lineAt(from).number; n <= doc.lineAt(to).number; n++) {
-          const line = doc.line(n);
-          add(line.from, line.from, Decoration.line({ class: "cm-md-fence" }));
-        }
-        return;
-      }
-
-      if (name === "Blockquote") {
-        for (let n = doc.lineAt(from).number; n <= doc.lineAt(to).number; n++) {
-          const line = doc.line(n);
-          add(line.from, line.from, Decoration.line({ class: "cm-md-quote" }));
-        }
-        return;
-      }
-      return;
-    },
-  });
-
-  // Footnote references, matched on the text since the grammar has no node.
-  for (let n = 1; n <= doc.lines; n++) {
-    const line = doc.line(n);
-    if (!line.text.includes("[^")) continue;
-    for (const m of line.text.matchAll(FOOTNOTE)) {
-      const from = line.from + (m.index ?? 0);
-      add(from, from + m[0].length, Decoration.mark({ class: "cm-md-footnote" }));
-    }
-    if (/^\[\^[^\]\s]+\]:/.test(line.text)) {
-      add(line.from, line.from, Decoration.line({ class: "cm-md-ref" }));
+  private styleBlock(node: MarkdownNode, className: string): void {
+    const doc = this.state.doc;
+    const firstLine = doc.lineAt(node.from).number;
+    const lastLine = doc.lineAt(node.to).number;
+    for (let number = firstLine; number <= lastLine; number++) {
+      this.styleLine(doc.line(number).from, className);
     }
   }
 
-  return Decoration.set(ranges, true);
+  private decorateNode(node: MarkdownNode): void {
+    const heading = /^(ATX|Setext)Heading(\d)$/.exec(node.name);
+    if (heading) {
+      this.decorateHeading(node, heading[1] === "Setext", heading[2]!);
+      return;
+    }
+    const inlineStyle = INLINE_STYLES[node.name];
+    if (inlineStyle) {
+      this.decorateInline(node, inlineStyle);
+      return;
+    }
+    switch (node.name) {
+      case "Image":
+        this.decorateImage(node);
+        break;
+      case "Link":
+        this.decorateLink(node);
+        break;
+      case "Autolink":
+        this.decorateAutolink(node);
+        break;
+      case "LinkReference":
+        this.styleLine(node.from, "cm-md-ref");
+        break;
+      case "FencedCode":
+        this.styleBlock(node, "cm-md-fence");
+        break;
+      case "Blockquote":
+        this.styleBlock(node, "cm-md-quote");
+        break;
+    }
+  }
+
+  private decorateHeading(
+    node: MarkdownNode,
+    setext: boolean,
+    level: string,
+  ): void {
+    this.styleLine(node.from, `cm-md-h${level}`);
+    if (this.selectionTouches(node)) return;
+    const mark = node.getChild("HeaderMark");
+    if (!mark) return;
+    if (setext) {
+      this.hideUnderlineWithPrecedingNewline(mark);
+    } else {
+      this.hideHeadingPrefixWithSpace(mark, node.to);
+    }
+  }
+
+  private hideUnderlineWithPrecedingNewline(mark: MarkdownNode): void {
+    this.hide(mark.from - 1, mark.to);
+  }
+
+  private hideHeadingPrefixWithSpace(
+    mark: MarkdownNode,
+    headingEnd: number,
+  ): void {
+    this.hide(mark.from, Math.min(mark.to + 1, headingEnd));
+  }
+
+  private decorateInline(
+    node: MarkdownNode,
+    { className, marks }: InlineStyle,
+  ): void {
+    this.add(node.from, node.to, Decoration.mark({ class: className }));
+    if (this.selectionTouches(node)) return;
+    for (const name of marks) {
+      for (const mark of node.getChildren(name)) this.hide(mark.from, mark.to);
+    }
+  }
+
+  private decorateImage(node: MarkdownNode): void {
+    const text = this.state.doc.sliceString(node.from, node.to);
+    const image = /^!\[([^\]]*)\]\(\s*<?([^)>\s]+)/.exec(text);
+    if (!image || this.selectionTouches(node)) return;
+    const url = resolveImageUrl(image[2]!, this.options.assetBase?.() ?? "");
+    this.add(
+      node.from,
+      node.to,
+      Decoration.replace({ widget: new ImageWidget(url, image[1] ?? "") }),
+    );
+  }
+
+  private decorateLink(node: MarkdownNode): void {
+    this.add(node.from, node.to, Decoration.mark({ class: "cm-md-link" }));
+    if (this.selectionTouches(node)) return;
+    this.hideLinkSyntaxOutsideLabel(node);
+  }
+
+  private hideLinkSyntaxOutsideLabel(node: MarkdownNode): void {
+    const marks = node.getChildren("LinkMark");
+    if (marks.length < 2) return;
+    this.hide(marks[0]!.from, marks[0]!.to);
+    this.hide(marks[1]!.from, node.to);
+  }
+
+  private decorateAutolink(node: MarkdownNode): void {
+    this.add(node.from, node.to, Decoration.mark({ class: "cm-md-link" }));
+    if (this.selectionTouches(node)) return;
+    this.hide(node.from, node.from + 1);
+    this.hide(node.to - 1, node.to);
+  }
+
+  private decorateFootnotes(): void {
+    const doc = this.state.doc;
+    for (let number = 1; number <= doc.lines; number++) {
+      const line = doc.line(number);
+      if (!line.text.includes("[^")) continue;
+      for (const reference of line.text.matchAll(FOOTNOTE_REFERENCE)) {
+        const from = line.from + reference.index;
+        this.add(
+          from,
+          from + reference[0].length,
+          Decoration.mark({ class: "cm-md-footnote" }),
+        );
+      }
+      if (FOOTNOTE_DEFINITION.test(line.text)) this.styleLine(line.from, "cm-md-ref");
+    }
+  }
+}
+
+function preserveDecorationsDuringComposition(
+  decorations: DecorationSet,
+  transaction: Transaction,
+): DecorationSet {
+  return transaction.docChanged
+    ? decorations.map(transaction.changes)
+    : decorations;
 }
 
 export function livePreview(opts: LivePreviewOptions = {}): Extension {
   const field = StateField.define<DecorationSet>({
-    create: (state) => buildDecorations(state, opts),
+    create: (state) => new MarkdownDecorations(state, opts).build(),
     update(value, tr) {
-      // Never re-decorate mid-composition: replacing the text node a composition
-      // lives in aborts the IME, which is exactly what breaks Hanja conversion.
       if (tr.isUserEvent("input.type.compose")) {
-        return tr.docChanged ? value.map(tr.changes) : value;
+        return preserveDecorationsDuringComposition(value, tr);
       }
       if (!tr.docChanged && !tr.selection && !tr.effects.length) return value;
-      return buildDecorations(tr.state, opts);
+      return new MarkdownDecorations(tr.state, opts).build();
     },
     provide: (f) => EditorView.decorations.from(f),
   });

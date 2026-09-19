@@ -119,45 +119,6 @@ export function frontMatterEquals(a: string, b: string): boolean {
   }
 }
 
-/**
- * "2026-08-07T23:05:11+09:00" in Asia/Seoul regardless of the machine's zone.
- * scripts/get-now.sh uses local time and would be wrong abroad; on a KST
- * machine the output is identical. ui/api.ts has the browser's twin of this
- * function, since lib/ (here) reaches node:fs and can't be imported client-side.
- */
-export function nowKstIso(now: Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).formatToParts(now);
-  const at = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
-  return (
-    `${at("year")}-${at("month")}-${at("day")}` +
-    `T${at("hour")}:${at("minute")}:${at("second")}+09:00`
-  );
-}
-
-/**
- * The same wall clock, but on `day` ("YYYY-MM-DD"): what a backdated post is
- * published at.  Cutting the day off a timestamp belongs beside the function
- * that spells the timestamp, so the offset cannot drift from the format.
- */
-export function kstIsoOn(day: string, now: Date = new Date()): string {
-  return day + nowKstIso(now).slice(10);
-}
-
-/**
- * Setext underline sized to display width, where a CJK character occupies two
- * columns -- the rule scripts/new-daily.sh implements and hongdown enforces.
- * Only a fallback: the scaffold writes an ATX heading and lets hongdown convert
- * it, which produces the same underline.
- */
 export function setextUnderline(title: string, char = "="): string {
   let width = 0;
   for (const ch of title) {
