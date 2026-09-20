@@ -86,6 +86,10 @@ export function kstDate(at: Date = new Date()): string {
   return readKstWallClock(at).calendarDate;
 }
 
+export function kstClockTime(at: Date = new Date()): string {
+  return readKstWallClock(at).clockTime;
+}
+
 export function kstYear(iso: string): string {
   return readKstWallClock(new Date(iso)).year;
 }

@@ -4,6 +4,7 @@ import {
   calendarDateOf,
   datetimeLocalValue,
   isCalendarDate,
+  kstClockTime,
   kstDate,
   kstDateTime,
   kstIsoFromDatetimeLocal,
@@ -22,6 +23,20 @@ test("server and browser dates roll over together at midnight in Seoul", () => {
   assert.equal(kstDate(before), "2025-12-31");
   assert.equal(kstDate(after), "2026-01-01");
   assert.equal(kstYear(after.toISOString()), "2026");
+});
+
+test("the Seoul wall clock is read in Asia/Seoul, not on whatever clock the machine keeps", () => {
+  const machineTimeZone = process.env.TZ;
+  try {
+    for (const timeZone of ["UTC", "America/New_York", "Asia/Seoul"]) {
+      process.env.TZ = timeZone;
+      assert.equal(kstClockTime(new Date("2026-08-08T08:30:05+09:00")), "08:30:05", timeZone);
+      assert.equal(kstDate(new Date("2026-08-08T08:30:05+09:00")), "2026-08-08", timeZone);
+    }
+  } finally {
+    if (machineTimeZone === undefined) delete process.env.TZ;
+    else process.env.TZ = machineTimeZone;
+  }
 });
 
 test("backdating changes the day while retaining the Seoul wall clock", () => {

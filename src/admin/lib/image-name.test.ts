@@ -19,6 +19,17 @@ function suggest(overrides: Partial<ImageNameContext>, pattern = "{slug}-{index}
   return suggestImageName({ ...context, ...overrides }, { imageNamePattern: pattern });
 }
 
+function withMachineTimeZone(timeZone: string, body: () => void): void {
+  const machineTimeZone = process.env.TZ;
+  process.env.TZ = timeZone;
+  try {
+    body();
+  } finally {
+    if (machineTimeZone === undefined) delete process.env.TZ;
+    else process.env.TZ = machineTimeZone;
+  }
+}
+
 test("a dragged-in file keeps its descriptive name as a slug without the extension, the convention existing images follow", () => {
   assert.equal(suggest({ originalName: "container-insight-network-rx.png" }), "container-insight-network-rx");
   assert.equal(suggest({ originalName: "  Container Insight — Network RX .PNG" }), "container-insight-network-rx");
@@ -108,8 +119,24 @@ test("the naming context takes the post's location and the incoming image as the
   });
 });
 
-test("{day} is today's day of the month in UTC, not in Korea", () => {
+test("{day} is today's day of the month in Korea, where the posts are dated", () => {
   const image = { originalName: null, ext: ".png", existing: [] };
   const earlyMorningInKorea = new Date("2026-08-08T08:30:00+09:00");
-  assert.equal(imageNameContext(post, image, earlyMorningInKorea).day, "07");
+  assert.equal(imageNameContext(post, image, earlyMorningInKorea).day, "08");
+  assert.equal(imageNameContext(post, image, new Date("2026-08-07T23:59:59+09:00")).day, "07");
+});
+
+test("{hhmmss} reads the same Seoul wall clock as {day}, whatever time zone the machine keeps", () => {
+  const image = { originalName: null, ext: ".png", existing: [] };
+  const earlyMorningInKorea = new Date("2026-08-08T08:30:05+09:00");
+  const ctx = imageNameContext(post, image, earlyMorningInKorea);
+  for (const machineTimeZone of ["UTC", "America/New_York", "Asia/Seoul"]) {
+    withMachineTimeZone(machineTimeZone, () => {
+      assert.equal(
+        suggestImageName(ctx, { imageNamePattern: "{day}-{hhmmss}" }, earlyMorningInKorea),
+        "08-083005",
+        machineTimeZone,
+      );
+    });
+  }
 });

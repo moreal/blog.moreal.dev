@@ -1,4 +1,5 @@
 import { ADMIN_CONFIG, type AdminConfig, type ImageNameContext } from "../config.ts";
+import { kstClockTime, kstDate } from "../shared/dates.ts";
 import type { PostFileRef } from "./paths.ts";
 
 type ImageNamingConfig = Pick<AdminConfig, "imageNamePattern" | "suggestImageName">;
@@ -54,8 +55,12 @@ function isGenericName(stem: string): boolean {
   );
 }
 
-function expandPattern(pattern: string, ctx: ImageNameContext, index: number): string {
-  const now = new Date();
+function expandPattern(
+  pattern: string,
+  ctx: ImageNameContext,
+  index: number,
+  now: Date,
+): string {
   return pattern.replace(/\{(\w+)\}/g, (placeholder, token: string) => {
     switch (token) {
       case "slug":
@@ -81,9 +86,7 @@ function expandPattern(pattern: string, ctx: ImageNameContext, index: number): s
 }
 
 function hoursMinutesSeconds(time: Date): string {
-  return [time.getHours(), time.getMinutes(), time.getSeconds()]
-    .map((part) => String(part).padStart(2, "0"))
-    .join("");
+  return kstClockTime(time).replaceAll(":", "");
 }
 
 export function imageNameContext(
@@ -94,7 +97,7 @@ export function imageNameContext(
   return {
     year: post.year,
     month: post.month,
-    day: utcDayOfMonth(now),
+    day: kstDayOfMonth(now),
     slug: post.slug,
     lang: post.lang,
     postPath: post.postPath,
@@ -104,20 +107,21 @@ export function imageNameContext(
   };
 }
 
-function utcDayOfMonth(time: Date): string {
-  return time.toISOString().slice(8, 10);
+function kstDayOfMonth(time: Date): string {
+  return kstDate(time).slice(8, 10);
 }
 
 export function suggestImageName(
   ctx: ImageNameContext,
   config: ImageNamingConfig = ADMIN_CONFIG,
+  now: Date = new Date(),
 ): string {
   const override = config.suggestImageName?.(ctx);
   if (override !== undefined && override !== "") return slugifyName(override);
 
   const taken = new Set(ctx.existing.map((file) => withoutExtension(file).toLowerCase()));
   const descriptive = slugOfDescriptiveName(ctx.originalName);
-  if (descriptive === null) return firstFreePatternName(config.imageNamePattern, ctx, taken);
+  if (descriptive === null) return firstFreePatternName(config.imageNamePattern, ctx, taken, now);
   return taken.has(descriptive) ? firstFreeNumberedName(descriptive, taken) : descriptive;
 }
 
@@ -125,12 +129,13 @@ function firstFreePatternName(
   pattern: string,
   ctx: ImageNameContext,
   taken: Set<string>,
+  now: Date,
 ): string {
   for (let index = 1; index < CANDIDATE_LIMIT; index++) {
-    const candidate = slugifyName(expandPattern(pattern, ctx, index));
+    const candidate = slugifyName(expandPattern(pattern, ctx, index, now));
     if (!taken.has(candidate)) return candidate;
   }
-  const lastResort = slugifyName(expandPattern(pattern, ctx, CANDIDATE_LIMIT));
+  const lastResort = slugifyName(expandPattern(pattern, ctx, CANDIDATE_LIMIT, now));
   return firstFreeNumberedName(lastResort, taken);
 }
 
