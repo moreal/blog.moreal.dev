@@ -128,6 +128,29 @@ test("text is written bare only when YAML reads it back unchanged", () => {
   }
 });
 
+test("text the YAML parser reads back as something else is quoted, however it ends or is tagged", () => {
+  const quoted = [
+    "Ends in a colon:",
+    "콜론으로 끝나는 설명:",
+    "a colon and a tab:\tb",
+    "a hash after a tab\t#b",
+    "0x1A",
+    "0o17",
+    "1e10",
+    ".inf",
+    ".nan",
+  ];
+  for (const description of quoted) {
+    assert.equal(
+      serializeFrontMatter({ published, description }).split("\n")[2],
+      `description: ${JSON.stringify(description)}`,
+    );
+    assert.equal(metaOf(serializeFrontMatter({ published, description })).description, description);
+  }
+  const book = { title: "Ends in a colon:" };
+  assert.equal(metaOf(serializeFrontMatter({ published, type: "reading", book })).book?.title, book.title);
+});
+
 test("a new reading post gets the empty title and author lines of new-reading.sh, which mean no book", () => {
   const serialized = serializeFrontMatter({ published, type: "reading", book: { title: "Ignored" }, bookScaffold: true });
   assert.equal(serialized, `---\npublished: ${published}\ntype: reading\nbook:\n  title:\n  author:\n---\n`);

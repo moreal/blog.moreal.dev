@@ -1,3 +1,4 @@
+import { load as loadYaml } from "js-yaml";
 import {
   parseFrontMatter,
   splitFrontMatter,
@@ -40,6 +41,16 @@ const YAML_MAPPING_SEPARATOR = ": ";
 const YAML_COMMENT_START = " #";
 const YAML_BOOLEAN_OR_NULL = /^(true|false|null|yes|no|on|off|~)$/i;
 const YAML_NUMBER_LIKE = /^[-+]?[0-9.]+$/;
+const PROBE_KEY = "value";
+
+function parsedByYaml(value: string): unknown {
+  try {
+    return (loadYaml(`${PROBE_KEY}: ${value}`) as Record<string, unknown> | null)
+      ?.[PROBE_KEY];
+  } catch {
+    return undefined;
+  }
+}
 
 function readsBackUnchangedAsPlainYaml(value: string): boolean {
   return (
@@ -50,7 +61,8 @@ function readsBackUnchangedAsPlainYaml(value: string): boolean {
     !value.includes(YAML_MAPPING_SEPARATOR) &&
     !value.includes(YAML_COMMENT_START) &&
     !YAML_BOOLEAN_OR_NULL.test(value) &&
-    !YAML_NUMBER_LIKE.test(value)
+    !YAML_NUMBER_LIKE.test(value) &&
+    parsedByYaml(value) === value
   );
 }
 
