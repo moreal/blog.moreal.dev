@@ -31,7 +31,7 @@ type FrontMatterSummary = Pick<
 
 const sourceTitleParser = MarkdownIt("commonmark").use(title);
 
-function firstHeading(body: string): string {
+export function firstHeading(body: string): string {
   const env: { title?: string } = {};
   sourceTitleParser.render(body, env);
   return env.title ?? "";

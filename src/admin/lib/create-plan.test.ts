@@ -79,7 +79,7 @@ test("a new post without a date is published at the current Seoul time, and a ba
   assert.equal(backdated.plan.input.publishedAt, "2024-02-29T10:23:45+09:00");
 });
 
-test("a translation source is the original's front matter and its first non-blank body line, trimmed", () => {
+test("a translation source is the original's front matter and its first heading", () => {
   const original = "---\npublished: 2020-03-01T10:00:00+09:00\ntype: reading\ndark: true\n---\n\n  Original title  \n==============\n\nText\n";
   assert.deepEqual(parseTranslationSource(original, "original.en.md"), {
     form: { published: "2020-03-01T10:00:00+09:00", type: "reading", dark: true },
@@ -87,6 +87,21 @@ test("a translation source is the original's front matter and its first non-blan
   });
   const untitled = parseTranslationSource("---\npublished: 2020-03-01T10:00:00+09:00\n---\n\n", "original.en.md");
   assert.equal(untitled.heading, "");
+});
+
+test("a translation takes the heading's text, not the line that spells it", () => {
+  const fence = "---\npublished: 2020-03-01T10:00:00+09:00\n---\n";
+  const headingOf = (body: string) => parseTranslationSource(fence + body, "original.en.md").heading;
+  assert.equal(headingOf("\n# Real title\n\nText\n"), "Real title");
+  assert.equal(headingOf("#   Real title   ###\n"), "Real title");
+  assert.equal(headingOf("\n# *Real* `title`\n"), "Real title");
+  assert.equal(headingOf("\nReal title\n==========\n\nText\n"), "Real title");
+  const plan = planTranslation({ ...request, title: undefined }, "2020/03/original", {
+    form: { published: "2020-03-01T10:00:00+09:00" },
+    heading: headingOf("# Real title\n"),
+  });
+  assert.ok(plan.ok);
+  assert.equal(plan.plan.input.title, "Real title");
 });
 
 test("a request names one of the known languages and kinds, and the language is checked first", () => {

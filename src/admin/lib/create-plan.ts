@@ -10,6 +10,7 @@ import {
 } from "../shared/dates.ts";
 import { CREATE_SLUG, LANGS, POST_KINDS, postFileName, postFilePath } from "../shared/post-files.ts";
 import { resolvePostDir } from "./paths.ts";
+import { firstHeading } from "./scan.ts";
 import type { ScaffoldInput } from "./scaffold.ts";
 import type { FrontMatterForm, Lang, PostKind } from "./types.ts";
 
@@ -117,13 +118,9 @@ export function postFileOf(plan: CreationPlan): string {
   return postFilePath(plan, plan.slug, plan.input.lang);
 }
 
-function firstNonBlankLine(text: string): string {
-  return text.split("\n").find((line) => line.trim() !== "")?.trim() ?? "";
-}
-
 export function parseTranslationSource(source: string, file: string): TranslationSource {
   const { body } = splitSource(source, file);
-  return { form: readForm(source, file), heading: firstNonBlankLine(body) };
+  return { form: readForm(source, file), heading: firstHeading(body) };
 }
 
 async function findSiblingSource(postPath: string): Promise<{ abs: string; name: string } | null> {
