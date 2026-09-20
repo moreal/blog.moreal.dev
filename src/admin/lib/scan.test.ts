@@ -130,6 +130,28 @@ test("groups are ordered newest first by the published time of their first liste
   );
 });
 
+test("a source whose published text cannot be read as a time carries no publication time", async (t) => {
+  const root = await contentRoot(t, {
+    "2026/03/commented.ko-Hang.md": post("2026-03-01T10:00:00+09:00 # 옮긴 날"),
+  });
+  const [group] = await scanPosts(root);
+  const [summary] = group?.sources ?? [];
+  assert.equal(summary?.published, "2026-03-01T10:00:00+09:00 # 옮긴 날");
+  assert.equal(summary?.publishedMs, 0);
+});
+
+test("posts with no readable publication time are listed after every dated post", async (t) => {
+  const root = await contentRoot(t, {
+    "2026/03/commented-newest.ko-Hang.md": post("2026-03-09T10:00:00+09:00 # 메모"),
+    "2026/03/commented-oldest.ko-Hang.md": post("2026-03-02T10:00:00+09:00 # 메모"),
+    "2026/03/newer.ko-Hang.md": post("2026-03-05T10:00:00+09:00"),
+    "2026/03/older.ko-Hang.md": post("2026-03-01T10:00:00+09:00"),
+  });
+  const slugs = (await scanPosts(root)).map((group) => group.slug);
+  assert.deepEqual(slugs.slice(0, 2), ["newer", "older"]);
+  assert.deepEqual(slugs.slice(2).sort(), ["commented-newest", "commented-oldest"]);
+});
+
 test("a directory beside a post is its asset directory, counted by its visible files, even when empty", async (t) => {
   const root = await contentRoot(t, {
     "2026/03/pictures.ko-Hang.md": post("2026-03-03T10:00:00+09:00"),

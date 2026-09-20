@@ -31,6 +31,13 @@ type FrontMatterSummary = Pick<
 
 const sourceTitleParser = MarkdownIt("commonmark").use(title);
 
+const NO_PUBLISHED_TIME = 0;
+
+function publishedMsOf(published: string): number {
+  const ms = new Date(published).getTime();
+  return Number.isNaN(ms) ? NO_PUBLISHED_TIME : ms;
+}
+
 export function firstHeading(body: string): string {
   const env: { title?: string } = {};
   sourceTitleParser.render(body, env);
@@ -57,7 +64,7 @@ function frontMatterSummary(text: string, file: string): FrontMatterSummary {
   return {
     title: firstHeading(body),
     published: form.published,
-    publishedMs: new Date(form.published).getTime(),
+    publishedMs: publishedMsOf(form.published),
     ...(form.description !== undefined ? { description: form.description } : {}),
     draft: form.draft === true,
     dark: form.dark === true,
@@ -77,7 +84,7 @@ async function summarize(source: PostSource): Promise<PostSourceSummary> {
     lang: source.lang,
     title: "",
     published: "",
-    publishedMs: 0,
+    publishedMs: NO_PUBLISHED_TIME,
     draft: false,
     dark: false,
     derivedLangs: derivedLangsOf(source.lang),
@@ -149,7 +156,7 @@ function withLanguagesAndAssets(group: PostGroup, assetCount: number | undefined
 }
 
 function firstListedPublishedMs(group: PostGroup): number {
-  return group.sources[0]?.publishedMs ?? 0;
+  return group.sources[0]?.publishedMs ?? NO_PUBLISHED_TIME;
 }
 
 export async function scanPosts(root: string = CONTENT_ROOT): Promise<PostGroup[]> {
