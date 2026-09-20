@@ -46,7 +46,6 @@ export async function searchSources(
     if (text === null) continue;
     const matches = findSourceMatches(text, lowercaseQuery);
     if (matches === null) continue;
-    if (hits.length >= maxHits) return { hits: mostMatchesFirst(hits), truncated: true };
     hits.push({
       file: source.file,
       postPath: source.postPath,
@@ -55,5 +54,6 @@ export async function searchSources(
       ...matches,
     });
   }
-  return { hits: mostMatchesFirst(hits), truncated: false };
+  const ranked = mostMatchesFirst(hits);
+  return { hits: ranked.slice(0, maxHits), truncated: ranked.length > maxHits };
 }

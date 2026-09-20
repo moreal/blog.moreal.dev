@@ -59,7 +59,19 @@ test("sources that cannot be read or do not match are skipped", async () => {
   assert.deepEqual(found.hits.map((hit) => hit.file), ["c.md"]);
 });
 
-test("search stops at the hit limit and says the list was cut short", async () => {
+test("the posts with the most matching lines are the ones kept when the list is cut short", async () => {
+  const files = ["a.md", "b.md", "c.md"];
+  const groups = [group("2026/01/one", files.map((file) => ({ file })))];
+  const found = await searchSources(groups, "cms", reader({
+    "a.md": "cms",
+    "b.md": "cms",
+    "c.md": "cms\ncms\ncms",
+  }), 2);
+  assert.deepEqual(found.hits.map((hit) => [hit.file, hit.count]), [["c.md", 3], ["a.md", 1]]);
+  assert.equal(found.truncated, true);
+});
+
+test("search cuts the ranked list at the hit limit and says the list was cut short", async () => {
   const files = ["a.md", "b.md", "c.md"];
   const groups = [group("2026/01/one", files.map((file) => ({ file })))];
   const texts = Object.fromEntries(files.map((file) => [file, "cms"]));
