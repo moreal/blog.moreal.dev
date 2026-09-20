@@ -47,8 +47,15 @@ test("backdating changes the day while retaining the Seoul wall clock", () => {
 });
 
 test("the post list shows publication times on the Seoul calendar", () => {
-  assert.match(kstDateTime("2025-12-31T14:59:00Z"), /^2025\. 12\. 31\. /);
-  assert.match(kstDateTime("2025-12-31T15:00:00Z"), /^2026\. 1\. 1\. /);
+  assert.match(kstDateTime("2025-12-31T14:59:00Z") ?? "", /^2025\. 12\. 31\. /);
+  assert.match(kstDateTime("2025-12-31T15:00:00Z") ?? "", /^2026\. 1\. 1\. /);
+});
+
+test("a timestamp that cannot be read has no Seoul year and no display time", () => {
+  for (const unreadable of ["", "어제", "2026-03-01T10:00:00+09:00 # 메모"]) {
+    assert.equal(kstYear(unreadable), null, unreadable);
+    assert.equal(kstDateTime(unreadable), null, unreadable);
+  }
 });
 
 test("the calendar date of a timestamp is read as written, without converting its offset", () => {

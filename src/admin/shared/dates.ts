@@ -90,10 +90,17 @@ export function kstClockTime(at: Date = new Date()): string {
   return readKstWallClock(at).clockTime;
 }
 
-export function kstYear(iso: string): string {
-  return readKstWallClock(new Date(iso)).year;
+function readableTimestamp(iso: string): Date | null {
+  const at = new Date(iso);
+  return Number.isNaN(at.getTime()) ? null : at;
 }
 
-export function kstDateTime(iso: string): string {
-  return kstDateTimeDisplayFormat.format(new Date(iso));
+export function kstYear(iso: string): string | null {
+  const at = readableTimestamp(iso);
+  return at === null ? null : readKstWallClock(at).year;
+}
+
+export function kstDateTime(iso: string): string | null {
+  const at = readableTimestamp(iso);
+  return at === null ? null : kstDateTimeDisplayFormat.format(at);
 }

@@ -27,6 +27,8 @@ function useDebounced<T>(source: () => T, ms: number): () => T {
   return value;
 }
 
+const UNREADABLE_DATE = "—";
+
 const FILTERS: { id: PostFilter; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "daily", label: POST_KIND_LABELS.daily },
@@ -145,7 +147,7 @@ function PostGroupRow(props: { group: PostGroup }) {
       </div>
       <div class="row-side">
         <span class="when">
-          {kstDateTime(firstListedPublished(props.group))}
+          {kstDateTime(firstListedPublished(props.group)) ?? UNREADABLE_DATE}
         </span>
         <div class="row-actions">
           <For each={props.group.missingLangs}>
@@ -265,7 +267,7 @@ export default function PostList() {
         <For each={groupsByYear()}>
           {([year, list]) => (
             <>
-              <h2 class="year">{year}</h2>
+              <h2 class="year">{year ?? UNREADABLE_DATE}</h2>
               <div class="rows">
                 <For each={list}>
                   {(group) => (

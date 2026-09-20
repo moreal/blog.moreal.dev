@@ -55,6 +55,15 @@ test("posts are grouped under the Seoul year of their first source, newest year 
   ]);
 });
 
+test("a post whose publication date cannot be read is grouped under no year, after the dated ones", () => {
+  const dated = group("d", [source({ published: "2026-05-01T00:00:00+09:00" })]);
+  const undated = group("u", [source({ published: "" })]);
+  assert.deepEqual(groupsByPublishedYear([undated, dated]), [
+    ["2026", [dated]],
+    [null, [undated]],
+  ]);
+});
+
 test("a post is dated by its first listed source", () => {
   assert.equal(firstListedPublished(group("a", [source({ published: "x" }), source({ published: "y" })])), "x");
   assert.equal(firstListedPublished(group("a", [])), "");
