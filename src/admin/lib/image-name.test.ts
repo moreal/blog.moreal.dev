@@ -66,6 +66,18 @@ test("a name with nothing left after slugifying, such as one written in Hangul, 
   assert.equal(suggest({ originalName: "!!!.png" }), "a-post-1");
 });
 
+test("{original} is the original file name's own slug, and only a name that says nothing keeps image", () => {
+  assert.equal(suggest({ originalName: "IMG_1234.JPG" }, "{original}-{index}"), "img-1234-1");
+  assert.equal(suggest({ originalName: "2026-08-07.png" }, "{original}-{index}"), "2026-08-07-1");
+  assert.equal(
+    suggest({ originalName: "Screenshot 2026-08-07 at 23.05.11.png" }, "{original}"),
+    "screenshot-2026-08-07-at-23-05-11",
+  );
+  for (const originalName of ["image.png", "Untitled.gif", "스크린샷.png", "배포 흐름.png", "!!!.png", null, ""]) {
+    assert.equal(suggest({ originalName }, "{original}-{index}"), "image-1", String(originalName));
+  }
+});
+
 test("{index} counts past names already in the asset directory, ignoring their extension and case", () => {
   assert.equal(suggest({ existing: ["a-post-1.png", "A-POST-2.JPG"] }), "a-post-3");
   assert.equal(suggest({ existing: ["a-post-2.png"] }), "a-post-1");
@@ -80,9 +92,10 @@ test("a pattern without {index} that is taken gets a numeric suffix instead", ()
   assert.equal(suggest({ existing: ["a-post.png"] }, "{slug}"), "a-post-2");
 });
 
-test("once every pattern name up to index 999 is taken, the index 1000 name is suffixed even when free", () => {
+test("the search for a free {index} carries on past the limit it starts with, rather than suffixing a free name", () => {
   const existing = Array.from({ length: 999 }, (_, index) => `a-post-${index + 1}.png`);
-  assert.equal(suggest({ existing }), "a-post-1000-2");
+  assert.equal(suggest({ existing }), "a-post-1000");
+  assert.equal(suggest({ existing: [...existing, "a-post-1000.png"] }), "a-post-1001");
 });
 
 test("pattern tokens take their values from the post, and unknown tokens are left for the slug to flatten", () => {

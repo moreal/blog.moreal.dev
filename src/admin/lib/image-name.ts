@@ -39,17 +39,30 @@ function withoutExtension(fileName: string): string {
   return fileName.replace(/\.[^.]+$/, "");
 }
 
-function slugOfDescriptiveName(originalName: string | null): string | null {
-  if (originalName === null || originalName === "") return null;
-  const stem = withoutExtension(originalName).trim();
-  if (isGenericName(stem)) return null;
+function stemOf(fileName: string): string {
+  return withoutExtension(fileName).trim();
+}
+
+function slugOfOriginalName(originalName: string | null): string | null {
+  if (originalName === null) return null;
+  const stem = stemOf(originalName);
+  if (saysNothingAtAll(stem)) return null;
   const slug = slugifyName(stem);
   return slug === "" ? null : slug;
 }
 
+function slugOfDescriptiveName(originalName: string | null): string | null {
+  if (originalName === null) return null;
+  return isGenericName(stemOf(originalName)) ? null : slugOfOriginalName(originalName);
+}
+
+function saysNothingAtAll(stem: string): boolean {
+  return NAMES_THAT_SAY_NOTHING.has(stem.toLowerCase());
+}
+
 function isGenericName(stem: string): boolean {
   return (
-    NAMES_THAT_SAY_NOTHING.has(stem.toLowerCase()) ||
+    saysNothingAtAll(stem) ||
     DIGITS_AND_SEPARATORS_ONLY.test(stem) ||
     CAMERA_OR_SCREENSHOT_PREFIX.test(stem)
   );
@@ -78,7 +91,7 @@ function expandPattern(
       case "hhmmss":
         return hoursMinutesSeconds(now);
       case "original":
-        return slugOfDescriptiveName(ctx.originalName) ?? "image";
+        return slugOfOriginalName(ctx.originalName) ?? "image";
       default:
         return placeholder;
     }
@@ -131,12 +144,12 @@ function firstFreePatternName(
   taken: Set<string>,
   now: Date,
 ): string {
-  for (let index = 1; index < CANDIDATE_LIMIT; index++) {
+  for (let index = 1; index <= CANDIDATE_LIMIT; index++) {
     const candidate = slugifyName(expandPattern(pattern, ctx, index, now));
     if (!taken.has(candidate)) return candidate;
   }
-  const lastResort = slugifyName(expandPattern(pattern, ctx, CANDIDATE_LIMIT, now));
-  return firstFreeNumberedName(lastResort, taken);
+  const lastResort = slugifyName(expandPattern(pattern, ctx, CANDIDATE_LIMIT + 1, now));
+  return taken.has(lastResort) ? firstFreeNumberedName(lastResort, taken) : lastResort;
 }
 
 function firstFreeNumberedName(base: string, taken: Set<string>): string {
