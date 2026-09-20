@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
-import { formatMarkdown } from "./format.ts";
+import { formatMarkdown, versionsNewestFirst } from "./format.ts";
 import { CONTENT_ROOT } from "./paths.ts";
 
 const fakeDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "blog-format-test-"));
@@ -64,4 +64,11 @@ test("after a crash the formatter is checked again before the next run", async (
   await takeInvocations();
   await formatMarkdown(cleanFile);
   assert.deepEqual(await takeInvocations(), ["--version", `-w ${cleanFile}`]);
+});
+
+test("mise install directories are ordered by version number, not as text", () => {
+  assert.deepEqual(
+    versionsNewestFirst(["0.9.3", "0.10.0", "0.3.8", "0.3.11", "0.5.3", "0.5", "latest"]),
+    ["0.10.0", "0.9.3", "0.5.3", "0.5", "0.3.11", "0.3.8", "latest"],
+  );
 });

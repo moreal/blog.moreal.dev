@@ -45,9 +45,35 @@ async function hongdownFromMiseWhich(): Promise<string[]> {
   }
 }
 
+const VERSION_FIELDS = 3;
+const BELOW_ANY_VERSION = -1;
+
+function versionNumbers(name: string): number[] {
+  const fields = name.split(".");
+  return Array.from({ length: VERSION_FIELDS }, (_, index) => {
+    const field = Number.parseInt(fields[index] ?? "", 10);
+    return Number.isNaN(field) ? BELOW_ANY_VERSION : field;
+  });
+}
+
+function newerFirst(a: string, b: string): number {
+  const earlier = versionNumbers(a);
+  return (
+    versionNumbers(b)
+      .map((field, index) => field - earlier[index]!)
+      .find((difference) => difference !== 0) ?? 0
+  );
+}
+
+/** "0.10.2" is newer than "0.9.3", and a name that is no version at all, such
+ * as mise's "latest" link, comes last. */
+export function versionsNewestFirst(names: string[]): string[] {
+  return [...names].sort(newerFirst);
+}
+
 async function hongdownsInMiseInstalls(): Promise<string[]> {
   try {
-    const versions = (await fs.readdir(MISE_INSTALLS)).sort().reverse();
+    const versions = versionsNewestFirst(await fs.readdir(MISE_INSTALLS));
     return versions.map((version) =>
       path.join(MISE_INSTALLS, version, "hongdown"),
     );
