@@ -6,7 +6,7 @@ export function extensionFromMimeType(
   mimeType: string,
   acceptedTypes: AdminConfig["imageTypes"] = ADMIN_CONFIG.imageTypes,
 ): ImageExtension {
-  const ext = acceptedTypes[mimeType];
+  const ext = Object.hasOwn(acceptedTypes, mimeType) ? acceptedTypes[mimeType] : undefined;
   if (ext === undefined) {
     return { ok: false, message: `${mimeType || "알 수 없는 형식"}은 받지 않습니다.` };
   }

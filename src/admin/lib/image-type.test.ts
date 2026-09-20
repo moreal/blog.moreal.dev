@@ -22,3 +22,13 @@ test("a MIME type outside the table is refused with a message naming it", () => 
 test("a missing MIME type is refused as an unknown type", () => {
   assert.deepEqual(extensionFromMimeType(""), { ok: false, message: "알 수 없는 형식은 받지 않습니다." });
 });
+
+test("a MIME type naming a built-in property of the table is refused, not answered with what it inherits", () => {
+  for (const mimeType of ["constructor", "toString", "valueOf", "hasOwnProperty", "__proto__"]) {
+    assert.deepEqual(
+      extensionFromMimeType(mimeType),
+      { ok: false, message: `${mimeType}은 받지 않습니다.` },
+      mimeType,
+    );
+  }
+});
