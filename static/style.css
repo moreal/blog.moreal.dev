@@ -60,6 +60,7 @@ body.list {
 }
 body.list .tab-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 2.5rem;
   font-size: 0.9rem;
@@ -154,6 +155,40 @@ body.list ul time a:before {
 body.list ul .languages a:first-child:before,
 body.list ul time a:first-child:before {
   content: "";
+}
+body.projects .lede {
+  margin-top: 0;
+  color: #666;
+  font-size: 0.95rem;
+  font-weight: 300;
+}
+@media (prefers-color-scheme: dark) {
+  body.projects .lede {
+    color: #999;
+  }
+}
+body.projects .project-section {
+  margin-bottom: 3rem;
+}
+body.projects .project-section h2 {
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin: 0 0 1.25rem;
+}
+body.projects .project-section li {
+  margin-bottom: 1.15rem;
+  padding-bottom: 0;
+}
+body.projects .project-section li p {
+  margin: 0.2rem 0 0;
+  color: #666;
+  font-size: 0.95rem;
+  font-weight: 300;
+}
+@media (prefers-color-scheme: dark) {
+  body.projects .project-section li p {
+    color: #999;
+  }
 }
 body.post {
   max-width: 45rem;
@@ -391,6 +426,10 @@ html.night body.list .empty {
 }
 html.night body.list ul .languages,
 html.night body.list ul time {
+  color: #7e8698;
+}
+html.night body.list.projects .lede,
+html.night body.list.projects .project-section li p {
   color: #7e8698;
 }
 html.night body.post .post-header .back-link,
