@@ -67,6 +67,7 @@ body {
 
     .tab-nav {
       display: flex;
+      flex-wrap: wrap;
       gap: 1rem;
       margin-bottom: 2.5rem;
       font-size: 0.9rem;
@@ -167,6 +168,45 @@ body {
           &:first-child:before {
             content: "";
           }
+        }
+      }
+    }
+  }
+
+  &.projects {
+    .lede {
+      margin-top: 0;
+      color: #666;
+      font-size: 0.95rem;
+      font-weight: 300;
+
+      @media (prefers-color-scheme: dark) {
+        color: #999;
+      }
+    }
+
+    .project-section {
+      margin-bottom: 3rem;
+
+      h2 {
+        font-size: 1.05rem;
+        font-weight: 500;
+        margin: 0 0 1.25rem;
+      }
+
+      li {
+        margin-bottom: 1.15rem;
+        padding-bottom: 0;
+      }
+
+      li p {
+        margin: 0.2rem 0 0;
+        color: #666;
+        font-size: 0.95rem;
+        font-weight: 300;
+
+        @media (prefers-color-scheme: dark) {
+          color: #999;
         }
       }
     }
@@ -454,6 +494,13 @@ html.night body {
     ul {
       .languages,
       time {
+        color: $night-faint;
+      }
+    }
+
+    &.projects {
+      .lede,
+      .project-section li p {
         color: $night-faint;
       }
     }

@@ -6,6 +6,13 @@ export const SITE = {
   relMe: ["https://social.silicon.moe/@moreal", "https://hackers.pub/@moreal"],
 } as const;
 
+export const NAV = [
+  { id: "all", href: "/", label: "전체" },
+  { id: "daily", href: "/daily/", label: "일상" },
+  { id: "reading", href: "/reading/", label: "독후감" },
+  { id: "projects", href: "/projects/", label: "작업" },
+] as const;
+
 const LANG_LABELS: Record<string, string> = {
   "ko-Hang": "한국어",
   "ko-Kore": "國漢文",

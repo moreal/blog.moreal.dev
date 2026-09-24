@@ -8,7 +8,7 @@ import {
 } from "../lib/post-list";
 import type { Post } from "../lib/posts";
 import { kstDate } from "../lib/posts";
-import { SITE } from "../lib/site";
+import { NAV, SITE } from "../lib/site";
 import AuthorMeta from "./AuthorMeta";
 
 interface Props {
@@ -16,15 +16,9 @@ interface Props {
   tab?: ListTab;
 }
 
-const TABS: { tab: ListTab; href: string; label: string }[] = [
-  { tab: "all", href: "/", label: "전체" },
-  { tab: "daily", href: "/daily/", label: "일상" },
-  { tab: "reading", href: "/reading/", label: "독후감" },
-];
-
 export default function ListPage(props: Props) {
   const tab = props.tab ?? "all";
-  const label = TABS.find((tabLink) => tabLink.tab === tab)!.label;
+  const label = NAV.find((tabLink) => tabLink.id === tab)!.label;
   const items = listItems(props.posts, tab);
   const sections = yearSections(items);
   const darkCount = darkPostCount(items);
@@ -44,8 +38,8 @@ export default function ListPage(props: Props) {
         <header>
           <h1>{SITE.title}</h1>
           <nav class="tab-nav">
-            {TABS.map((tabLink) =>
-              tabLink.tab === tab
+            {NAV.map((tabLink) =>
+              tabLink.id === tab
                 ? (
                   <span class="tab-current" aria-current="page">
                     {tabLink.label}
