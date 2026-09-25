@@ -386,6 +386,15 @@ body footer p {
   }
 }
 
+:lang(ko) body.post main article {
+  text-align: justify;
+  text-align-last: start;
+  line-break: strict;
+  overflow-wrap: break-word;
+  hyphens: none;
+  text-wrap: pretty;
+}
+
 html.night {
   color-scheme: dark;
 }
