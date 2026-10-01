@@ -25,17 +25,46 @@ function decorations(state: EditorState) {
   return ranges;
 }
 
+function dimmedText(state: EditorState) {
+  return decorations(state)
+    .filter((range) => range.className?.split(" ").includes("cm-md-mark"))
+    .map(({ from, to }) => state.sliceDoc(from, to));
+}
+
 function hiddenText(state: EditorState) {
   return decorations(state)
     .filter((range) => range.from < range.to && !range.className && !range.widget)
     .map(({ from, to }) => state.sliceDoc(from, to));
 }
 
-test("headings hide prefixes and complete underline lines until selected", () => {
-  assert.deepEqual(hiddenText(editor("# Heading\n\nend")), ["# "]);
-  assert.deepEqual(hiddenText(editor("Heading\n=======\n\nend")), ["\n======="]);
-  assert.deepEqual(hiddenText(editor("# Heading\n\nend", 3)), []);
-  assert.deepEqual(hiddenText(editor("Heading\n=======\n\nend", 3)), []);
+test("heading and emphasis marks stay in place, dimmed, wherever the caret is", () => {
+  for (const anchor of [undefined, 3]) {
+    assert.deepEqual(hiddenText(editor("# Heading\n\nend", anchor)), []);
+    assert.deepEqual(dimmedText(editor("# Heading\n\nend", anchor)), ["#"]);
+    assert.deepEqual(dimmedText(editor("Heading\n=======\n\nend", anchor)), ["======="]);
+    assert.deepEqual(dimmedText(editor("**bold** `code`\n\nend", anchor)), ["**", "**", "`", "`"]);
+  }
+});
+
+test("a setext underline is set at its heading's size, so the pair reads as one heading", () => {
+  const state = editor("Title\n=====\n\nSection\n-------\n\nend");
+  const lineClasses = decorations(state)
+    .filter((range) => range.className?.startsWith("cm-md-h"))
+    .map((range) => [state.doc.lineAt(range.from).text, range.className]);
+  assert.deepEqual(lineClasses, [
+    ["Title", "cm-md-h1"],
+    ["=====", "cm-md-h1"],
+    ["Section", "cm-md-h2"],
+    ["-------", "cm-md-h2"],
+  ]);
+});
+
+test("only a setext underline is set in half-width columns", () => {
+  const underlines = (doc: string) =>
+    decorations(editor(doc))
+      .filter((range) => range.className?.includes("cm-md-setext"))
+      .map(({ from, to }) => doc.slice(from, to));
+  assert.deepEqual(underlines("제목\n====\n\n소제목\n------\n\n## ATX\n\nend"), ["====", "------"]);
 });
 
 test("inline and reference links retain their labels and editable definitions", () => {
@@ -73,13 +102,13 @@ test("footnote references and definitions have distinct styles", () => {
 });
 
 test("IME composition maps existing decorations until normal editing resumes", () => {
-  const before = editor("**bold**\n\nend");
+  const before = editor("[link](https://example.com)\n\nend");
   const composing = before.update({
     changes: { from: 3, insert: "한" },
     selection: { anchor: 4 },
     annotations: Transaction.userEvent.of("input.type.compose"),
   }).state;
-  assert.deepEqual(hiddenText(composing), ["**", "**"]);
+  assert.deepEqual(hiddenText(composing), ["[", "](https://example.com)"]);
   const after = composing.update({ selection: { anchor: 5 } }).state;
   assert.deepEqual(hiddenText(after), []);
 });

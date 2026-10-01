@@ -8,6 +8,7 @@ import {
   type CaretMark,
   type EditorEngineProps,
   blockInsertion,
+  changedSpan,
   fingerprintOf,
   findLine,
 } from "./engine.ts";
@@ -48,6 +49,10 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
           }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) props.onChange(update.state.doc.toString());
+            if (update.docChanged || update.selectionSet) {
+              const { state } = update;
+              props.onCaretLine?.(state.doc.lineAt(state.selection.main.head).number);
+            }
           }),
           EditorView.domEventHandlers({
             scroll: (_event, v) => {
@@ -61,11 +66,18 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
           EditorView.theme({
             "&": { height: "100%" },
             ".cm-content": {
-              fontFamily: "var(--sans)",
-              fontSize: "15px",
-              lineHeight: "1.75",
-              padding: "16px 20px 40vh",
+              maxWidth: "calc(var(--measure) + 48px)",
+              margin: "0 auto",
+              fontFamily: "var(--serif)",
+              fontSize: "var(--writing-size)",
+              lineHeight: "1.6",
+              padding: "48px 24px 40vh",
               caretColor: "var(--ink)",
+            },
+            ".cm-content.cm-lineWrapping": {
+              wordBreak: "keep-all",
+              overflowWrap: "break-word",
+              lineBreak: "strict",
             },
             ".cm-scroller": { overflow: "auto" },
             "&.cm-focused": { outline: "none" },
@@ -73,7 +85,12 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
         ],
       }),
     });
-    props.ref?.({ replaceAll, focus: () => view?.focus() });
+    props.ref?.({
+      replaceAll,
+      focus: () => view?.focus(),
+      scroller: view.scrollDOM,
+      revealLine,
+    });
     onCleanup(() => view?.destroy());
   }
 
@@ -87,6 +104,16 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
       insertBlock(view, markdownText);
     });
     return true;
+  }
+
+  function revealLine(number: number) {
+    if (view === undefined) return;
+    const line = view.state.doc.line(Math.min(Math.max(1, number), view.state.doc.lines));
+    view.dispatch({
+      selection: { anchor: line.to },
+      effects: EditorView.scrollIntoView(line.from, { y: "start", yMargin: 48 }),
+    });
+    view.focus();
   }
 
   function replaceAll(next: string) {
@@ -108,9 +135,8 @@ export default function EditorCodeMirror(props: EditorEngineProps) {
     const pos = doc.line(Math.min(targetLine, doc.lines)).from;
 
     view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: next },
+      changes: changedSpan(current, next),
       selection: { anchor: Math.min(pos, next.length) },
-      scrollIntoView: true,
     });
   }
 

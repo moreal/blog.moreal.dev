@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { blockInsertion, findLine, fingerprintOf } from "./engine.ts";
+import { blockInsertion, changedSpan, findLine, fingerprintOf } from "./engine.ts";
 
 test("a pasted block at the start of a line is followed by a blank line", () => {
   assert.equal(blockInsertion("", "![](./a.png)"), "![](./a.png)\n\n");
@@ -28,4 +28,30 @@ test("without a match, or on a blank line, the caret keeps its line number withi
   const lines = ["a", "b"];
   assert.equal(findLine(lines, { line: 2, fingerprint: "zzz" }), 2);
   assert.equal(findLine(lines, { line: 9, fingerprint: "" }), 2);
+});
+
+function apply(current: string, next: string): string {
+  const { from, to, insert } = changedSpan(current, next);
+  return current.slice(0, from) + insert + current.slice(to);
+}
+
+test("a reformat replaces only the span between the unchanged start and end", () => {
+  assert.deepEqual(changedSpan("head\nold line\ntail", "head\nnew line\ntail"), {
+    from: 5,
+    to: 8,
+    insert: "new",
+  });
+  assert.deepEqual(changedSpan("same", "same"), { from: 4, to: 4, insert: "" });
+});
+
+test("the replaced span always rebuilds the reformatted text exactly", () => {
+  for (const [current, next] of [
+    ["aaa", "aaaa"],
+    ["aaaa", "aaa"],
+    ["", "new"],
+    ["gone", ""],
+    ["문장 하나.\n\n\n문장 둘.", "문장 하나.\n\n문장 둘."],
+  ]) {
+    assert.equal(apply(current!, next!), next);
+  }
 });

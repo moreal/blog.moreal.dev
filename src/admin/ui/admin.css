@@ -1,6 +1,8 @@
-/* Styles for the dev-only CMS.  Deliberately independent of the blog's own
-   SCSS: this UI never ships, and sharing the site's typography would make the
-   preview pane harder to distinguish from the chrome around it. */
+/* Styles for the dev-only CMS.  Independent of the blog's own SCSS, except
+   that the writing surface borrows the post page's typography so a sentence
+   reads the same while written as once published. */
+
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200..900&display=swap");
 
 :root {
   --bg: #fbfbfa;
@@ -13,6 +15,11 @@
   --bad: #b3261e;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  --serif: "Noto Serif KR", serif;
+  /* hongdown wraps at 80 columns: 40 full-width characters plus slack, so a
+     source line never breaks into a stray word on the next screen line. */
+  --writing-size: 1.2rem;
+  --measure: calc(41 * var(--writing-size));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -212,6 +219,10 @@ h2.year {
 
 .chip.derived {
   border-style: dashed;
+}
+
+.chip.quiet {
+  border-color: transparent;
 }
 
 a.hit {
@@ -539,6 +550,45 @@ button.picker:disabled {
 
 /* ---- front matter form ---- */
 
+.fm-details {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.fm-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 20px;
+  font-size: 12px;
+  color: var(--dim);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.fm-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fm-details > summary::before {
+  content: "▸";
+  transition: transform 120ms ease-out;
+}
+
+.fm-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.fm-details > summary:hover {
+  color: var(--ink);
+}
+
+.fm-details > .fm {
+  border-bottom: 0;
+  border-top: 1px dashed var(--line);
+}
+
 .fm {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -609,6 +659,31 @@ button.picker:disabled {
 
 /* ---- writing surface ---- */
 
+.editor-head,
+.fm-details,
+.outline {
+  transition: opacity 400ms ease;
+}
+
+.editor.typing .editor-head,
+.editor.typing .fm-details {
+  opacity: 0.2;
+}
+
+/* The outline is where the writer is in the piece, not chrome: it stays
+   readable while typing and only steps back a little. */
+.editor.typing .outline {
+  opacity: 0.65;
+}
+
+.editor.typing .editor-head:hover,
+.editor.typing .fm-details:hover,
+.editor.typing .outline:hover,
+.editor.typing .outline:focus-within,
+.editor.typing .fm-details[open] {
+  opacity: 1;
+}
+
 .editor-main {
   flex: 1;
   min-height: 0;
@@ -620,17 +695,238 @@ button.picker:disabled {
   grid-template-columns: 1fr 1fr;
 }
 
+.editor-pane {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  container-type: inline-size;
+}
+
+/* ---- outline ---- */
+
+.outline {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  z-index: 3;
+  max-width: min(260px, calc(100% - 24px));
+  max-height: calc(100% - 96px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transform: translateY(-50%);
+}
+
+.outline::-webkit-scrollbar {
+  display: none;
+}
+
+.outline ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: color-mix(in srgb, var(--ink) 74%, transparent);
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.outline-h1 button {
+  font-weight: 600;
+}
+
+.outline button:hover,
+.outline button:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  outline: none;
+}
+
+.outline-bar {
+  flex: none;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.outline-h2 .outline-bar {
+  width: 10px;
+  margin-left: 4px;
+}
+
+.outline-h3 .outline-bar {
+  width: 6px;
+  margin-left: 8px;
+}
+
+.outline-text {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline li.active button {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.outline li.active .outline-bar {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.outline:hover,
+.outline:focus-within {
+  width: 260px;
+  border-color: var(--line);
+  background: var(--panel);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.12);
+}
+
+.outline:hover .outline-text,
+.outline:focus-within .outline-text {
+  display: block;
+}
+
+/* Wide enough to hold titles beside the column: show them outright. */
+@container (min-width: 1300px) {
+  .outline,
+  .outline:hover,
+  .outline:focus-within {
+    top: 48px;
+    left: 24px;
+    width: calc((100cqw - var(--measure) - 48px) / 2 - 56px);
+    max-width: 260px;
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .outline .outline-text {
+    display: block;
+  }
+
+  .outline .outline-bar {
+    display: none;
+  }
+
+  .outline ol {
+    border-left: 1px solid var(--line);
+  }
+
+  .outline li {
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+  }
+
+  .outline li.active {
+    border-left-color: var(--accent);
+  }
+
+  .outline button {
+    padding: 4px 8px 4px 12px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .outline-h2 .outline-text {
+    padding-left: 12px;
+  }
+
+  .outline-h3 .outline-text {
+    padding-left: 24px;
+    font-size: 13.5px;
+  }
+}
+
+@container (max-width: 640px) {
+  .outline {
+    display: none;
+  }
+}
+
 .editor-surface {
   min-height: 0;
   overflow: auto;
   background: var(--bg);
 }
 
+.editor-surface,
+.editor-surface .cm-scroller {
+  scrollbar-width: none;
+}
+
+.editor-surface::-webkit-scrollbar,
+.editor-surface .cm-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.overlay-scrollbar {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  bottom: 4px;
+  width: 12px;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.overlay-scrollbar:hover,
+.overlay-scrollbar.active {
+  opacity: 1;
+  transition-duration: 80ms;
+}
+
+.overlay-scrollbar-thumb {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+  transition: width 120ms ease, right 120ms ease, background 120ms ease;
+  touch-action: none;
+}
+
+.overlay-scrollbar:hover .overlay-scrollbar-thumb,
+.overlay-scrollbar.dragging .overlay-scrollbar-thumb {
+  right: 2px;
+  width: 7px;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+@media (pointer: coarse) {
+  .overlay-scrollbar {
+    pointer-events: none;
+  }
+}
+
 .editor-surface.plain {
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.75;
-  padding: 16px 20px;
+  font-family: var(--serif);
+  font-size: var(--writing-size);
+  line-height: 1.6;
+  word-break: keep-all;
+  line-break: strict;
+  padding: 48px max(24px, (100% - var(--measure)) / 2) 40vh;
   border: 0;
   resize: none;
   color: inherit;
@@ -718,6 +1014,12 @@ kbd {
   border-bottom-width: 2px;
   border-radius: 4px;
   padding: 1px 5px;
+}
+
+button.primary kbd {
+  background: transparent;
+  color: inherit;
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
 }
 
 /* ---- panes ---- */
@@ -1200,12 +1502,17 @@ select:focus-visible {
   }
 
   .editor-surface.plain {
-    padding: 14px 12px;
+    padding: 20px 16px 40dvh;
   }
 
   .editor-surface .cm-content {
-    padding: 14px 12px 40dvh !important;
+    padding: 20px 16px 40dvh !important;
     font-size: 16px !important;
+  }
+
+  .fm-details > summary {
+    padding: 8px 12px;
+    min-height: 44px;
   }
 
   .preview {

@@ -1,4 +1,4 @@
-import { Show, createResource, createSignal, onCleanup, onMount } from "solid-js";
+import { Show, createMemo, createResource, createSignal, onCleanup, onMount } from "solid-js";
 import type {
   FrontMatterForm as Form,
   SaveResponse,
@@ -7,6 +7,9 @@ import EditorCodeMirror from "./EditorCodeMirror.tsx";
 import EditorTextarea from "./EditorTextarea.tsx";
 import FrontMatterForm from "./FrontMatterForm.tsx";
 import ImageNameDialog from "./ImageNameDialog.tsx";
+import Outline from "./Outline.tsx";
+import { activeHeadingIndex, outlineOf } from "./outline.ts";
+import OverlayScrollbar from "./OverlayScrollbar.tsx";
 import { createImagePaste } from "./imagePaste.ts";
 import { createPublishedPreview } from "./publishedPreview.ts";
 import Preview from "./Preview.tsx";
@@ -37,6 +40,11 @@ export default function Editor() {
   const [warning, setWarning] = createSignal("");
   const [saving, setSaving] = createSignal(false);
   const [recovered, setRecovered] = createSignal<string | null>(null);
+  const [typing, setTyping] = createSignal(false);
+  const [scroller, setScroller] = createSignal<HTMLElement>();
+  const [caretLine, setCaretLine] = createSignal(1);
+  const headings = createMemo(() => outlineOf(body()));
+  const activeHeading = () => activeHeadingIndex(headings(), caretLine());
 
   const [scroll, setScroll] = createSignal(0);
 
@@ -75,15 +83,19 @@ export default function Editor() {
       }
     };
     window.addEventListener("keydown", saveFromAnyFocusedControl);
+    const revealChrome = () => setTyping(false);
+    window.addEventListener("mousemove", revealChrome);
     onCleanup(() => {
       window.removeEventListener("beforeunload", beforeUnload);
       window.removeEventListener("keydown", saveFromAnyFocusedControl);
+      window.removeEventListener("mousemove", revealChrome);
     });
   });
 
   function onChange(next: string) {
     setBody(next);
     setDirty(true);
+    setTyping(true);
     setStatus("");
     if (file !== "") drafts.keep(next);
   }
@@ -150,7 +162,7 @@ export default function Editor() {
     cfg()?.editorEngine === "textarea" ? EditorTextarea : EditorCodeMirror;
 
   return (
-    <div class="editor">
+    <div class="editor" classList={{ typing: typing() }}>
       <Show when={file === ""}>
         <div class="card bad-box">?file= 이 없습니다.</div>
       </Show>
@@ -176,7 +188,7 @@ export default function Editor() {
                     <span class="chip derived">→ 한국어 (파생)</span>
                   </Show>
                   <Show when={dirty()}>
-                    <span class="chip warn">저장 안 됨</span>
+                    <span class="chip quiet">저장 안 됨</span>
                   </Show>
                 </div>
                 <div class="toolbar" style={{ margin: 0 }}>
@@ -232,15 +244,27 @@ export default function Editor() {
               />
 
               <div class="editor-main" classList={{ split: publishedPreview.visible() }}>
-                <Surface
-                  value={src.body}
-                  onChange={onChange}
-                  onSaveRequest={() => void save()}
-                  onImagePaste={images.paste}
-                  assetBase={publishedAssetBase}
-                  onScroll={setScroll}
-                  ref={(editorHandle) => (handle = editorHandle)}
-                />
+                <div class="editor-pane">
+                  <Surface
+                    value={src.body}
+                    onChange={onChange}
+                    onSaveRequest={() => void save()}
+                    onImagePaste={images.paste}
+                    assetBase={publishedAssetBase}
+                    onScroll={setScroll}
+                    onCaretLine={setCaretLine}
+                    ref={(editorHandle) => {
+                      handle = editorHandle;
+                      setScroller(editorHandle.scroller);
+                    }}
+                  />
+                  <Outline
+                    headings={headings()}
+                    active={activeHeading()}
+                    onPick={(line) => handle?.revealLine(line)}
+                  />
+                  <OverlayScrollbar target={scroller} />
+                </div>
                 <Show when={publishedPreview.visible()}>
                   <Preview
                     views={publishedPreview.views()}

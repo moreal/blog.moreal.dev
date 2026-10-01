@@ -11,12 +11,18 @@ export interface EditorEngineProps {
   assetBase?: () => string;
   /** Scroll position as 0..1, for mirroring into the preview pane. */
   onScroll?: (ratio: number) => void;
+  /** The 1-based line the caret is on, whenever it moves. */
+  onCaretLine?: (line: number) => void;
 }
 
 export interface EditorHandle {
   /** Replace the whole document (after hongdown) while keeping the caret. */
   replaceAll: (next: string) => void;
   focus: () => void;
+  /** The element that scrolls, for the overlay scrollbar to follow. */
+  scroller: HTMLElement;
+  /** Put the caret at the end of a 1-based line and bring it to the top. */
+  revealLine: (line: number) => void;
 }
 
 const CARET_AT_LINE_START = /(^|\n)\s*$/;
@@ -53,4 +59,29 @@ export function findLine(lines: string[], mark: CaretMark): number {
     }
   }
   return Math.min(mark.line, lines.length);
+}
+
+/**
+ * Only the span hongdown actually touched, so the lines around it keep their
+ * place on screen instead of the whole document being swapped under the reader.
+ */
+export function changedSpan(
+  current: string,
+  next: string,
+): { from: number; to: number; insert: string } {
+  const shorter = Math.min(current.length, next.length);
+  let prefix = 0;
+  while (prefix < shorter && current[prefix] === next[prefix]) prefix++;
+  let suffix = 0;
+  while (
+    suffix < shorter - prefix &&
+    current[current.length - 1 - suffix] === next[next.length - 1 - suffix]
+  ) {
+    suffix++;
+  }
+  return {
+    from: prefix,
+    to: current.length - suffix,
+    insert: next.slice(prefix, next.length - suffix),
+  };
 }

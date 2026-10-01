@@ -18,6 +18,8 @@ export interface LivePreviewOptions {
 }
 
 const hidden = Decoration.replace({});
+const dimmed = Decoration.mark({ class: "cm-md-mark" });
+const setextUnderline = Decoration.mark({ class: "cm-md-mark cm-md-setext" });
 
 class ImageWidget extends WidgetType {
   constructor(
@@ -111,6 +113,10 @@ class MarkdownDecorations {
     if (from < to) this.ranges.push(hidden.range(from, to));
   }
 
+  private dim(from: number, to: number): void {
+    if (from < to) this.ranges.push(dimmed.range(from, to));
+  }
+
   private styleLine(position: number, className: string): void {
     const { from } = this.state.doc.lineAt(position);
     this.add(from, from, Decoration.line({ class: className }));
@@ -155,34 +161,19 @@ class MarkdownDecorations {
       case "Blockquote":
         this.styleBlock(node, "cm-md-quote");
         break;
+      case "QuoteMark":
+      case "ListMark":
+        this.dim(node.from, node.to);
+        break;
     }
   }
 
-  private decorateHeading(
-    node: MarkdownNode,
-    setext: boolean,
-    level: string,
-  ): void {
-    this.styleLine(node.from, `cm-md-h${level}`);
-    if (this.selectionTouches(node)) return;
+  private decorateHeading(node: MarkdownNode, setext: boolean, level: string): void {
+    this.styleBlock(node, `cm-md-h${level}`);
     const mark = node.getChild("HeaderMark");
     if (!mark) return;
-    if (setext) {
-      this.hideUnderlineWithPrecedingNewline(mark);
-    } else {
-      this.hideHeadingPrefixWithSpace(mark, node.to);
-    }
-  }
-
-  private hideUnderlineWithPrecedingNewline(mark: MarkdownNode): void {
-    this.hide(mark.from - 1, mark.to);
-  }
-
-  private hideHeadingPrefixWithSpace(
-    mark: MarkdownNode,
-    headingEnd: number,
-  ): void {
-    this.hide(mark.from, Math.min(mark.to + 1, headingEnd));
+    if (setext) this.add(mark.from, mark.to, setextUnderline);
+    else this.dim(mark.from, mark.to);
   }
 
   private decorateInline(
@@ -190,9 +181,8 @@ class MarkdownDecorations {
     { className, marks }: InlineStyle,
   ): void {
     this.add(node.from, node.to, Decoration.mark({ class: className }));
-    if (this.selectionTouches(node)) return;
     for (const name of marks) {
-      for (const mark of node.getChildren(name)) this.hide(mark.from, mark.to);
+      for (const mark of node.getChildren(name)) this.dim(mark.from, mark.to);
     }
   }
 
@@ -291,9 +281,16 @@ const theme = EditorView.baseTheme({
   ".cm-md-fence": { fontFamily: "var(--mono)", fontSize: "0.92em", background: "var(--bg)" },
   ".cm-md-quote": {
     borderLeft: "3px solid var(--line)",
-    paddingLeft: "10px",
-    fontStyle: "italic",
-    opacity: "0.85",
+    paddingLeft: "14px",
+    color: "var(--dim)",
+  },
+  ".cm-md-mark": { color: "var(--dim)", opacity: "0.45", fontWeight: "400" },
+  // hongdown counts "=" and "-" as one column and a Korean syllable as two.
+  // A monospace glyph widened or narrowed to exactly half an em makes two of
+  // them span one syllable, so the underline covers the heading it belongs to.
+  ".cm-md-setext": {
+    fontFamily: "var(--mono)",
+    letterSpacing: "calc(0.5em - 1ch)",
   },
   ".cm-md-image": { display: "inline-block", maxWidth: "100%", verticalAlign: "top" },
   ".cm-md-image img": {

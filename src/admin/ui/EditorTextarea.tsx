@@ -30,7 +30,33 @@ export default function EditorTextarea(props: EditorEngineProps) {
     props.ref?.({
       replaceAll,
       focus: () => node.focus(),
+      scroller: node,
+      revealLine,
     });
+  }
+
+  // A textarea cannot say where a wrapped line sits, so this estimates by the
+  // line's share of the document; good enough for a fallback surface.
+  function revealLine(number: number) {
+    if (el === undefined) return;
+    const lines = el.value.split("\n");
+    const target = Math.min(Math.max(1, number), lines.length);
+    const end = lines.slice(0, target).join("\n").length;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(end, end);
+    reportCaretLine();
+    el.scrollTop = ((target - 1) / lines.length) * el.scrollHeight;
+  }
+
+  function reportCaretLine() {
+    if (el === undefined || props.onCaretLine === undefined) return;
+    props.onCaretLine(el.value.slice(0, el.selectionStart).split("\n").length);
+  }
+
+  function reportScroll() {
+    if (el === undefined || props.onScroll === undefined) return;
+    const max = el.scrollHeight - el.clientHeight;
+    props.onScroll(max <= 0 ? 0 : el.scrollTop / max);
   }
 
   function onPaste(event: ClipboardEvent) {
@@ -71,6 +97,10 @@ export default function EditorTextarea(props: EditorEngineProps) {
       ref={mount}
       onInput={(e) => props.onChange(e.currentTarget.value)}
       onPaste={onPaste}
+      onScroll={reportScroll}
+      onSelect={reportCaretLine}
+      onKeyUp={reportCaretLine}
+      onClick={reportCaretLine}
     />
   );
 }
